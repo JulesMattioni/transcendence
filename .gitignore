@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Secrets & environnement
+# Secrets & environment
 # ─────────────────────────────────────────────────────────────
 .env
 .env.*
@@ -12,7 +12,7 @@ vault/data/
 vault/logs/
 *.hcl.local
 
-# Clés / certificats
+# Keys / certificates
 *.pem
 *.key
 *.crt
@@ -44,14 +44,14 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environnements virtuels
+# Virtual environments
 .venv/
 venv/
 env/
 ENV/
 .python-version
 
-# Outils de test / lint / typage
+# Test / lint / typing tools
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -62,8 +62,8 @@ htmlcov/
 .tox/
 .nox/
 
-# Alembic (garder les migrations versionnées, ignorer les artefacts locaux)
-# (les fichiers de migration dans versions/ doivent être commités)
+# Alembic (keep migrations versioned, ignore local artifacts)
+# (migration files in versions/ must be committed)
 
 # ─────────────────────────────────────────────────────────────
 # Frontend (React + Vite + TypeScript + Tailwind)
@@ -90,22 +90,23 @@ pnpm-debug.log*
 .prettiercache
 
 # ─────────────────────────────────────────────────────────────
-# PostgreSQL / pgvector — données persistées (volumes)
+# PostgreSQL / pgvector — persisted data (volumes)
 # ─────────────────────────────────────────────────────────────
 pgdata/
 postgres-data/
 *.sql.backup
 *.dump
+.data/
 
 # ─────────────────────────────────────────────────────────────
-# Documents & uploads (core service) — ne pas versionner les données utilisateurs
+# Documents & uploads (core service) — do not version user data
 # ─────────────────────────────────────────────────────────────
 uploads/
 storage/
 media/
 *.upload
 
-# RAG — index vectoriels / embeddings générés localement
+# RAG — vector indexes / embeddings generated locally
 embeddings/
 vector_store/
 *.faiss
