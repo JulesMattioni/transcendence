@@ -1,0 +1,136 @@
+# ─────────────────────────────────────────────────────────────
+# Secrets & environnement
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+
+# HashiCorp Vault
+.vault-token
+vault/data/
+vault/logs/
+*.hcl.local
+
+# Clés / certificats
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+
+# ─────────────────────────────────────────────────────────────
+# Python / FastAPI (auth, core, org, rag, realtime)
+# ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Outils de test / lint / typage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache
+.tox/
+.nox/
+
+# Alembic (garder les migrations versionnées, ignorer les artefacts locaux)
+# (les fichiers de migration dans versions/ doivent être commités)
+
+# ─────────────────────────────────────────────────────────────
+# Frontend (React + Vite + TypeScript + Tailwind)
+# ─────────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+.vite/
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Logs npm / yarn / pnpm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Cache ESLint / Prettier
+.eslintcache
+.prettiercache
+
+# ─────────────────────────────────────────────────────────────
+# PostgreSQL / pgvector — données persistées (volumes)
+# ─────────────────────────────────────────────────────────────
+pgdata/
+postgres-data/
+*.sql.backup
+*.dump
+
+# ─────────────────────────────────────────────────────────────
+# Documents & uploads (core service) — ne pas versionner les données utilisateurs
+# ─────────────────────────────────────────────────────────────
+uploads/
+storage/
+media/
+*.upload
+
+# RAG — index vectoriels / embeddings générés localement
+embeddings/
+vector_store/
+*.faiss
+*.index
+
+# ─────────────────────────────────────────────────────────────
+# Docker
+# ─────────────────────────────────────────────────────────────
+docker-compose.override.yml
+.docker/
+
+# ─────────────────────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─────────────────────────────────────────────────────────────
+# IDE / OS
+# ─────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
