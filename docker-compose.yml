@@ -25,7 +25,9 @@ services:
       - "8200:8200"
 
   auth:
-    build: ./auth
+    build:
+      context: .
+      dockerfile: auth/Dockerfile
     env_file: .env
     depends_on:
       postgres:
@@ -34,7 +36,9 @@ services:
       - "8000"
 
   org:
-    build: ./org
+    build:
+      context: .
+      dockerfile: org/Dockerfile
     env_file: .env
     depends_on:
       postgres:
@@ -43,7 +47,9 @@ services:
       - "8000"
 
   core:
-    build: ./core
+    build:
+      context: .
+      dockerfile: core/Dockerfile
     env_file: .env
     depends_on:
       postgres:
@@ -54,7 +60,9 @@ services:
       - "8000"
 
   rag:
-    build: ./rag
+    build:
+      context: .
+      dockerfile: rag/Dockerfile
     env_file: .env
     depends_on:
       postgres:
@@ -67,7 +75,9 @@ services:
       - "8000"
 
   realtime:
-    build: ./realtime
+    build:
+      context: .
+      dockerfile: realtime/Dockerfile
     env_file: .env
     depends_on:
       postgres:

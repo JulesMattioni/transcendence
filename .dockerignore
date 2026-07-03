@@ -1,0 +1,11 @@
+**/.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+frontend/dist
+.data
+.git
+gateway/crs
+gateway/certs
+**/.pytest_cache
+**/.mypy_cache

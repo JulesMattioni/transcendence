@@ -5,11 +5,13 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 
-COPY pyproject.toml uv.lock ./
+COPY core/pyproject.toml core/uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY . .
+COPY core/ .
+COPY shared/ ./shared/
 
 RUN uv sync --frozen --no-dev
 
