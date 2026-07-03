@@ -96,7 +96,6 @@ pgdata/
 postgres-data/
 *.sql.backup
 *.dump
-.data/
 
 # ─────────────────────────────────────────────────────────────
 # Documents & uploads (core service) — do not version user data
