@@ -14,6 +14,16 @@ services:
       timeout: 5s
       retries: 5
 
+  vault:
+    image: hashicorp/vault:1.16
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+
   auth:
     build: ./auth
     env_file: .env
@@ -31,6 +41,39 @@ services:
         condition: service_healthy
     ports:
       - "8001:8000"
+
+  core:
+    build: ./core
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      org:
+        condition: service_started
+    ports:
+      - "8002:8000"
+
+  rag:
+    build: ./rag
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      org:
+        condition: service_started
+      core:
+        condition: service_started
+    ports:
+      - "8003:8000"
+
+  realtime:
+    build: ./realtime
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
 
 volumes:
   pgdata:
