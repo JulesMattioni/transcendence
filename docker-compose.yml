@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:
@@ -12,6 +13,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   auth:
     build: ./auth
     env_file: .env
@@ -20,6 +22,15 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+
+  org:
+    build: ./org
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
 
 volumes:
   pgdata:
