@@ -51,6 +51,7 @@ Un point d'entrée HTTPS unique (**API Gateway** : Nginx + ModSecurity/WAF) rout
 |---|---|
 | Frontend | React + Vite + TypeScript, Tailwind CSS |
 | Backend | Python + FastAPI |
+| Package manager Python | uv (dépendances + environnements virtuels) |
 | ORM | SQLAlchemy (+ Alembic pour les migrations) |
 | Base de données | PostgreSQL + extension pgvector |
 | Temps réel | WebSockets |
@@ -79,6 +80,7 @@ Un point d'entrée HTTPS unique (**API Gateway** : Nginx + ModSecurity/WAF) rout
 - **Linting** : conformité **flake8** (PEP 8) sur tout le code Python, sans exception.
 - **Typage** : typage strict avec **mypy** — toutes les fonctions et méthodes doivent avoir leurs annotations de type (paramètres et retour).
 - **Paradigme** : le code backend est organisé en **programmation orientée objet** (classes pour les modèles, les services, les repositories, etc.), pas de scripts procéduraux.
+- **Gestion des dépendances** : **uv** comme package manager Python pour tous les services. Les dépendances sont déclarées dans `pyproject.toml` et figées dans `uv.lock` (versionné). Installation reproductible via `uv sync` (y compris dans les Dockerfiles).
 - Ces règles s'appliquent à tous les services FastAPI (`auth/`, `core/`, `org/`, `rag/`, `realtime/`), à intégrer dans la CI (job flake8 + mypy avant le build/test).
 
 ## 7. Standards de code Frontend
