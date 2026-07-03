@@ -3,13 +3,19 @@
 # Shortcuts around Docker Compose.
 # ─────────────────────────────────────────────────────────────
 
-COMPOSE := docker compose
+# Active Compose profile (dev by default). Override with: make PROFILE=prod ...
+PROFILE ?= dev
+COMPOSE := docker compose --profile $(PROFILE)
 
-.PHONY: run up down stop build logs ps re clean fclean help
+.PHONY: run prod up down stop build logs ps re clean fclean help
 
-## run   : build + start the whole stack (foreground)
+## run   : build + start the whole stack in dev profile (foreground)
 run:
 	$(COMPOSE) up --build
+
+## prod  : build + start the whole stack in prod profile (foreground)
+prod:
+	$(MAKE) run PROFILE=prod
 
 ## up    : start the stack in the background (detached)
 up:
