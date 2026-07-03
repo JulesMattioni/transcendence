@@ -134,3 +134,6 @@ logs/
 *~
 .DS_Store
 Thumbs.db
+
+
+gateway/crs/

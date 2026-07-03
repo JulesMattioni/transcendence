@@ -7,10 +7,25 @@
 PROFILE ?= dev
 COMPOSE := docker compose --profile $(PROFILE)
 
-.PHONY: run prod up down stop build logs ps re clean fclean help
+CERT_DIR := gateway/certs
+
+.PHONY: run prod up down stop build logs ps re certs clean fclean help
+
+## certs : generate self-signed TLS cert for the gateway (skips if present)
+certs:
+	@if [ -f $(CERT_DIR)/server.crt ] && [ -f $(CERT_DIR)/server.key ]; then \
+		echo "certs already present in $(CERT_DIR)/ — skipping"; \
+	else \
+		mkdir -p $(CERT_DIR); \
+		openssl req -x509 -newkey rsa:2048 -nodes \
+			-keyout $(CERT_DIR)/server.key \
+			-out $(CERT_DIR)/server.crt \
+			-days 365 -subj "/CN=localhost"; \
+		echo "generated $(CERT_DIR)/server.crt and server.key"; \
+	fi
 
 ## run   : build + start the whole stack in dev profile (foreground)
-run:
+run: certs
 	$(COMPOSE) up --build
 
 ## prod  : build + start the whole stack in prod profile (foreground)
