@@ -6,7 +6,7 @@ import Footer from "../components/landing/Footer";
 
 function LandingPage() {
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#FAFAFA] text-gray-900">
+    <div className="relative min-h-screen overflow-x-hidden bg-bg text-gray-900">
       <Navbar />
       <Hero />
       <DiscoverSection />

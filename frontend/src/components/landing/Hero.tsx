@@ -1,4 +1,5 @@
 import angel0 from '../../assets/angel_0.png'
+import { Link } from 'react-router-dom'
 
 
 function Hero() {
@@ -29,18 +30,18 @@ function Hero() {
         </p>
         {/* Boutons */}
         <div className="mt-8 flex items-center gap-4">
-          <a
-            href="#"
+          <Link
+            to="/register"
             className="bg-keepr px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Get started now
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/login"
             className="border border-gray-600 bg-white px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-gray-50"
           >
             Sign In
-          </a>
+          </Link>
         </div>
 
       </div>

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 function DiscoverSection() {
   return (
     <section className="px-6 py-20 sm:px-10">
@@ -20,12 +22,12 @@ function DiscoverSection() {
 
         {/* right column */}
         <div className="flex shrink-0 justify-center lg:w-1/3">
-          <a
-            href="#"
+          <Link
+            to="/register"
             className="inline-block bg-keepr px-8 py-3 text-sm font-sans font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Try Now
-          </a>
+          </Link>
         </div>
       </div>
     </section>
