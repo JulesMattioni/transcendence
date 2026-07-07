@@ -2,6 +2,7 @@ import Navbar from "../components/landing/Navbar";
 import Hero from "../components/landing/Hero";
 import DiscoverSection from "../components/landing/DiscoverSection";
 import FeatureCards from "../components/landing/FeatureCards";
+import Footer from "../components/landing/Footer";
 
 function LandingPage() {
   return (
@@ -10,6 +11,7 @@ function LandingPage() {
       <Hero />
       <DiscoverSection />
       <FeatureCards />
+      <Footer />
     </div>
   );
 }
