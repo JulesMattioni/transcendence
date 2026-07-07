@@ -1,6 +1,7 @@
-import Navbar from '../components/landing/Navbar'
-import Hero from '../components/landing/Hero'
-import DiscoverSection from '../components/landing/DiscoverSection'
+import Navbar from "../components/landing/Navbar";
+import Hero from "../components/landing/Hero";
+import DiscoverSection from "../components/landing/DiscoverSection";
+import FeatureCards from "../components/landing/FeatureCards";
 
 function LandingPage() {
   return (
@@ -8,8 +9,9 @@ function LandingPage() {
       <Navbar />
       <Hero />
       <DiscoverSection />
+      <FeatureCards />
     </div>
-  )
+  );
 }
 
-export default LandingPage
+export default LandingPage;

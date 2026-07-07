@@ -6,7 +6,7 @@ function Hero() {
     <section className="relative grid min-h-screen grid-cols-1 content-center items-center gap-8 overflow-hidden px-6 pt-16 pb-16 sm:px-10 lg:min-h-0 lg:grid-cols-2">
       <div className='z-10 overflow-x-hidden pt-8'>
         {/* Badge */}
-        <span className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-4 py-1.5 font-mono text-xs text-black-600">
+        <span className="inline-flex items-center gap-2 rounded-full border border-gray-600 bg-white px-4 py-1.5 font-mono text-xs text-black-600">
           <span className="h-2 w-2 rounded-full bg-keepr" />
           AI Powered Security Vault
         </span>
