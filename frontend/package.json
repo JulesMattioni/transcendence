@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/montserrat": "^5.2.8",
+    "@fontsource/shippori-mincho": "^5.2.8",
     "@tailwindcss/vite": "^4.3.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
