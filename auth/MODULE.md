@@ -14,3 +14,10 @@ Gère l'inscription, la connexion et l'identité des utilisateurs. Émet les **J
 - OAuth2 (Google, 42).
 
 **Stack :** Python + FastAPI, SQLAlchemy, secrets via Vault
+
+**Endpoints a faire:**
+
+- POST /auth/signup (email + password → user créé)
+- POST /auth/login (email + password → renvoie le token)
+- POST /auth/refresh (refresh token → nouveau access token)
+- GET /auth/me (token → renvoie l'utilisateur courant)
