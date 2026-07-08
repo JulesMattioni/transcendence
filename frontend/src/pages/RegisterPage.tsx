@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AuthLayout from '../components/auth/AuthLayout'
 import AuthInput from '../components/auth/AuthInput'
@@ -25,7 +25,7 @@ function RegisterPage() {
       </h1>
 
       <form className='mt-4 space-y-4'>
-        <p className='text-center font-sans font-light text-sm'>
+        <p className='text-center font-sans font-light text-sm text-muted'>
           Get started with Keepr.
         </p>
         <div className='grid grid-cols-2 gap-3'>
@@ -71,23 +71,26 @@ function RegisterPage() {
           children="Create Account"
           icon=<ArrowRight size={15} strokeWidth={2}/>
         />
-        <p className='text-center font-sans font-light font-sm text-muted'>
-          Already have an account ? <Link to={'/login'} className='hover:text-black underline'> Sign In</Link>
-        </p>
         <div className='grid grid-cols-2 gap-3'>
           <AuthButton
-            children="Connect with "
+            children="Create with "
             variant='outline'
             type='button'
             icon=<GoogleIcon/>
           />
           <AuthButton
-            children="Connect with "
+            children="Create with "
             variant='outline'
             type='button'
             icon=<FortyTwoIcon/>
           />
         </div>
+        <p className='text-center font-sans font-light text-sm text-muted'>
+          Already have an account ? <Link to={'/login'} className='hover:text-black underline'> Sign In</Link>
+        </p>
+        <Link to={'/'} className='flex items-center text-sans text-sm text-muted hover:text-black'>
+          <ArrowLeft size={14} className='text-keepr'/>Back
+        </Link>
       </form>
     </AuthLayout>
   )
