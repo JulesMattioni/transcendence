@@ -13,7 +13,7 @@ Gère l'inscription, la connexion et l'identité des utilisateurs. Émet les **J
 - 2FA TOTP (activation, vérification).
 - OAuth2 (Google, 42).
 
-**Stack :** Python + FastAPI, SQLAlchemy, secrets via Vault
+**Stack :** Python + FastAPI, SQLAlchemy, secrets via Vault (.env pour l instant, le vault viendra a la fin)
 
 **Endpoints a faire:**
 
