@@ -1,6 +1,10 @@
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import AuthLayout from '../components/auth/AuthLayout'
 import AuthInput from '../components/auth/AuthInput'
+import AuthButton from '../components/auth/AuthButton'
+import GoogleIcon from '../components/icons/GoogleIcon'
+import FortyTwoIcon from '../components/icons/FortyTwoIcon'
 
 
 function RegisterPage() {
@@ -62,6 +66,24 @@ function RegisterPage() {
           onChange={setConfirmPassword}
           autoComplete='new-password'
         />
+        <AuthButton
+          children="Create Account"
+          icon=<ArrowRight size={15} strokeWidth={2}/>
+        />
+        <div className='grid grid-cols-2 gap-3'>
+          <AuthButton
+            children="Connect with "
+            variant='outline'
+            type='button'
+            icon=<GoogleIcon/>
+          />
+          <AuthButton
+            children="Connect with "
+            variant='outline'
+            type='button'
+            icon=<FortyTwoIcon/>
+          />
+        </div>
       </form>
     </AuthLayout>
   )
