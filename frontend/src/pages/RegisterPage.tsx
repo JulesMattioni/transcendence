@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import AuthLayout from '../components/auth/AuthLayout'
 import AuthInput from '../components/auth/AuthInput'
 import AuthButton from '../components/auth/AuthButton'
@@ -70,6 +71,9 @@ function RegisterPage() {
           children="Create Account"
           icon=<ArrowRight size={15} strokeWidth={2}/>
         />
+        <p className='text-center font-sans font-light font-sm text-muted'>
+          Already have an account ? <Link to={'/login'} className='hover:text-black underline'> Sign In</Link>
+        </p>
         <div className='grid grid-cols-2 gap-3'>
           <AuthButton
             children="Connect with "
