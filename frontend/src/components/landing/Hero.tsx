@@ -1,5 +1,6 @@
 import angel0 from '../../assets/angel_0.png'
 import { Link } from 'react-router-dom'
+import { ArrowUp } from 'lucide-react'
 
 
 function Hero() {
@@ -68,7 +69,7 @@ function Hero() {
               <span className="text-muted leading-none">+</span> Upload
             </button>
             <button className="flex h-8 w-8 items-center justify-center rounded-full bg-keepr text-white text-lg">
-              ↑
+              <ArrowUp size={12} strokeWidth={3}/>
             </button>
           </div>
         </div>
