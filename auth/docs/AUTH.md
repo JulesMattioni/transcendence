@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/AUTH-SERVICE-111111?style=for-the-badge&labelColor=000000" alt="auth-service" />
 </p>
 
-<h1 align="center">🔐 Auth Service</h1>
+<h1 align="center">Auth Service</h1>
 
 <p align="center">
   A standalone authentication microservice — signup, login, JWT sessions, TOTP 2FA and OAuth 2.0 (Google &amp; 42) — built with FastAPI and wired into a React frontend.
@@ -52,7 +52,7 @@
 
 <hr/>
 
-<h2 id="overview">🧭 Overview</h2>
+<h2 id="overview">Overview</h2>
 
 <p>
 The <code>auth</code> service is the identity provider for the platform. It owns user accounts,
@@ -69,7 +69,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 
 <hr/>
 
-<h2 id="tech-stack">🧩 Tech Stack</h2>
+<h2 id="tech-stack">Tech Stack</h2>
 
 <table>
   <tr>
@@ -167,10 +167,10 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 
 <hr/>
 
-<h2 id="features">✨ Features</h2>
+<h2 id="features">Features</h2>
 
 <details>
-  <summary><b>🧱 Foundations &amp; database</b></summary>
+  <summary><b>Foundations &amp; database</b></summary>
   <ul>
     <li>SQLAlchemy + Alembic wired to <code>DATABASE_URL</code>, first migration generates the schema</li>
     <li><code>User</code> model (id, unique email, hashed_password, is_active, is_2fa_enabled, created_at)</li>
@@ -180,7 +180,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 </details>
 
 <details>
-  <summary><b>👤 Standard user management</b></summary>
+  <summary><b>Standard user management</b></summary>
   <ul>
     <li><code>POST /auth/signup</code> — email validation, password policy, hashed storage, <code>409</code> on duplicate email</li>
     <li><code>PasswordHasher</code> — isolated, independently testable hashing service (argon2/bcrypt)</li>
@@ -193,7 +193,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 </details>
 
 <details>
-  <summary><b>🔑 TOTP two-factor authentication</b></summary>
+  <summary><b>TOTP two-factor authentication</b></summary>
   <ul>
     <li><code>POST /auth/2fa/setup</code> — generates a TOTP secret + QR provisioning URI (pending confirmation)</li>
     <li><code>POST /auth/2fa/verify</code> — confirms the code, enables 2FA, issues recovery codes</li>
@@ -203,7 +203,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 </details>
 
 <details>
-  <summary><b>🌐 OAuth 2.0 — Google &amp; 42</b></summary>
+  <summary><b>OAuth 2.0 — Google &amp; 42</b></summary>
   <ul>
     <li><code>oauth_accounts</code> model — (provider, provider_user_id, user_id), with linking/merging on an existing email</li>
     <li>Google — <code>GET /auth/oauth/google/login</code> + <code>/callback</code>, Authorization Code flow</li>
@@ -212,7 +212,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 </details>
 
 <details>
-  <summary><b>🖥️ Frontend integration</b></summary>
+  <summary><b>Frontend integration</b></summary>
   <ul>
     <li><code>LoginPage.tsx</code> / <code>RegisterPage.tsx</code> wired to their respective endpoints (currently pure UI, no API calls)</li>
     <li>Global auth state via React Context — persisted session, protected routes, silent token refresh</li>
@@ -222,7 +222,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 </details>
 
 <details>
-  <summary><b>🛡️ Security, quality &amp; infra</b></summary>
+  <summary><b>Security, quality &amp; infra</b></summary>
   <ul>
     <li>Rate limiting + account lockout on <code>/auth/login</code></li>
     <li>Dedicated CI job: flake8 + strict mypy for the <code>auth</code> service</li>
@@ -233,7 +233,7 @@ JWTs it issues through a shared dependency instead of re-implementing auth logic
 
 <hr/>
 
-<h2 id="api-reference">📡 API Reference</h2>
+<h2 id="api-reference">API Reference</h2>
 
 <table>
   <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
@@ -276,7 +276,7 @@ auth/
 
 <hr/>
 
-<h2 id="getting-started">🚀 Getting Started</h2>
+<h2 id="getting-started">Getting Started</h2>
 
 <h3>Prerequisites</h3>
 <p>
@@ -304,7 +304,7 @@ uv run uvicorn app.main:app --reload
 
 <hr/>
 
-<h2 id="environment-variables">🔧 Environment Variables</h2>
+<h2 id="environment-variables">Environment Variables</h2>
 
 <table>
   <tr><th>Variable</th><th>Description</th></tr>
@@ -323,7 +323,7 @@ uv run uvicorn app.main:app --reload
 
 <hr/>
 
-<h2 id="testing">✅ Testing &amp; Quality</h2>
+<h2 id="testing">Testing &amp; Quality</h2>
 
 ```bash
 # run the test suite
@@ -340,7 +340,7 @@ uv run mypy --strict app
 
 <hr/>
 
-<h2 id="security">🔒 Security Notes</h2>
+<h2 id="security">Security Notes</h2>
 
 <ul>
   <li>Passwords are salted and hashed (argon2/bcrypt) — plaintext and hashes are never returned in responses</li>
@@ -357,7 +357,7 @@ uv run mypy --strict app
 <p>Reference material to read before/while implementing each part of the service.</p>
 
 <details open>
-  <summary><b>🧱 FastAPI &amp; backend structure</b></summary>
+  <summary><b>FastAPI &amp; backend structure</b></summary>
   <table>
     <tr><th>Topic</th><th>Link</th></tr>
     <tr><td>FastAPI — routing, DI, <code>OAuth2PasswordBearer</code>, <code>HTTPException</code></td><td><a href="https://fastapi.tiangolo.com">fastapi.tiangolo.com</a></td></tr>
@@ -370,7 +370,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>🔑 Passwords &amp; hashing</b></summary>
+  <summary><b>Passwords &amp; hashing</b></summary>
   <table>
     <tr><th>Topic</th><th>Link</th></tr>
     <tr><td>OWASP Password Storage Cheat Sheet</td><td><a href="https://cheatsheetseries.owasp.org">cheatsheetseries.owasp.org</a></td></tr>
@@ -379,7 +379,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>🪪 JWT</b></summary>
+  <summary><b>JWT</b></summary>
   <table>
     <tr><th>Topic</th><th>Link</th></tr>
     <tr><td>RFC 7519 (JWT spec)</td><td><a href="https://datatracker.ietf.org/doc/html/rfc7519">datatracker.ietf.org/doc/html/rfc7519</a></td></tr>
@@ -390,7 +390,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>📟 2FA / TOTP</b></summary>
+  <summary><b>2FA / TOTP</b></summary>
   <table>
     <tr><th>Topic</th><th>Link</th></tr>
     <tr><td>RFC 6238 (TOTP)</td><td><a href="https://datatracker.ietf.org/doc/html/rfc6238">datatracker.ietf.org/doc/html/rfc6238</a></td></tr>
@@ -400,7 +400,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>🌐 OAuth 2.0</b></summary>
+  <summary><b>OAuth 2.0</b></summary>
   <table>
     <tr><th>Topic</th><th>Link</th></tr>
     <tr><td>RFC 6749 (Authorization Code flow)</td><td><a href="https://datatracker.ietf.org/doc/html/rfc6749">datatracker.ietf.org/doc/html/rfc6749</a></td></tr>
@@ -410,7 +410,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>🛡️ Cross-cutting security</b></summary>
+  <summary><b>Cross-cutting security</b></summary>
   <ul>
     <li>Secure cookies: <code>httpOnly</code>, <code>Secure</code>, <code>SameSite</code></li>
     <li>Rate limiting / anti-brute-force patterns</li>
@@ -419,7 +419,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>🖥️ Frontend</b></summary>
+  <summary><b>Frontend</b></summary>
   <ul>
     <li>Auth state management in React (Context API / Zustand) + protected routes via <code>react-router-dom</code></li>
     <li>API calls from React (fetch/axios, refresh-token interceptor)</li>
@@ -427,7 +427,7 @@ uv run mypy --strict app
 </details>
 
 <details>
-  <summary><b>✅ Tests</b></summary>
+  <summary><b>Tests</b></summary>
   <ul>
     <li><code>pytest</code> + <code>pytest-asyncio</code> + <code>httpx.AsyncClient</code></li>
   </ul>
@@ -435,7 +435,7 @@ uv run mypy --strict app
 
 <hr/>
 
-<h2 id="roadmap">🗺️ Roadmap &amp; Branch Convention</h2>
+<h2 id="roadmap">Roadmap &amp; Branch Convention</h2>
 
 <p>One branch per issue, one Pull Request per branch, linked to its Linear issue.</p>
 
