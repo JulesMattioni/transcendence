@@ -12,6 +12,7 @@ function RegisterPage() {
   const [first_name, setFirstName] = useState('')
   const [last_name, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  // const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirm_password, setConfirmPassword] = useState('')
 
@@ -32,14 +33,14 @@ function RegisterPage() {
           <AuthInput
             type="text"
             name="FirstName"
-            placeholder='First name'
+            placeholder='First Name'
             value={first_name}
             onChange={setFirstName}
           />
           <AuthInput
             type="text"
             name="LastName"
-            placeholder='Last name'
+            placeholder='Last Name'
             value={last_name}
             onChange={setLastName}
           />
@@ -51,6 +52,14 @@ function RegisterPage() {
           value={email}
           onChange={setEmail}
         />
+        {/* <AuthInput
+          type="tel"
+          name="phone"
+          placeholder='Phone Number'
+          value={phone}
+          onChange={setPhone}
+          autoComplete='tel'
+        /> */}
         <AuthInput
           type="password"
           name="password"
