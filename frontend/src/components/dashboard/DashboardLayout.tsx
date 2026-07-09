@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
+import BottomNav from './BottomNav'
 
 function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -18,9 +19,7 @@ function DashboardLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Bottom nav (mobile) */}
-      <nav className="border-t border-gray-200 p-4 text-center text-sm text-muted lg:hidden">
-        [ bottom nav mobile ]
-      </nav>
+      <BottomNav/>
     </div>
   )
 }

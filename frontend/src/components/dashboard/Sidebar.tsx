@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { PanelLeft, Home, FileText, Shield, LogOut } from 'lucide-react'
-
-const navItems = [
-  { to: '/dashboard', label: 'Home', icon: Home },
-  { to: '/dashboard/files', label: 'Files', icon: FileText },
-  { to: '/dashboard/admin', label: 'Admin', icon: Shield },
-]
+import { PanelLeft, LogOut } from 'lucide-react'
+import { navItems } from './NavItems'
 
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
