@@ -11,7 +11,7 @@ CERT_DIR := gateway/certs
 CRS_DIR := gateway/crs
 CRS_REPO := https://github.com/coreruleset/coreruleset.git
 
-.PHONY: run prod up down stop build logs ps re certs crs clean fclean help
+.PHONY: run prod up down stop build logs ps re certs crs clean fclean help migration migrate migrate-down
 
 ## certs : generate self-signed TLS cert for the gateway (skips if present)
 certs:
@@ -78,6 +78,19 @@ clean:
 ## fclean: everything, volumes INCLUDED (wipes the Postgres database)
 fclean:
 	$(COMPOSE) down --rmi local --volumes --remove-orphans
+
+## migration m="msg" : generate a new migration from model changes (DEV)
+migration:
+	$(COMPOSE) run --rm migrations alembic revision --autogenerate -m "$(or $(m),auto)"
+
+## migrate : apply all pending migrations (also runs automatically on `up`)
+migrate:
+	$(COMPOSE) run --rm migrations alembic upgrade head
+
+## migrate-down : roll back the last migration
+migrate-down:
+	$(COMPOSE) run --rm migrations alembic downgrade -1
+
 
 ## help  : list the available targets
 help:
