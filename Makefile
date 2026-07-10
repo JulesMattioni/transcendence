@@ -8,8 +8,10 @@ PROFILE ?= dev
 COMPOSE := docker compose --profile $(PROFILE)
 
 CERT_DIR := gateway/certs
+CRS_DIR := gateway/crs
+CRS_REPO := https://github.com/coreruleset/coreruleset.git
 
-.PHONY: run prod up down stop build logs ps re certs clean fclean help
+.PHONY: run prod up down stop build logs ps re certs crs clean fclean help
 
 ## certs : generate self-signed TLS cert for the gateway (skips if present)
 certs:
@@ -24,8 +26,18 @@ certs:
 		echo "generated $(CERT_DIR)/server.crt and server.key"; \
 	fi
 
+## crs   : clone OWASP Core Rule Set for the gateway WAF (skips if present)
+crs:
+	@if [ -d $(CRS_DIR)/rules ] && [ -f $(CRS_DIR)/crs-setup.conf.example ]; then \
+		echo "CRS already present in $(CRS_DIR)/ — skipping"; \
+	else \
+		rm -rf $(CRS_DIR); \
+		git clone --depth 1 $(CRS_REPO) $(CRS_DIR); \
+		echo "cloned CRS into $(CRS_DIR)/"; \
+	fi
+
 ## run   : build + start the whole stack in dev profile (foreground)
-run: certs
+run: certs crs
 	$(COMPOSE) up --build
 
 ## prod  : build + start the whole stack in prod profile (foreground)
@@ -33,7 +45,7 @@ prod:
 	$(MAKE) run PROFILE=prod
 
 ## up    : start the stack in the background (detached)
-up:
+up: certs crs
 	$(COMPOSE) up --build -d
 
 ## down  : stop and remove containers + networks
@@ -45,7 +57,7 @@ stop:
 	$(COMPOSE) stop
 
 ## build : (re)build the images without starting
-build:
+build: certs crs
 	$(COMPOSE) build
 
 ## logs  : follow the logs of all services
