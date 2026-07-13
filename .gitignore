@@ -103,6 +103,7 @@ postgres-data/
 uploads/
 media/
 *.upload
+tmp/
 
 # RAG — vector indexes / embeddings generated locally
 embeddings/
