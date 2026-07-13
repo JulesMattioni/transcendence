@@ -4,7 +4,7 @@ from shared.database import get_session
 from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
-from app.schemas.file import FileCreate, FileRead
+from app.schemas.file import FileCreate, FileRead, FileUpdate
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -43,3 +43,36 @@ async def upload_file(
         description=description,
     )
     return await service.create(upload, data, owner_id)
+
+
+@router.get("/{file_id}", response_model=FileRead)
+async def get_file(
+    file_id: int,
+    service: FileService = Depends(get_file_service),
+) -> FileRead:
+    return await service.get(file_id)
+
+
+@router.get("", response_model=list[FileRead])
+async def list_files(
+    organisation_id: int,
+    service: FileService = Depends(get_file_service),
+) -> list[FileRead]:
+    return await service.list_by_organisation(organisation_id)
+
+
+@router.patch("/{file_id}", response_model=FileRead)
+async def update_file(
+    file_id: int,
+    data: FileUpdate,
+    service: FileService = Depends(get_file_service),
+) -> FileRead:
+    return await service.update(file_id, data)
+
+
+@router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_file(
+    file_id: int,
+    service: FileService = Depends(get_file_service),
+) -> None:
+    await service.delete(file_id)
