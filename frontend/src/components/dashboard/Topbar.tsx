@@ -24,7 +24,7 @@ function Topbar() {
             <div className="flex items-center gap-4">
                 <button
                 type="button"
-                className="text-keepr hover:opacity-80"
+                className="text-keepr transition-colors duration-200 hover:text-blue-700"
                 >
                 <Bell size={22} fill="currentColor" />
                 </button>
