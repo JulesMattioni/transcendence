@@ -19,7 +19,8 @@ from outside without going through it. This is enforced two ways:
 
 Built from `owasp/modsecurity:nginx` (see `Dockerfile`), which ships Nginx with
 the ModSecurity v3 module already compiled. The OWASP Core Rule Set (CRS) is
-added on top from `gateway/crs/` (cloned from the coreruleset repo).
+added on top from `gateway/crs/` (cloned from the coreruleset repo — git-ignored,
+fetched automatically by `make crs`, which `run`/`up`/`build` depend on).
 
 > Note: the `owasp/modsecurity-crs:nginx` image was **not** usable here — it is
 > only published for `linux/386`, which fails on our `amd64` hosts. We build on
