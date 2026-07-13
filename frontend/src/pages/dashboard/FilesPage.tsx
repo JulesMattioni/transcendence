@@ -1,9 +1,10 @@
 import DashboardLayout from '../../components/dashboard/DashboardLayout'
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { type FileRead, listFiles } from '../../api/files'
 import { ApiError } from '../../api/client'
 import Modal from '../../components/Modal'
 import { Plus } from 'lucide-react'
+import UploadForm from '../../components/UploadForm'
 
 function FilesPage() {
   const [files, setFiles] = useState<FileRead[]>([])
@@ -11,16 +12,26 @@ function FilesPage() {
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  useEffect(() => {
-    listFiles()
-    .then((data) => setFiles(data))
-    .catch((err) => {
-      const message =
-        err instanceof ApiError ? err.message : 'Could not load files.'
-      setError(message)
-    })
-    .finally(() => setLoading(false))
+  const loadFiles = useCallback(() => {
+    return listFiles()
+      .then((data) => {
+        setFiles(data)
+        setError(null)
+      })
+      .catch((err) => {
+        const message =
+          err instanceof ApiError ? err.message : 'Could not load files.'
+        setError(message)
+      })
+      .finally(() => setLoading(false))
   }, [])
+
+
+
+  useEffect(() => {
+    loadFiles()
+  }, [loadFiles])
+
 
     return (
     <DashboardLayout>
@@ -63,7 +74,13 @@ function FilesPage() {
         onClose={() => setIsModalOpen(false)}
         title="Add file"
       >
-        <p className="text-muted">Upload form goes here.</p>
+        <UploadForm
+          onSuccess={() => {
+            setIsModalOpen(false)
+            loadFiles()
+          }}
+        />
+
       </Modal>
 
     </DashboardLayout>
