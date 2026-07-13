@@ -101,7 +101,6 @@ postgres-data/
 # Documents & uploads (core service) — do not version user data
 # ─────────────────────────────────────────────────────────────
 uploads/
-storage/
 media/
 *.upload
 
