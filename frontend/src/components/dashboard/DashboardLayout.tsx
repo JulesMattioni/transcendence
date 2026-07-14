@@ -5,21 +5,21 @@ import BottomNav from './BottomNav'
 
 function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div className="flex h-screen flex-col overflow-hidden bg-bg">
       {/* Topbar */}
-      <Topbar/>
+      <Topbar />
 
       {/* Body */}
-      <div className="flex flex-1">
-        {/* Sidebar (desktop) */}
-        <Sidebar/>
+      <div className="flex min-h-0 flex-1">
+        {/* Sidebar */}
+        <Sidebar />
 
         {/* Content Zone */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="pb-24 lg:pb-6 min-h-0 flex-1 overflow-y-auto p-6">{children}</main>
       </div>
 
       {/* Bottom nav (mobile) */}
-      <BottomNav/>
+      <BottomNav />
     </div>
   )
 }
