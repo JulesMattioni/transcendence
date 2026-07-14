@@ -22,7 +22,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur"
       onClick={onClose}
     >
       {/* White box */}
