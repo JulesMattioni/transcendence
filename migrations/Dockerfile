@@ -14,5 +14,6 @@ COPY migrations/ .
 
 COPY shared/ ./shared/
 COPY core/app/ ./core_models/
+COPY auth/app/ ./auth_models/
 
 CMD ["alembic", "upgrade", "head"]
