@@ -20,9 +20,13 @@ import {
   FileSpreadsheet,
   File as FileIcon,
   Trash2,
+  Download,
+  Pencil,
 } from "lucide-react";
 import UploadForm from "../../components/UploadForm";
 import FilePreview from '../../components/FilePreview'
+import { downloadFile } from "../../api/files";
+import EditForm from "../../components/EditForm";
 
 
 function iconForType(contentType: string) {
@@ -54,7 +58,7 @@ function FilesPage() {
   const [total, setTotal] = useState(0);
   const [fileToDelete, setFileToDelete] = useState<FileRead | null>(null);
   const [fileToView, setFileToView] = useState<FileRead | null>(null)
-
+  const [fileToEdit, setFileToEdit] = useState<FileRead | null>(null)
 
   const pageSize = 9;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -77,6 +81,14 @@ function FilesPage() {
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
+
+  const handleDownload = useCallback((file: FileRead) => {
+    downloadFile(file).catch((err) => {
+      const message =
+        err instanceof ApiError ? err.message : 'Could not download file.'
+      setError(message)
+    })
+  }, [])
 
   const confirmDelete = useCallback(() => {
     if (!fileToDelete) return;
@@ -135,7 +147,6 @@ function FilesPage() {
                   <Icon size={60} strokeWidth={1.5} />
                 </div>
 
-
                 {/* Text */}
                 <div className="flex flex-[1] items-center gap-2 border-t border-gray-200 px-3 py-2">
                   <div className="min-w-0 flex-1">
@@ -151,6 +162,20 @@ function FilesPage() {
                       </p>
                     )}
                   </div>
+                  <button
+                    onClick={() => setFileToEdit(file)}
+                    aria-label={`Edit ${file.title}`}
+                    className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDownload(file)}
+                    aria-label={`Download ${file.title}`}
+                    className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
+                  >
+                    <Download size={18} />
+                  </button>
                   <button
                     onClick={() => setFileToDelete(file)}
                     aria-label={`Delete ${file.title}`}
@@ -233,6 +258,21 @@ function FilesPage() {
         size="xl"
       >
         {fileToView && <FilePreview file={fileToView} />}
+      </Modal>
+      <Modal
+        isOpen={fileToEdit !== null}
+        onClose={() => setFileToEdit(null)}
+        title="Edit file"
+      >
+        {fileToEdit && (
+          <EditForm
+            file={fileToEdit}
+            onSuccess={() => {
+              setFileToEdit(null)
+              loadFiles()
+            }}
+          />
+        )}
       </Modal>
     </DashboardLayout>
   );

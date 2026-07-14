@@ -20,6 +20,12 @@ class FileService(BaseService):
         self._repository = repository
         self._storage = storage
 
+    async def _get_owned(self, file_id: int, organisation_id: int) -> File:
+        file = await self._repository.get(file_id)
+        if file is None or file.organisation_id != organisation_id:
+            raise FileNotFoundError(f"file {file_id} does not exist")
+        return file
+
     async def create(
         self, upload: UploadFile, data: FileCreate, owner_id: int
     ) -> FileRead:
@@ -49,12 +55,6 @@ class FileService(BaseService):
 
         return FileRead.model_validate(file)
 
-    async def get(self, file_id: int) -> FileRead:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
-        return FileRead.model_validate(file)
-
     async def list_by_organisation(
         self, organisation_id: int, page: int, page_size: int
     ) -> FilePage:
@@ -70,10 +70,14 @@ class FileService(BaseService):
             page_size=page_size,
         )
 
-    async def update(self, file_id: int, data: FileUpdate) -> FileRead:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
+    async def get(self, file_id: int, organisation_id: int) -> FileRead:
+        file = await self._get_owned(file_id, organisation_id)
+        return FileRead.model_validate(file)
+
+    async def update(
+        self, file_id: int, organisation_id: int, data: FileUpdate
+    ) -> FileRead:
+        file = await self._get_owned(file_id, organisation_id)
 
         changes = data.model_dump(exclude_unset=True)
         for field, value in changes.items():
@@ -88,11 +92,8 @@ class FileService(BaseService):
 
         return FileRead.model_validate(file)
 
-    async def delete(self, file_id: int) -> None:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
-
+    async def delete(self, file_id: int, organisation_id: int) -> None:
+        file = await self._get_owned(file_id, organisation_id)
         path = file.filepath
 
         try:
@@ -104,13 +105,5 @@ class FileService(BaseService):
 
         self._storage.delete(path)
 
-    async def get_content(self, file_id: int) -> File:
-        """Return the File ORM object (incl. filepath) for streaming.
-
-        Unlike get(), this returns the model itself so the router can
-        access filepath / content_type to build the file response.
-        """
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
-        return file
+    async def get_content(self, file_id: int, organisation_id: int) -> File:
+        return await self._get_owned(file_id, organisation_id)

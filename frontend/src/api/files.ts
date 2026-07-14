@@ -33,13 +33,6 @@ export function listFiles(page = 1, pageSize = 9): Promise<FilePage> {
   )
 }
 
-
-export function getFile(id: number): Promise<FileRead> {
-    return apiFetch<FileRead>(`/core/files/${id}`)
-}
-
-
-
 export function uploadFile(
     file: File,
     title: string,
@@ -60,18 +53,28 @@ export function uploadFile(
     })
 }
 
+export function getFile(id: number): Promise<FileRead> {
+  return apiFetch<FileRead>(
+    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+  )
+}
+
 export function deleteFile(id: number): Promise<void> {
-    return apiFetch<void>(`/core/files/${id}`, {
-        method: 'DELETE',
-    })
+  return apiFetch<void>(
+    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    { method: 'DELETE' },
+  )
 }
 
 export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
-  return apiFetch<FileRead>(`/core/files/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
+  return apiFetch<FileRead>(
+    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+  )
 }
 
 export async function fetchFileContent(id: number): Promise<Blob> {
@@ -81,10 +84,24 @@ export async function fetchFileContent(id: number): Promise<Blob> {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`/api/core/files/${id}/content`, { headers })
+  const response = await fetch(
+    `/api/core/files/${id}/content?organisation_id=${CURRENT_ORG_ID}`,
+    { headers },
+  )
   if (!response.ok) {
-    console.error('file content status:', response.status, await response.text())
     throw new ApiError(response.status, 'Could not load file content.')
   }
   return response.blob()
+}
+
+export async function downloadFile(file: FileRead): Promise<void> {
+  const blob = await fetchFileContent(file.id)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = file.filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
