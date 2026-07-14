@@ -22,6 +22,8 @@ import {
   Trash2,
 } from "lucide-react";
 import UploadForm from "../../components/UploadForm";
+import FilePreview from '../../components/FilePreview'
+
 
 function iconForType(contentType: string) {
   if (contentType.startsWith("image/")) return FileImage;
@@ -51,6 +53,8 @@ function FilesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [fileToDelete, setFileToDelete] = useState<FileRead | null>(null);
+  const [fileToView, setFileToView] = useState<FileRead | null>(null)
+
 
   const pageSize = 9;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -79,7 +83,11 @@ function FilesPage() {
     deleteFile(fileToDelete.id)
       .then(() => {
         setFileToDelete(null);
-        return loadFiles();
+        if (files.length === 1 && page > 1) {
+          setPage((p) => p - 1);
+        } else {
+          loadFiles();
+        }
       })
       .catch((err) => {
         const message =
@@ -87,7 +95,8 @@ function FilesPage() {
         setError(message);
         setFileToDelete(null);
       });
-  }, [fileToDelete, loadFiles]);
+  }, [fileToDelete, files.length, page, loadFiles]);
+
 
   return (
     <DashboardLayout>
@@ -119,9 +128,13 @@ function FilesPage() {
                 className="flex aspect-[4/3] flex-col overflow-hidden border border-gray-200 transition-colors duration-200 hover:border-keepr"
               >
                 {/* Icon */}
-                <div className="flex flex-[3] items-center justify-center bg-blue-100 text-keepr">
+                <div
+                  onClick={() => setFileToView(file)}
+                  className="flex flex-[3] cursor-pointer items-center justify-center bg-blue-100 text-keepr transition-colors hover:bg-blue-200"
+                >
                   <Icon size={60} strokeWidth={1.5} />
                 </div>
+
 
                 {/* Text */}
                 <div className="flex flex-[1] items-center gap-2 border-t border-gray-200 px-3 py-2">
@@ -212,6 +225,14 @@ function FilesPage() {
             Delete
           </button>
         </div>
+      </Modal>
+      <Modal
+        isOpen={fileToView !== null}
+        onClose={() => setFileToView(null)}
+        title={fileToView?.title ?? ''}
+        size="xl"
+      >
+        {fileToView && <FilePreview file={fileToView} />}
       </Modal>
     </DashboardLayout>
   );

@@ -103,3 +103,14 @@ class FileService(BaseService):
             raise
 
         self._storage.delete(path)
+
+    async def get_content(self, file_id: int) -> File:
+        """Return the File ORM object (incl. filepath) for streaming.
+
+        Unlike get(), this returns the model itself so the router can
+        access filepath / content_type to build the file response.
+        """
+        file = await self._repository.get(file_id)
+        if file is None:
+            raise FileNotFoundError(f"file {file_id} does not exist")
+        return file

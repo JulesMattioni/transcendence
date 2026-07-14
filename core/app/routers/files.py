@@ -5,6 +5,7 @@ from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
 from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -51,6 +52,19 @@ async def get_file(
     service: FileService = Depends(get_file_service),
 ) -> FileRead:
     return await service.get(file_id)
+
+
+@router.get("/{file_id}/content")
+async def get_file_content(
+    file_id: int,
+    service: FileService = Depends(get_file_service),
+) -> FileResponse:
+    file = await service.get_content(file_id)
+    return FileResponse(
+        path=file.filepath,
+        media_type=file.content_type,
+        filename=file.filename,
+    )
 
 
 @router.get("", response_model=FilePage)

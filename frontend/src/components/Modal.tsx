@@ -1,13 +1,21 @@
 import type { ReactNode } from "react";
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-function Modal({ isOpen, onClose, title, children }: ModalProps) {
+const sizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+  xl: 'max-w-5xl',
+}
+
+function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   if (!isOpen) {
     return null;
   }
@@ -19,9 +27,10 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
     >
       {/* White box */}
       <div
-        className="w-full max-w-md bg-white p-6 shadow-xl"
+        className={`w-full ${sizeClasses[size]} bg-white p-6 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
+
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-sans text-xl font-semibold text-black">
             {title}
