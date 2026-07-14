@@ -4,7 +4,7 @@ from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from fastapi import UploadFile
 from app.models.file import File
-from app.schemas.file import FileCreate, FileRead, FileUpdate
+from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from app.exceptions import FileNotFoundError
 
 
@@ -19,6 +19,12 @@ class FileService(BaseService):
         self._session = session
         self._repository = repository
         self._storage = storage
+
+    async def _get_owned(self, file_id: int, organisation_id: int) -> File:
+        file = await self._repository.get(file_id)
+        if file is None or file.organisation_id != organisation_id:
+            raise FileNotFoundError(f"file {file_id} does not exist")
+        return file
 
     async def create(
         self, upload: UploadFile, data: FileCreate, owner_id: int
@@ -49,22 +55,29 @@ class FileService(BaseService):
 
         return FileRead.model_validate(file)
 
-    async def get(self, file_id: int) -> FileRead:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
+    async def list_by_organisation(
+        self, organisation_id: int, page: int, page_size: int
+    ) -> FilePage:
+        offset = (page - 1) * page_size
+        files = await self._repository.list_by_organisation(
+            organisation_id, limit=page_size, offset=offset
+        )
+        total = await self._repository.count_by_organisation(organisation_id)
+        return FilePage(
+            items=[FileRead.model_validate(f) for f in files],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    async def get(self, file_id: int, organisation_id: int) -> FileRead:
+        file = await self._get_owned(file_id, organisation_id)
         return FileRead.model_validate(file)
 
-    async def list_by_organisation(
-        self, organisation_id: int
-    ) -> list[FileRead]:
-        files = await self._repository.list_by_organisation(organisation_id)
-        return [FileRead.model_validate(f) for f in files]
-
-    async def update(self, file_id: int, data: FileUpdate) -> FileRead:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
+    async def update(
+        self, file_id: int, organisation_id: int, data: FileUpdate
+    ) -> FileRead:
+        file = await self._get_owned(file_id, organisation_id)
 
         changes = data.model_dump(exclude_unset=True)
         for field, value in changes.items():
@@ -79,11 +92,8 @@ class FileService(BaseService):
 
         return FileRead.model_validate(file)
 
-    async def delete(self, file_id: int) -> None:
-        file = await self._repository.get(file_id)
-        if file is None:
-            raise FileNotFoundError(f"file {file_id} does not exist")
-
+    async def delete(self, file_id: int, organisation_id: int) -> None:
+        file = await self._get_owned(file_id, organisation_id)
         path = file.filepath
 
         try:
@@ -94,3 +104,6 @@ class FileService(BaseService):
             raise
 
         self._storage.delete(path)
+
+    async def get_content(self, file_id: int, organisation_id: int) -> File:
+        return await self._get_owned(file_id, organisation_id)

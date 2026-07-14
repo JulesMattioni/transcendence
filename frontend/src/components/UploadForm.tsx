@@ -1,77 +1,76 @@
-import { useState } from 'react'
-import { uploadFile } from '../api/files'
-import { ApiError } from '../api/client'
-
+import { useState } from "react";
+import { uploadFile } from "../api/files";
+import { ApiError } from "../api/client";
 
 interface UploadFormProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 function UploadForm({ onSuccess }: UploadFormProps) {
-  const [file, setFile] = useState<File | null>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [isDragging, setIsDragging] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(false)
-    const dropped = e.dataTransfer.files?.[0]
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
     if (dropped) {
-      setFile(dropped)
+      setFile(dropped);
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!file) {
-      setError('Please choose a file.')
-      return
+      setError("Please choose a file.");
+      return;
     }
     if (!title.trim()) {
-      setError('Please enter a title.')
-      return
+      setError("Please enter a title.");
+      return;
     }
 
-    setSubmitting(true)
-    setError(null)
+    setSubmitting(true);
+    setError(null);
     try {
-      await uploadFile(file, title, description || undefined)
-      onSuccess()
+      await uploadFile(file, title, description || undefined);
+      onSuccess();
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Upload failed.'
-      setError(message)
+      const message = err instanceof ApiError ? err.message : "Upload failed.";
+      setError(message);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   return (
-  <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* File input */}
 
-    <div>
-        <label className="mb-1 block text-sm font-medium text-ink">File</label>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-black">
+          File
+        </label>
         <label
           onDragOver={(e) => {
-            e.preventDefault()
-            setIsDragging(true)
+            e.preventDefault();
+            setIsDragging(true);
           }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           className={`flex cursor-pointer flex-col items-center justify-center border-2 border-dashed p-6 text-center text-sm transition-colors ${
             isDragging
-              ? 'border-keepr bg-blue-50 text-keepr'
-              : 'border-gray-300 text-muted'
+              ? "border-keepr bg-blue-50 text-keepr"
+              : "border-gray-300 text-muted"
           }`}
         >
           {file ? (
-            <span className="font-medium text-ink">{file.name}</span>
+            <span className="font-medium text-black">{file.name}</span>
           ) : (
             <span>Drag a file here, or click to browse</span>
           )}
@@ -84,7 +83,9 @@ function UploadForm({ onSuccess }: UploadFormProps) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-ink">Title</label>
+        <label className="mb-1 block text-sm font-medium text-black">
+          Title
+        </label>
         <input
           type="text"
           value={title}
@@ -94,9 +95,8 @@ function UploadForm({ onSuccess }: UploadFormProps) {
         />
       </div>
 
-
       <div>
-        <label className="mb-1 block text-sm font-medium text-ink">
+        <label className="mb-1 block text-sm font-medium text-black">
           Description <span className="text-muted">(optional)</span>
         </label>
         <textarea
@@ -114,11 +114,10 @@ function UploadForm({ onSuccess }: UploadFormProps) {
         disabled={submitting}
         className="w-full bg-keepr px-4 py-2 font-medium text-white disabled:opacity-50"
       >
-        {submitting ? 'Uploading…' : 'Upload'}
+        {submitting ? "Uploading…" : "Upload"}
       </button>
-
     </form>
-  )
+  );
 }
 
-export default UploadForm
+export default UploadForm;

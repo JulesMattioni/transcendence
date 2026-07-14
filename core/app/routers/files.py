@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
-from app.schemas.file import FileCreate, FileRead, FileUpdate
+from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -45,34 +46,53 @@ async def upload_file(
     return await service.create(upload, data, owner_id)
 
 
+@router.get("", response_model=FilePage)
+async def list_files(
+    organisation_id: int,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=9, ge=1, le=100),
+    service: FileService = Depends(get_file_service),
+) -> FilePage:
+    return await service.list_by_organisation(organisation_id, page, page_size)
+
+
 @router.get("/{file_id}", response_model=FileRead)
 async def get_file(
     file_id: int,
-    service: FileService = Depends(get_file_service),
-) -> FileRead:
-    return await service.get(file_id)
-
-
-@router.get("", response_model=list[FileRead])
-async def list_files(
     organisation_id: int,
     service: FileService = Depends(get_file_service),
-) -> list[FileRead]:
-    return await service.list_by_organisation(organisation_id)
+) -> FileRead:
+    return await service.get(file_id, organisation_id)
+
+
+@router.get("/{file_id}/content")
+async def get_file_content(
+    file_id: int,
+    organisation_id: int,
+    service: FileService = Depends(get_file_service),
+) -> FileResponse:
+    file = await service.get_content(file_id, organisation_id)
+    return FileResponse(
+        path=file.filepath,
+        media_type=file.content_type,
+        filename=file.filename,
+    )
 
 
 @router.patch("/{file_id}", response_model=FileRead)
 async def update_file(
     file_id: int,
+    organisation_id: int,
     data: FileUpdate,
     service: FileService = Depends(get_file_service),
 ) -> FileRead:
-    return await service.update(file_id, data)
+    return await service.update(file_id, organisation_id, data)
 
 
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_file(
     file_id: int,
+    organisation_id: int,
     service: FileService = Depends(get_file_service),
 ) -> None:
-    await service.delete(file_id)
+    await service.delete(file_id, organisation_id)

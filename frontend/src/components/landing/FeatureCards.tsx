@@ -1,31 +1,34 @@
-import angel1 from '../../assets/angel_1.png'
-import angel2 from '../../assets/angel_2.png'
-import angel3 from '../../assets/angel_3.png'
+import angel1 from "../../assets/angel_1.png";
+import angel2 from "../../assets/angel_2.png";
+import angel3 from "../../assets/angel_3.png";
 
 const cards = [
   {
     image: angel1,
-    title: 'Data Safety',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.',
+    title: "Data Safety",
+    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
   },
   {
     image: angel2,
-    title: 'Role-based Permissions',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.',
+    title: "Role-based Permissions",
+    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
   },
   {
     image: angel3,
-    title: 'Smart Access',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.',
+    title: "Smart Access",
+    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
   },
-]
+];
 
 function FeatureCards() {
   return (
     <section className="px-6 py-20 sm:px-10">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {cards.map((card) => (
-          <div key={card.title} className="group border border-gray-200 p-4 bg-white transition-colors duration-300 hover:border-keepr">
+          <div
+            key={card.title}
+            className="group border border-gray-200 p-4 bg-white transition-colors duration-300 hover:border-keepr"
+          >
             {/* Box */}
             <div className="relative aspect-[3/2] w-full overflow-hidden bg-white transition-colors duration-300 group-hover:bg-keepr">
               {/* White angel */}
@@ -41,15 +44,15 @@ function FeatureCards() {
                 style={{
                   maskImage: `url(${card.image})`,
                   WebkitMaskImage: `url(${card.image})`,
-                  maskSize: 'cover',
-                  WebkitMaskSize: 'cover',
-                  maskPosition: 'top',
-                  WebkitMaskPosition: 'top',
+                  maskSize: "cover",
+                  WebkitMaskSize: "cover",
+                  maskPosition: "top",
+                  WebkitMaskPosition: "top",
                 }}
               />
             </div>
             {/* Title */}
-            <h3 className="mt-6 font-serif text-2xl font-bold text-ink">
+            <h3 className="mt-6 font-serif text-2xl font-bold text-black">
               {card.title}
             </h3>
             {/* Text */}
@@ -60,7 +63,7 @@ function FeatureCards() {
         ))}
       </div>
     </section>
-  )
+  );
 }
 
-export default FeatureCards
+export default FeatureCards;
