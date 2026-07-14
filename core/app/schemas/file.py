@@ -46,3 +46,16 @@ class FileUpdate(BaseModel):
 
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=512)
+
+
+class FilePage(BaseModel):
+    """A single page of files plus the total count.
+
+    total is the number of files matching the query (all pages combined),
+    so the client can compute how many pages exist.
+    """
+
+    items: list[FileRead]
+    total: int
+    page: int
+    page_size: int

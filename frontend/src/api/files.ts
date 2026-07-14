@@ -18,13 +18,25 @@ export interface FileUpdate {
   description?: string
 }
 
-export function listFiles(): Promise<FileRead[]> {
-    return apiFetch<FileRead[]>(`/core/files?organisation_id=${CURRENT_ORG_ID}`)
+export interface FilePage {
+  items: FileRead[]
+  total: number
+  page: number
+  page_size: number
 }
+
+export function listFiles(page = 1, pageSize = 9): Promise<FilePage> {
+  return apiFetch<FilePage>(
+    `/core/files?organisation_id=${CURRENT_ORG_ID}&page=${page}&page_size=${pageSize}`,
+  )
+}
+
 
 export function getFile(id: number): Promise<FileRead> {
     return apiFetch<FileRead>(`/core/files/${id}`)
 }
+
+
 
 export function uploadFile(
     file: File,

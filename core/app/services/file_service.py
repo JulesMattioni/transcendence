@@ -4,7 +4,7 @@ from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from fastapi import UploadFile
 from app.models.file import File
-from app.schemas.file import FileCreate, FileRead, FileUpdate
+from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from app.exceptions import FileNotFoundError
 
 
@@ -56,10 +56,19 @@ class FileService(BaseService):
         return FileRead.model_validate(file)
 
     async def list_by_organisation(
-        self, organisation_id: int
-    ) -> list[FileRead]:
-        files = await self._repository.list_by_organisation(organisation_id)
-        return [FileRead.model_validate(f) for f in files]
+        self, organisation_id: int, page: int, page_size: int
+    ) -> FilePage:
+        offset = (page - 1) * page_size
+        files = await self._repository.list_by_organisation(
+            organisation_id, limit=page_size, offset=offset
+        )
+        total = await self._repository.count_by_organisation(organisation_id)
+        return FilePage(
+            items=[FileRead.model_validate(f) for f in files],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
 
     async def update(self, file_id: int, data: FileUpdate) -> FileRead:
         file = await self._repository.get(file_id)

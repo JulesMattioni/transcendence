@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
-from app.schemas.file import FileCreate, FileRead, FileUpdate
+from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -53,12 +53,14 @@ async def get_file(
     return await service.get(file_id)
 
 
-@router.get("", response_model=list[FileRead])
+@router.get("", response_model=FilePage)
 async def list_files(
     organisation_id: int,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=9, ge=1, le=100),
     service: FileService = Depends(get_file_service),
-) -> list[FileRead]:
-    return await service.list_by_organisation(organisation_id)
+) -> FilePage:
+    return await service.list_by_organisation(organisation_id, page, page_size)
 
 
 @router.patch("/{file_id}", response_model=FileRead)

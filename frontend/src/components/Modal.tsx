@@ -1,15 +1,15 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 
 interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  children: ReactNode
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
 }
 
 function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) {
-    return null
+    return null;
   }
 
   return (
@@ -23,7 +23,9 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-sans text-xl font-semibold text-ink">{title}</h2>
+          <h2 className="font-sans text-xl font-semibold text-black">
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="z-20 text-subtle transition-colors duration-200 hover:text-red-500"
@@ -34,7 +36,7 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
         {children}
       </div>
     </div>
-  )
+  );
 }
 
-export default Modal
+export default Modal;

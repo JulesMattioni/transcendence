@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.models.file import File
 
 
@@ -24,11 +24,29 @@ class FileRepository:
         """Return the File with this id, or None if it does not exist."""
         return await self._session.get(File, file_id)
 
-    async def list_by_organisation(self, organisation_id: int) -> list[File]:
-        """Return all files belonging to a given organisation."""
-        command = select(File).where(File.organisation_id == organisation_id)
+    async def list_by_organisation(
+        self, organisation_id: int, limit: int, offset: int
+    ) -> list[File]:
+        """Return one page of files, newest first."""
+        command = (
+            select(File)
+            .where(File.organisation_id == organisation_id)
+            .order_by(File.created_at.desc(), File.id.desc())
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(command)
         return list(result.scalars().all())
+
+    async def count_by_organisation(self, organisation_id: int) -> int:
+        """Return the total number of files for this organisation."""
+        command = (
+            select(func.count())
+            .select_from(File)
+            .where(File.organisation_id == organisation_id)
+        )
+        result = await self._session.execute(command)
+        return result.scalar_one()
 
     async def update(self, file: File) -> File:
         """Persist changes made to an already-loaded File."""
