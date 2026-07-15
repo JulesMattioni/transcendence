@@ -7,6 +7,4 @@ from core_models.models import file  # noqa: F401  (File -> table "files")
 from auth_models.models import (
     user,
 )  # noqa: F401  (File -> table "users, tokens")
-
-# When auth has models:
-# from auth_models.models import user  # noqa: F401
+from rag_models.models import chunk  # noqa: F401  (Chunk -> table "chunks")
