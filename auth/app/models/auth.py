@@ -13,7 +13,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True)
     hashed_password: Mapped[str] = mapped_column(Text)
-    is_2fa_active: Mapped[bool] = mapped_column(default=False)
+    is_2fa_enabled: Mapped[bool] = mapped_column(default=False)
     tokens: Mapped[List["RefreshToken"]] = relationship(back_populates="user")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
