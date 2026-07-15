@@ -41,13 +41,23 @@ Table `document_chunks` :
 - Pas d'index vectoriel (IVFFlat/HNSW) au départ : à ajouter dans une migration ultérieure une fois qu'il y a du volume (l'index a besoin de données pour se calibrer).
 
 ### Étapes (dans l'ordre, on valide chacune avant la suivante)
-1. Branche `rag` + modèle `DocumentChunk` + migration pgvector (extension + table).
-2. Dépendances rag (`sentence-transformers`, `torch`, `httpx`) + chargement du modèle au boot.
-3. Couche embeddings (wrapper sentence-transformers, testable seule).
-4. Client Groq maison (httpx, testable avec une requête simple).
-5. Ingestion : endpoint `/rag/ingest` (chunk + embed + stocke) + déclencheur côté core.
-6. Retrieval + génération : endpoint `/rag/query` (embed question → similarité filtrée org → Groq → réponse + citations).
-7. Frontend : page « Assistant » (champ question, affichage réponse + sources).
+1. ✅ Branche `rag` + modèle `Chunk` + migration pgvector (extension + table).
+   - Table nommée `chunks` (pas `document_chunks`). Colonnes : id, file_id, organisation_id, chunk_index, content, embedding `vector(384)`, created_at.
+   - ⚠️ Le modèle `Chunk` côté rag ne déclare **PAS** de `ForeignKey("files.id")` : rag ne connaît pas le modèle `File`, ça faisait planter le flush (`NoReferencedTableError`). La vraie contrainte FK + `ON DELETE CASCADE` vit **en base** (posée par la migration), rag n'a pas besoin de la re-déclarer côté ORM.
+2. ✅ Dépendances rag (`sentence-transformers`, `torch`, `httpx`, `pypdf`) + chargement du modèle au boot via `lifespan`.
+3. ✅ Couche embeddings : `EmbeddingService(BaseService)` — instance module `embedding_service`, méthodes `embed_text` (query) / `embed_texts` (batch), `normalize_embeddings=True`, sortie `list[float]` dim 384.
+4. ✅ Client LLM maison : `OpenAICompatibleService(BaseService)` async (`httpx.AsyncClient`) dans `app/services/llm/` (+ `KeyManager` pool de clés, `LlmResponse`). Clé via `.env` (`GROQ_API_KEY`). Modèle Groq = `meta-llama/llama-4-scout-17b-16e-instruct`.
+5. ✅ Ingestion : `POST /ingest` (`IngestService` + `ChunkRepository` + `ReaderStorage`) + déclencheur fire-and-forget côté core (`RagClient` dans `FileService.create`).
+   - Transport : volume `core_uploads` monté **:ro** dans rag ; core passe `{file_id, organisation_id, filepath, content_type}` dans le payload (rag ne touche jamais la table `files`).
+   - Formats : PDF (`pypdf`) + texte ; fichier au `content_type` inconnu → tentative de décodage UTF-8 strict (texte → ingéré, binaire → 415).
+   - Idempotence : `DELETE` des chunks du `file_id` puis ré-insertion (rejouable, sans doublon). Commit/rollback au niveau service.
+6. ⏳ Retrieval + génération : `POST /query`. **Objectif : RAG solide.** Pipeline visé, construit de façon **incrémentale** (chaque sous-étape testable, RAG fonctionnel à tout moment) :
+   - **6a — Socle** : embed question → recherche pgvector top-k (filtrée `organisation_id`) → Groq → réponse + citations. Testé bout-en-bout **avant** d'ajouter le reste.
+   - **6b — Query expansion + fusion** : 1 appel Groq génère 3 reformulations + 1 passage HyDE (réponse hypothétique) → embed chaque variante → top-10 pgvector **par variante** (~40-50 candidats) → fusion **RRF** (Reciprocal Rank Fusion, dédup → ~20-25 chunks uniques pré-classés).
+   - **6c — Re-ranking** : cross-encoder **multilingue** (`mmarco-mMiniLM`, cohérent avec l'embedding FR/EN, chargé au boot) re-score `(question, chunk)` → garde le **`k_final = 6`** → envoyé à Groq.
+   - **Nombres** : `k` par variante = 10 ; pool après fusion ~20-25 ; **`k_final = 6`** envoyé au LLM (chunks ~800 car → ~4800 car de contexte). Au-delà de ~8 chunks la qualité **baisse** (dilution + « lost in the middle »). Principe : **récupérer large, filtrer serré.**
+   - Réutilise : `embedding_service` (3), `OpenAICompatibleService`/Groq (4), table `chunks` (1). Nouveau : recherche vectorielle dans `ChunkRepository` (filtrée `organisation_id`), schémas `QueryRequest`/`QueryResponse`, `QueryService(BaseService)`.
+7. ⏳ Frontend : page « Assistant » (champ question, affichage réponse + sources).
 
 ### Dépendances externes / points ouverts
 - **Filtrage par RÔLE (« Lecteur min. »)** : dépend du service `org/` (non fait). Pour l'instant on filtre seulement par `organisation_id` (comme le RBAC de core), avec l'utilisateur mocké. Le filtre par rôle se greffe quand `org/` est prêt.
