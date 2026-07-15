@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.services.embedding_service import embedding_service
-from app.routers import health
+from app.routers import health, ingest
 
 
 @asynccontextmanager
@@ -12,3 +12,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="rag", lifespan=lifespan)
 app.include_router(health.router)
+app.include_router(ingest.router)
