@@ -6,6 +6,7 @@ from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
 from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from fastapi.responses import FileResponse
+from app.clients.rag_client import RagClient
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -15,7 +16,8 @@ def get_file_service(
 ) -> FileService:
     repository = FileRepository(session)
     storage = FileStorage()
-    return FileService(session, repository, storage)
+    rag_client = RagClient()
+    return FileService(session, repository, storage, rag_client)
 
 
 def get_current_user_id() -> int:

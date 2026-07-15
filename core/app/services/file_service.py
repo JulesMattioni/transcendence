@@ -6,6 +6,7 @@ from fastapi import UploadFile
 from app.models.file import File
 from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from app.exceptions import FileNotFoundError
+from app.clients.rag_client import RagClient
 
 
 class FileService(BaseService):
@@ -14,11 +15,13 @@ class FileService(BaseService):
         session: AsyncSession,
         repository: FileRepository,
         storage: FileStorage,
+        rag_client: RagClient,
     ) -> None:
         super().__init__()
         self._session = session
         self._repository = repository
         self._storage = storage
+        self._rag_client = rag_client
 
     async def _get_owned(self, file_id: int, organisation_id: int) -> File:
         file = await self._repository.get(file_id)
@@ -52,6 +55,13 @@ class FileService(BaseService):
             await self._session.rollback()
             self._storage.delete(destination)
             raise
+
+        self._rag_client.trigger_ingest(
+            file_id=file.id,
+            organisation_id=file.organisation_id,
+            filepath=file.filepath,
+            content_type=file.content_type,
+        )
 
         return FileRead.model_validate(file)
 
