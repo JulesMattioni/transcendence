@@ -30,7 +30,7 @@ Le service a **deux surfaces**, avec des rôles opposés :
   **`POST http://realtime:8000/internal/events`**.
 - Cet appel se fait **de container à container** sur le réseau Docker interne,
   **PAS via la gateway** (donc pas de `/ws/`, pas de ModSecurity sur du trafic interne).
-- L'endpoint `/internal/events` n'est **jamais exposé** dans la gateway : il reste privé
+- L'endpoint `/internal/events` n'est **jamais exposé** dans la gateway : il reste privéx
   au réseau Docker.
 
 ### (2) Diffusion — comment les navigateurs reçoivent le flux
