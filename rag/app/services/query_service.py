@@ -30,6 +30,39 @@ class QueryService(BaseService):
         self._llm = llm
 
     async def query(self, data: QueryRequest) -> QueryResponse:
+        chunks = await self._retrieve(data)
+        if not chunks:
+            return QueryResponse(
+                answer=(
+                    "No relevant document was found " "to answer the question."
+                ),
+                sources=[],
+            )
+
+        messages = self._build_messages(data.question, chunks)
+        result = await self._llm.generate(messages=messages)
+
+        return QueryResponse(
+            answer=result.content, sources=self._build_sources(chunks)
+        )
+
+    async def query_stream(self, data: QueryRequest):
+        chunks = await self._retrieve(data)
+
+        yield ("sources", self._build_sources(chunks))
+
+        if not chunks:
+            yield (
+                "token",
+                "No relevant document was found to answer the question.",
+            )
+            return
+
+        messages = self._build_messages(data.question, chunks)
+        async for token in self._llm.generate_stream(messages=messages):
+            yield ("token", token)
+
+    async def _retrieve(self, data: QueryRequest) -> list[Chunk]:
         queries = await self._expand_query(data.question)
         query_vectors = embedding_service.embed_texts(queries)
 
@@ -43,40 +76,9 @@ class QueryService(BaseService):
         ]
 
         candidates = self._fuse_rrf(ranked_lists, top_n=RERANK_CANDIDATES)
-
         if not candidates:
-            return QueryResponse(
-                answer=(
-                    "No relevant document was found to " "answer the question."
-                ),
-                sources=[],
-            )
-
-        chunks = self._rerank(data.question, candidates)
-
-        context = self._build_context(chunks)
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    f"Excerpts:\n{context}\n\nQuestion: " f"{data.question}"
-                ),
-            },
-        ]
-
-        result = await self._llm.generate(messages=messages)
-
-        sources = [
-            Source(
-                file_id=chunk.file_id,
-                chunk_index=chunk.chunk_index,
-                excerpt=chunk.content[:EXCERPT_MAX_CHARS],
-            )
-            for chunk in chunks
-        ]
-
-        return QueryResponse(answer=result.content, sources=sources)
+            return []
+        return self._rerank(data.question, candidates)
 
     def _build_context(self, chunks: list[Chunk]) -> str:
         blocks = [
@@ -129,3 +131,25 @@ class QueryService(BaseService):
     def _rerank(self, question: str, chunks: list[Chunk]) -> list[Chunk]:
         ranked = rerank_service.rerank(question, [c.content for c in chunks])
         return [chunks[idx] for idx, _ in ranked[:TOP_K]]
+
+    def _build_messages(
+        self, question: str, chunks: list[Chunk]
+    ) -> list[dict]:
+        context = self._build_context(chunks)
+        return [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Excerpts:\n{context}\n\nQuestion: {question}",
+            },
+        ]
+
+    def _build_sources(self, chunks: list[Chunk]) -> list[Source]:
+        return [
+            Source(
+                file_id=chunk.file_id,
+                chunk_index=chunk.chunk_index,
+                excerpt=chunk.content[:EXCERPT_MAX_CHARS],
+            )
+            for chunk in chunks
+        ]
