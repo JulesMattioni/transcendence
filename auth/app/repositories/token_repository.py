@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 from sqlalchemy import select
-from app.models.auth import RefreshToken
+from app.models.auth import RefreshToken, User
+from datetime import datetime
 
 
 class TokenRepository:
@@ -13,12 +13,16 @@ class TokenRepository:
         stmt = (
             select(RefreshToken)
             .where(RefreshToken.token == token)
-            .options(selectinload(RefreshToken.user))
+            .options(joinedload(RefreshToken.user))
         )
         return await self._session.scalar(stmt)
 
-    async def delete_token() -> ...:
-        pass
+    async def delete_token(self, token: RefreshToken) -> None:
+        await self._session.delete(token)
 
-    async def create_token() -> RefreshToken | None:
-        pass
+    async def create_token(
+        self, token_str: str, user: User, expired_at: datetime
+    ) -> RefreshToken | None:
+        token = RefreshToken(token=token_str, user=user, expired_at=expired_at)
+        self._session.add(token)
+        return token
