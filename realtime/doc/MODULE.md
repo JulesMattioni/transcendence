@@ -92,6 +92,31 @@ ajouté plus tard sans changer le flux de diffusion.
 
 ---
 
+## Vocabulaire `event_type`
+
+Voici les événements que realtime **s'engage à diffuser** : c'est une proposition,
+la liste correspond à l'enum `EventType` (`app/schemas/event_type.py`). Tout
+`event_type` hors de cette liste est rejeté à l'ingestion. Elle peut s'étendre —
+il suffit d'ajouter une valeur à l'enum.
+
+| `event_type`         | Émetteur | `target`                | `payload` (indicatif)        |
+|----------------------|----------|-------------------------|------------------------------|
+| `auth.login`         | auth     | `null`                  | `{ "method": "password" }`   |
+| `auth.logout`        | auth     | `null`                  | —                            |
+| `file.created`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.accessed`      | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.updated`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.deleted`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `role.changed`       | org      | `{ "type": "user", … }` | `{ "from": "…", "to": "…" }` |
+| `presence.online`    | realtime | `null`                  | —                            |
+| `presence.offline`   | realtime | `null`                  | —                            |
+
+> Les deux `presence.*` ne viennent pas d'un POST sur `/internal/events` : c'est le
+> `ConnectionManager` qui les émet lui-même quand un WS se connecte ou se déconnecte.
+
+
+---
+
 ## À faire (ordre de dev)
 
 1. **WebSocket echo** — `@app.websocket("/ws/audit")` : accepter la connexion et
