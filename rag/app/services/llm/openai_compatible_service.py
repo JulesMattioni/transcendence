@@ -1,7 +1,6 @@
 import asyncio
 import json
 import re
-import sys
 from typing import Any
 import httpx
 from pydantic import ValidationError
@@ -67,11 +66,6 @@ class OpenAICompatibleService(BaseService):
                     if server_retries > max_server_retries:
                         raise ValueError(f"Network error: {e}")
                     backoff = min(2**server_retries, 30)
-                    print(
-                        f"Network error ({e.__class__.__name__}), retrying in "
-                        f"{backoff}s...",
-                        file=sys.stderr,
-                    )
                     await asyncio.sleep(backoff)
                     continue
 
@@ -114,11 +108,6 @@ class OpenAICompatibleService(BaseService):
                             f"Rate limit requires waiting {wait}s, over the "
                             f"{self.RATE_LIMIT_MAX_WAIT}s cap; aborting."
                         )
-                    print(
-                        f"All keys rate limited, sleeping {wait}s "
-                        f"({rate_limit_retries}/{max_rate_limit_retries})...",
-                        file=sys.stderr,
-                    )
                     self._key_manager.rotate_key()
                     await asyncio.sleep(wait)
 
@@ -129,11 +118,6 @@ class OpenAICompatibleService(BaseService):
                             f"Request rejected by provider ({self.base_url}) "
                             f"with all available keys: {response.text}"
                         )
-                    print(
-                        (f"Error {response.status_code}, "
-                         "trying next API key..."),
-                        file=sys.stderr,
-                    )
 
                 elif response.status_code >= 500:
                     server_retries += 1
@@ -142,23 +126,64 @@ class OpenAICompatibleService(BaseService):
                             f"Server error {response.status_code} persisted."
                         )
                     backoff = min(2**server_retries, 30)
-                    print(
-                        f"Server error {response.status_code}, retrying in "
-                        f"{backoff}s...",
-                        file=sys.stderr,
-                    )
                     await asyncio.sleep(backoff)
 
                 else:
-                    print(
-                        (f"DEBUG API ERROR {response.status_code}: "
-                         f"{response.text}"),
-                        file=sys.stderr,
-                    )
                     raise ValueError(
-                        (f"Unknown error {response.status_code}: "
-                         f"{response.text}")
+                        (
+                            f"Unknown error {response.status_code}: "
+                            f"{response.text}"
+                        )
                     )
+
+    async def generate_stream(
+        self,
+        messages: list[dict[str, Any]],
+        max_tokens: int | None = None,
+    ):
+        payload: dict[str, Any] = {
+            "messages": messages,
+            "model": self.model_name,
+            "stream": True,
+        }
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+
+        headers = {
+            "Authorization": f"Bearer {self._key_manager.current_key}",
+            "Content-Type": "application/json",
+        }
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(120.0, connect=10.0)
+        ) as client:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                content=json.dumps(payload),
+            ) as response:
+                if response.status_code != 200:
+                    body = await response.aread()
+                    raise ValueError(
+                        f"LLM stream error {response.status_code}: "
+                        f"{body.decode()}"
+                    )
+
+                async for line in response.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[len("data:"):].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    delta = chunk["choices"][0].get("delta", {})
+                    token = delta.get("content")
+                    if token:
+                        yield token
 
     def _parse_retry_after(
         self, response: httpx.Response, default: float
