@@ -14,12 +14,21 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+_IGNORED_FKS = {"chunks_file_id_fkey"}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "foreign_key_constraint" and name in _IGNORED_FKS:
+        return False
+    return True
+
 
 def do_run_migrations(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -38,6 +47,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
