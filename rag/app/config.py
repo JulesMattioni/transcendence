@@ -33,6 +33,21 @@ EXPANSION_PROMPT = (
 )
 
 
+SUMMARY_PROMPT = (
+    "Summarize the following conversation excerpt in 2-3 concise sentences, "
+    "preserving key facts, entities, and topics that may be referenced later. "
+    "Answer in the same language as the conversation. Output only the summary."
+)
+
+REWRITE_PROMPT = (
+    "Given the conversation context and a follow-up question, rewrite the "
+    "follow-up as a standalone question that can be understood without the "
+    "context (resolve pronouns and references using the context). If the "
+    "question is already standalone, return it unchanged. Answer in the same "
+    "language as the question. Output only the rewritten question."
+)
+
+
 EXCERPT_MAX_CHARS = 300
 
 GROQ_BASE_URL = os.environ.get(
@@ -49,3 +64,7 @@ RERANK_CANDIDATES = 20
 CHUNK_SIZE = 800
 
 CHUNK_OVERLAP = 100
+
+CONV_TITLE_MAX_LEN = 60
+
+HISTORY_RAW_LIMIT = 6

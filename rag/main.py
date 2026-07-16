@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.services.embedding_service import embedding_service
 from app.services.rerank_service import rerank_service
-from app.routers import health, ingest, query
+from app.routers import health, ingest, query, conversation
 
 
 @asynccontextmanager
@@ -16,3 +16,4 @@ app = FastAPI(title="rag", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(ingest.router)
 app.include_router(query.router)
+app.include_router(conversation.router)
