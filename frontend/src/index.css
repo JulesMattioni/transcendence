@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+@import "@fontsource/montserrat/400.css";
+@import "@fontsource/montserrat/500.css";
+@import "@fontsource/montserrat/600.css";
+@import "@fontsource/montserrat/700.css";
+@import "@fontsource/shippori-mincho/400.css";
+@import "@fontsource/shippori-mincho/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@theme {
+  --color-keepr: #006AFF;
+  --color-muted: #585858;
+  --color-subtle: #9CA3AF; 
+  --color-bg: #F9F9F9;
+
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Shippori Mincho", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+
+  --animate-blink: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

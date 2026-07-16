@@ -5,8 +5,11 @@ COPY crs/crs-setup.conf.example /etc/modsecurity.d/crs-setup.conf
 
 RUN printf '\n\
 SecAction "id:900000,phase:1,pass,t:none,nolog,\
-setvar:tx.blocking_paranoia_level=2"\n' \
+setvar:tx.blocking_paranoia_level=2"\n\
+SecAction "id:900200,phase:1,pass,t:none,nolog,\
+setvar:'"'"'tx.allowed_methods=GET HEAD POST OPTIONS PUT PATCH DELETE'"'"'"\n' \
     >> /etc/modsecurity.d/crs-setup.conf
+
 
 COPY conf/setup.conf.template /etc/nginx/templates/modsecurity.d/setup.conf.template
 
