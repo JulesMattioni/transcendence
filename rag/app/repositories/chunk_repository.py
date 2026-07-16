@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from app.models.chunk import Chunk
 
 
@@ -16,3 +16,15 @@ class ChunkRepository:
     async def add_all(self, chunks: list[Chunk]) -> None:
         self._session.add_all(chunks)
         await self._session.flush()
+
+    async def search_similar(
+        self, embedding: list[float], organisation_id: int, k: int
+    ) -> list[Chunk]:
+        command = (
+            select(Chunk)
+            .where(Chunk.organisation_id == organisation_id)
+            .order_by(Chunk.embedding.cosine_distance(embedding))
+            .limit(k)
+        )
+        result = await self._session.execute(command)
+        return list(result.scalars().all())
