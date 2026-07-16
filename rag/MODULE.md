@@ -15,6 +15,22 @@
 
 ---
 
+## Barème visé (sujet §IV.4 « Artificial Intelligence ») — DEUX Major distincts
+
+Ce service peut valider **deux modules Major** du sujet, pas un seul :
+
+1. **RAG complet** — « Interact with a large dataset / Users can ask questions and get relevant answers / Implement proper context retrieval and response generation. » → **largement couvert** par le pipeline actuel (ingestion + retrieval filtré org + génération sourcée).
+2. **LLM system interface** — trois critères :
+   - « Generate text and/or images based on user input » → ✅ **fait** (`OpenAICompatibleService` → Groq).
+   - « Handle streaming responses properly » → ❌ **manquant** (c'est l'objet de l'étape 7a ci-dessous).
+   - « Implement error handling and rate limiting » → ✅ **fait** (`KeyManager` + rotation 429 / backoff dans le client).
+
+  → **2 critères sur 3 déjà acquis** ; il ne manque que le **streaming** pour valider ce 2e Major.
+
+> ⚠️ La **mémoire conversationnelle** (historique, résumé glissant) est une feature UX **hors barème** : ni le module RAG ni le module LLM interface ne la demandent. Le **streaming**, lui, valide un critère de module **et** donne l'effet « Claude.ai » recherché → on le priorise.
+
+---
+
 ## Plan de mise en œuvre
 
 ### Décisions actées (2026-07-14)
@@ -57,7 +73,25 @@ Table `document_chunks` :
    - **6c — Re-ranking** : cross-encoder **multilingue** (`mmarco-mMiniLM`, cohérent avec l'embedding FR/EN, chargé au boot) re-score `(question, chunk)` → garde le **`k_final = 6`** → envoyé à Groq.
    - **Nombres** : `k` par variante = 10 ; pool après fusion ~20-25 ; **`k_final = 6`** envoyé au LLM (chunks ~800 car → ~4800 car de contexte). Au-delà de ~8 chunks la qualité **baisse** (dilution + « lost in the middle »). Principe : **récupérer large, filtrer serré.**
    - Réutilise : `embedding_service` (3), `OpenAICompatibleService`/Groq (4), table `chunks` (1). Nouveau : recherche vectorielle dans `ChunkRepository` (filtrée `organisation_id`), schémas `QueryRequest`/`QueryResponse`, `QueryService(BaseService)`.
-7. ⏳ Frontend : page « Assistant » (champ question, affichage réponse + sources).
+7. ⏳ **Chat type Claude.ai/Gemini** — décidé 2026-07-15/16. UX cible : bulles, texte qui s'écrit progressivement, sessions rechargeables, questions de suivi contextuelles. **Ordre décidé : 7a streaming → 7b persistance → 7c mémoire** (le barème d'abord, chaque étage testable). Le pipeline RAG 6a/6b/6c NE CHANGE PAS, on l'enveloppe.
+
+   **7a — Streaming (valide le module LLM interface + effet Claude.ai) — ~70% backend, PAS juste visuel.**
+   - `OpenAICompatibleService` : **nouvelle** méthode `generate_stream()` **à côté** de `generate()` (on ne remplace pas — `generate()` reste pour les appels internes qui veulent le résultat complet : query expansion, query rewriting). Payload `"stream": true`, `httpx.AsyncClient.stream("POST", ...)`, parse le SSE Groq (lignes `data: {...}`, `data: [DONE]` = fin, texte dans `choices[0].delta.content`). C'est un **générateur async** (`async def` + `yield`), pas un `return`.
+   - Limite assumée : une fois des tokens émis, plus de rotation de clé possible → on ne gère que l'erreur AVANT le 1er token (status ≠ 200).
+   - `QueryService` : variante streamée de `query()` qui relaie les tokens. Endpoint renvoie une **`StreamingResponse`** FastAPI (SSE) au lieu du JSON.
+   - **Design des sources** : elles sont connues **avant** la génération (après retrieval) mais le texte arrive **pendant** → protocole : émettre les `sources` en **premier event**, puis streamer le texte.
+
+   **7b — Persistance des conversations (sessions rechargeables).**
+   - 2 tables (migration Alembic partagée, patron `chunks` ; ⚠️ ici la FK `messages.conversation_id → conversations.id` PEUT être déclarée en ORM car les 2 tables sont dans le `Base.metadata` de rag — cas différent de `chunks→files`) : `conversations` (id, organisation_id, user_id mock, title, created_at) ; `messages` (id, conversation_id FK ON DELETE CASCADE, role user/assistant, content, sources JSON, created_at).
+   - Couches patron core : `ConversationRepository`, `ConversationService(BaseService)`, endpoints REST `POST/GET/GET{id}/DELETE /conversations`.
+   - **Titre** : auto depuis les ~60 premiers caractères de la 1re question (pas d'appel LLM).
+   - **Interaction avec 7a** : en streaming il faut **accumuler** les tokens côté serveur pour sauver le message assistant complet en base à la fin du flux.
+   - **Contrat `/query` future-proof** : `{question, organisation_id, conversation_id?}` → sources + texte streamé + `conversation_id`. `conversation_id` absent = nouvelle conversation créée ; présent = on continue.
+
+   **7c — Mémoire conversationnelle (questions de suivi) — hors barème, raffinement.**
+   - **Point crucial** : le *query rewriting* se fait **AVANT** le retrieval. Une question de suivi vague (« et sa différence avec l'autre ? ») doit être réécrite en question autonome via l'historique, SINON le retrieval échoue (la phrase seule n'a aucun mot-clé). Réutilise la logique de `_expand_query`.
+   - Déclenché **seulement si** `conversation_id` + historique existant (pas d'appel LLM inutile sur la 1re question).
+   - Fenêtre d'historique injectée dans le prompt : via une méthode `_build_history()` **isolée**. v1 = N derniers messages (simple) OU résumé glissant (l'utilisateur penche pour le résumé glissant — À TRANCHER au moment de 7c ; le corps de `_build_history()` est remplaçable sans refonte). Note : le résumé glissant ajoute des appels LLM autour d'un flux déjà complexe → à peser.
 
 ### Dépendances externes / points ouverts
 - **Filtrage par RÔLE (« Lecteur min. »)** : dépend du service `org/` (non fait). Pour l'instant on filtre seulement par `organisation_id` (comme le RBAC de core), avec l'utilisateur mocké. Le filtre par rôle se greffe quand `org/` est prêt.

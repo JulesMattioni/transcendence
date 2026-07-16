@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.services.embedding_service import embedding_service
+from app.services.rerank_service import rerank_service
 from app.routers import health, ingest, query
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     embedding_service.load()
+    rerank_service.load()
     yield
 
 
