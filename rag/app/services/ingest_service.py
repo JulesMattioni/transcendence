@@ -8,12 +8,11 @@ from app.services.embedding_service import embedding_service
 from app.models.chunk import Chunk
 from app.schemas.ingest import IngestRequest, IngestResponse
 from app.exceptions import UnsupportedFileType
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from app.config import CHUNK_OVERLAP, CHUNK_SIZE
 
 
 class IngestService(BaseService):
-    CHUNK_SIZE = 800
-    CHUNK_OVERLAP = 100
-
     def __init__(
         self,
         session: AsyncSession,
@@ -71,13 +70,9 @@ class IngestService(BaseService):
         if not text:
             return []
 
-        chunks: list[str] = []
-        start = 0
-        step = self.CHUNK_SIZE - self.CHUNK_OVERLAP
-        while start < len(text):
-            piece = text[start: start + self.CHUNK_SIZE].strip()
-            if piece:
-                chunks.append(piece)
-            start += step
-
-        return chunks
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
+        return splitter.split_text(text)
