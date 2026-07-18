@@ -1,4 +1,3 @@
-from shared.base_service import BaseService
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.organisation import Organisation
 
@@ -11,7 +10,7 @@ from app.models.organisation import Organisation
 ATRR_ROLES = ["ADMIN", "GUEST", "MODERATOR"]
 
 
-class RoleManagment(BaseService):
+class MembershipRole:
     def __init__(self, session: AsyncSession):
         self.session = session
 
