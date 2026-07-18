@@ -1,7 +1,27 @@
 from shared.database import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, String, Integer, ForeignKey, func
 from datetime import datetime
+
+
+class Role(Base):
+    __tablename__ = "role"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+
+
+class Permission(Base):
+    __tablename__ = "permission"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+
+
+class PermissionRoles(Base):
+    __tablename__ = "permission_roles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"))
+    permission_id: Mapped[int] = mapped_column(ForeignKey("permission.id"))
+
 
 class OrganisationMember(Base):
     __tablename__ = "organisation_member"
@@ -11,7 +31,8 @@ class OrganisationMember(Base):
         ForeignKey("organisation.id", ondelete="CASCADE")
     )
     user_id: Mapped[int] = mapped_column(Integer, index=True)
-    roles: Mapped[str] = mapped_column(String(50))
+    role_id: Mapped[str] = mapped_column(ForeignKey("role.id"))
+
 
 class Organisation(Base):
     __tablename__ = "organisation"

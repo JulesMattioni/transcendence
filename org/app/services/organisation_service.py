@@ -1,25 +1,30 @@
-from shared.base_service import BaseService
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.organisation import Organisation, OrganisationMember
-from typing import Dict, Any
+from app.models.organisation import Organisation
+from shared.generic_crud import GenericCrud
 
 # Create, edit, and delete organizations
-class OrganisationSerive(BaseService):
+# GenericCrud[T] == GenericCrud[Organisation] self.model == class Organisation
+
+
+class OrganisationSerive(GenericCrud[Organisation]):
     def __init__(self, session: AsyncSession):
+        super().__init__(session, Organisation)
         self.session = session
 
-    async def create_organisation(self, org_name: str,
-                           user_id: int,
-                           roles: str) -> Organisation:
+    async def create_organisation(self, org_name: str) -> Organisation:
         new_org = Organisation(name=org_name)
-        self.session.add(new_org)
-        await self.session.flush()
+        await self.create(new_org)
         await self.session.commit()
-        await self.session.refresh(new_org)
         return new_org
 
-    async def edit_org(self):
-        pass
+    async def edit_org(self, org_id: int, org_name: str):
+        update_org = await self.update(org_id, {"name", org_name})
+        await self.session.commit()
+        return update_org
 
-    async def delete_org(self) -> bool:
-        pass
+    async def delete_org(self, org_id: int) -> bool:
+        succes = await self.delete(org_id)
+        if succes:
+            await self.session.commit()
+            return True
+        return False
