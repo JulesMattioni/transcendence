@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.organisation import Organisation
 from shared.generic_crud import GenericCrud
+from typing import Optional
 
 # Create, edit, and delete organizations
 # GenericCrud[T] == GenericCrud[Organisation] self.model == class Organisation
@@ -17,8 +18,9 @@ class OrganisationSerive(GenericCrud[Organisation]):
         await self.session.commit()
         return new_org
 
-    async def edit_org(self, org_id: int, org_name: str):
-        update_org = await self.update(org_id, {"name", org_name})
+    async def edit_org(self, org_id: int,
+                       org_name: str) -> Optional[Organisation]:
+        update_org = await self.update(org_id, {"name": org_name})
         await self.session.commit()
         return update_org
 
