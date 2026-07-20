@@ -5,6 +5,8 @@ import RegisterPage from '../pages/RegisterPage'
 import HomePage from '../pages/dashboard/HomePage'
 import FilesPage from '../pages/dashboard/FilesPage'
 import AdminPage from '../pages/dashboard/AdminPage'
+import RequireAuth from '../components/auth/RequireAuth'
+
 
 
 function AppRoutes() {
@@ -13,9 +15,30 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<HomePage />} />
-      <Route path="/dashboard/files" element={<FilesPage />} />
-      <Route path="/dashboard/admin" element={<AdminPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <HomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/files"
+        element={
+          <RequireAuth>
+            <FilesPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/admin"
+        element={
+          <RequireAuth>
+            <AdminPage />
+          </RequireAuth>
+        }
+      />
     </Routes>
   )
 }

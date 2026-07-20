@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../api/auth'
+import { ApiError } from '../api/client'
+import { validateEmail, validateRequired } from '../utils/validation'
 import AuthLayout from '../components/auth/AuthLayout'
 import AuthInput from '../components/auth/AuthInput'
 import AuthButton from '../components/auth/AuthButton'
@@ -10,6 +13,35 @@ import FortyTwoIcon from '../components/icons/FortyTwoIcon'
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    const emailError = validateEmail(email)
+    if (emailError) return setError(emailError)
+
+    const passwordError = validateRequired(password, 'Password')
+    if (passwordError) return setError(passwordError)
+
+    setLoading(true)
+    try {
+      await login({ email, password })
+      navigate('/dashboard')
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
 
   return (
     <AuthLayout>
@@ -20,10 +52,15 @@ function LoginPage() {
         Welcome back
       </h1>
 
-      <form className='mt-4 space-y-4'>
+      <form className='mt-4 space-y-4' onSubmit={handleSubmit}>
         <p className='text-center font-sans font-light text-sm text-muted'>
           Log in to your Keepr account.
         </p>
+        {error && (
+          <p className='text-center text-sm text-red-500'>
+            {error}
+          </p>
+        )}
         <AuthInput
           type="email"
           name="email"
@@ -46,6 +83,7 @@ function LoginPage() {
         </div>
         <AuthButton
           children="Sign In"
+          loading={loading}
           icon=<ArrowRight size={15} strokeWidth={2}/>
         />
         <div className='grid grid-cols-2 gap-3'>
