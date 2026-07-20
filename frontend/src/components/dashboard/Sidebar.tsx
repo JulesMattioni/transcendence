@@ -1,10 +1,22 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { logout } from '../../api/auth'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { PanelLeft, LogOut } from 'lucide-react'
 import { navItems } from './NavItems'
 
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    try {
+      await logout()
+    } finally {
+      navigate('/')
+    }
+  }
+
+
 
   return (
     <aside
@@ -49,6 +61,7 @@ function Sidebar() {
       {/* Logout */}
       <button
         type="button"
+        onClick={handleLogout}
         className="flex items-center gap-3 bg-red-50 px-4 py-4 text-sm text-red-500 transition-colors duration-200 hover:bg-red-100"
       >
         <LogOut size={20} className="shrink-0" />

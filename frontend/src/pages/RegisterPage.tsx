@@ -1,20 +1,63 @@
 import { useState } from 'react'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { signup } from '../api/auth'
+import { ApiError } from '../api/client'
+import { validateEmail, validateRequired, validatePasswordMatch, isPasswordValid } from '../utils/validation'
 import AuthLayout from '../components/auth/AuthLayout'
 import AuthInput from '../components/auth/AuthInput'
 import AuthButton from '../components/auth/AuthButton'
 import GoogleIcon from '../components/icons/GoogleIcon'
 import FortyTwoIcon from '../components/icons/FortyTwoIcon'
+import PasswordChecklist from '../components/auth/PasswordChecklist'
+import PasswordMatch from '../components/auth/PasswordMatch'
 
 
 function RegisterPage() {
   const [first_name, setFirstName] = useState('')
   const [last_name, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  // const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirm_password, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    const emailError = validateEmail(email)
+    if (emailError) return setError(emailError)
+
+    const firstNameError = validateRequired(first_name, 'First name')
+    if (firstNameError) return setError(firstNameError)
+
+    const lastNameError = validateRequired(last_name, 'Last name')
+    if (lastNameError) return setError(lastNameError)
+
+    if (!isPasswordValid(password)) {
+      return setError('Password does not meet all requirements.')
+    }
+
+    const matchError = validatePasswordMatch(password, confirm_password)
+    if (matchError) return setError(matchError)
+
+    setLoading(true)
+    try {
+      await signup({ first_name, last_name, email, password })
+      navigate('/dashboard')
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
 
   return (
     <AuthLayout>
@@ -25,10 +68,15 @@ function RegisterPage() {
         Create your account
       </h1>
 
-      <form className='mt-4 space-y-4'>
+      <form onSubmit={handleSubmit} className='mt-4 space-y-4'>
         <p className='text-center font-sans font-light text-sm text-muted'>
           Get started with Keepr.
         </p>
+        {error && (
+          <p className='text-center text-sm text-red-500'>
+            {error}
+          </p>
+        )}
         <div className='grid grid-cols-2 gap-3'>
           <AuthInput
             type="text"
@@ -52,14 +100,6 @@ function RegisterPage() {
           value={email}
           onChange={setEmail}
         />
-        {/* <AuthInput
-          type="tel"
-          name="phone"
-          placeholder='Phone Number'
-          value={phone}
-          onChange={setPhone}
-          autoComplete='tel'
-        /> */}
         <AuthInput
           type="password"
           name="password"
@@ -68,6 +108,7 @@ function RegisterPage() {
           onChange={setPassword}
           autoComplete='new-password'
         />
+        <PasswordChecklist password={password} />
         <AuthInput
           type="password"
           name="ConfirmPassword"
@@ -76,8 +117,10 @@ function RegisterPage() {
           onChange={setConfirmPassword}
           autoComplete='new-password'
         />
+        <PasswordMatch password={password} confirm={confirm_password} />
         <AuthButton
           children="Create Account"
+          loading={loading}
           icon=<ArrowRight size={15} strokeWidth={2}/>
         />
         <div className='grid grid-cols-2 gap-3'>

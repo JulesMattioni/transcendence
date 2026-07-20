@@ -78,7 +78,7 @@ export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
 }
 
 export async function fetchFileContent(id: number): Promise<Blob> {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('access_token')
   const headers = new Headers()
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)

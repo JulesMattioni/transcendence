@@ -30,7 +30,7 @@ Le service a **deux surfaces**, avec des rôles opposés :
   **`POST http://realtime:8000/internal/events`**.
 - Cet appel se fait **de container à container** sur le réseau Docker interne,
   **PAS via la gateway** (donc pas de `/ws/`, pas de ModSecurity sur du trafic interne).
-- L'endpoint `/internal/events` n'est **jamais exposé** dans la gateway : il reste privé
+- L'endpoint `/internal/events` n'est **jamais exposé** dans la gateway : il reste privéx
   au réseau Docker.
 
 ### (2) Diffusion — comment les navigateurs reçoivent le flux
@@ -89,6 +89,31 @@ Deux formes du même événement : ce que l'émetteur envoie, et ce que realtime
 **Décision V1 :** realtime **rediffuse sans persister** (pas de table DB, pas de
 migration). L'historique (`audit_events` + rejeu au chargement de page) pourra être
 ajouté plus tard sans changer le flux de diffusion.
+
+---
+
+## Vocabulaire `event_type`
+
+Voici les événements que realtime **s'engage à diffuser** : c'est une proposition,
+la liste correspond à l'enum `EventType` (`app/schemas/event_type.py`). Tout
+`event_type` hors de cette liste est rejeté à l'ingestion. Elle peut s'étendre —
+il suffit d'ajouter une valeur à l'enum.
+
+| `event_type`         | Émetteur | `target`                | `payload` (indicatif)        |
+|----------------------|----------|-------------------------|------------------------------|
+| `auth.login`         | auth     | `null`                  | `{ "method": "password" }`   |
+| `auth.logout`        | auth     | `null`                  | —                            |
+| `file.created`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.accessed`      | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.updated`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `file.deleted`       | core     | `{ "type": "file", … }` | `{ "filename": "…" }`        |
+| `role.changed`       | org      | `{ "type": "user", … }` | `{ "from": "…", "to": "…" }` |
+| `presence.online`    | realtime | `null`                  | —                            |
+| `presence.offline`   | realtime | `null`                  | —                            |
+
+> Les deux `presence.*` ne viennent pas d'un POST sur `/internal/events` : c'est le
+> `ConnectionManager` qui les émet lui-même quand un WS se connecte ou se déconnecte.
+
 
 ---
 

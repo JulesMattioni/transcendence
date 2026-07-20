@@ -17,3 +17,10 @@ class UserRead(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+
+
+class UserLogin(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    email: EmailStr
+    password: str

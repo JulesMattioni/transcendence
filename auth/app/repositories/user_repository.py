@@ -22,7 +22,9 @@ class UserRepository:
             .options(selectinload(User.tokens))
         )
 
-        return await self._session.scalar(stmt)
+        result: User | None = await self._session.scalar(stmt)
+
+        return result
 
     async def create_user(
         self, first_name: str, last_name: str, email: str, hashed_password: str
