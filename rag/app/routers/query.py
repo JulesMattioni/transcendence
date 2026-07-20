@@ -10,13 +10,9 @@ from fastapi.responses import StreamingResponse
 import json
 from app.repositories.conversation_repository import ConversationRepository
 from app.services.conversation_service import ConversationService
+from app.get_user import get_current_user_id
 
 router = APIRouter(prefix="/query", tags=["query"])
-
-
-def get_current_user_id() -> int:
-    """MOCK auth: user 1."""
-    return 1
 
 
 def get_conversation_service(

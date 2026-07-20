@@ -6,6 +6,7 @@ import HomePage from '../pages/dashboard/HomePage'
 import FilesPage from '../pages/dashboard/FilesPage'
 import AdminPage from '../pages/dashboard/AdminPage'
 import RequireAuth from '../components/auth/RequireAuth'
+import ChatPage from '../pages/dashboard/ChatPage'
 
 
 
@@ -36,6 +37,14 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <AdminPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/chat"
+        element={
+          <RequireAuth>
+            <ChatPage />
           </RequireAuth>
         }
       />

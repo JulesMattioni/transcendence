@@ -1,4 +1,4 @@
-import { Home, FileText, Shield } from 'lucide-react'
+import { Home, FileText, Shield, MessageCircle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -10,5 +10,6 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { to: '/dashboard', label: 'Home', icon: Home },
   { to: '/dashboard/files', label: 'Files', icon: FileText },
+  { to: '/dashboard/chat', label: 'Chat', icon: MessageCircle },
   { to: '/dashboard/admin', label: 'Admin', icon: Shield },
 ]
