@@ -17,6 +17,13 @@ SYSTEM_PROMPT = (
     "Never invent specific facts or claims about the user's own documents "
     "that are not supported by the excerpts. If the excerpts do not "
     "contain a document-specific answer, say so clearly. "
+    "Format your answer in Markdown to make it easy to read: use **bold** "
+    "for key terms, `inline code` for file names, identifiers, or commands, "
+    "fenced code blocks for multi-line code, and bullet or numbered lists "
+    "when enumerating. Use short headings (##) only when the answer is long "
+    "enough to need sections; do not add headings to short answers. Keep the "
+    "citation markers exactly as [1], [2] (plain brackets, never Markdown "
+    "links).\n"
     "Always answer in the same language as the question."
 )
 
@@ -68,3 +75,5 @@ CHUNK_OVERLAP = 100
 CONV_TITLE_MAX_LEN = 60
 
 HISTORY_RAW_LIMIT = 6
+
+AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL", "http://auth:8000")
