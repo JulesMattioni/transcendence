@@ -1,30 +1,7 @@
 from shared.database import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationships
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, String, Integer, ForeignKey, func
 from datetime import datetime
-
-
-class Role(Base):
-    __tablename__ = "role"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True)
-    permission: Mapped[list["Permission"]] = relationships(
-        "permission_role",
-        lazy="selectin"  # async
-    )
-
-
-class Permission(Base):
-    __tablename__ = "permission"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True)
-
-
-class PermissionRoles(Base):
-    __tablename__ = "permission_roles"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"))
-    permission_id: Mapped[int] = mapped_column(ForeignKey("permission.id"))
 
 
 class OrganisationMember(Base):

@@ -44,11 +44,7 @@ class RagClient:
             "content_type": content_type,
         }
         try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(30.0)
-            ) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
                 await client.post(f"{self._base_url}/ingest", json=payload)
         except Exception as exc:
-            logger.warning(
-                "rag ingestion trigger failed for file %s: %s", file_id, exc
-            )
+            logger.warning("rag ingestion trigger failed for file %s: %s", file_id, exc)

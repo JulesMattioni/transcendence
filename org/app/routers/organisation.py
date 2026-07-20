@@ -1,9 +1,13 @@
 from fastapi import APIRouter
-from app.services.organisation_service import OrgSerive
+# from app.schemas.organisation import (OrganisationCreate, OrganisationRead,
+# OrganisationUpdate)
+from app.services.organisation_service import OrganisationService
+
 
 router = APIRouter()
 
-_service = OrgSerive()
+_service = OrganisationService()
+
 
 @router.get("/organisation")
 def organisation():

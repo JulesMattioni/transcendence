@@ -1,0 +1,31 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.organisation import OrganisationMember
+from sqlalchemy import select
+from app.schemas.roles import Role
+
+
+class OrganisationMemberRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create_user(self, org_id: int, user_id: int,
+                          role_id: int) -> OrganisationMember:
+        new_member = OrganisationMember(
+            org_id,
+            user_id,
+            role_id
+        )
+        self._session.add(new_member)
+        await self._session.flush()
+        return new_member
+
+    async def get_user_perm(self, user_id: int, org_id: int) -> Role | None:
+        member_role = select(OrganisationMember.role_id).where(
+            OrganisationMember.user_id == user_id,
+            OrganisationMember.org_id == org_id
+        )
+        res = await self._session.execute(member_role)
+        role_id = res.scalar_one_or_none()
+        if role_id:
+            return Role(role_id)
+        return None

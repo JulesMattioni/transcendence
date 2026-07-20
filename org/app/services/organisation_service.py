@@ -1,32 +1,32 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.organisation import Organisation
-from shared.generic_crud import GenericCrud
-from typing import Optional
-
-# Create, edit, and delete organizations
-# GenericCrud[T] == GenericCrud[Organisation] self.model == class Organisation
+from shared.base_service import BaseService
+from app.repositories.organisation_repository import OrganisationRepository
+from app.schemas.organisation import OrganisationRead, OrganisationUpdate
 
 
-class OrganisationSerive(GenericCrud[Organisation]):
-    def __init__(self, session: AsyncSession):
-        super().__init__(session, Organisation)
+class OrganisationService(BaseService):
+    def __init__(self, repository: OrganisationRepository,
+                 session: AsyncSession) -> None:
+        super().__init__()
+        self.repository = repository
         self.session = session
 
-    async def create_organisation(self, org_name: str) -> Organisation:
-        new_org = Organisation(name=org_name)
-        await self.create(new_org)
+    async def create_organisation(self, org_name: str) -> OrganisationRead:
+        new_org = await self.repository.create(name_org=org_name)
         await self.session.commit()
-        return new_org
+        return OrganisationRead.model_validate(new_org)
 
-    async def edit_org(self, org_id: int,
-                       org_name: str) -> Optional[Organisation]:
-        update_org = await self.update(org_id, {"name": org_name})
+    async def get_org_by_id(self, org_id: int) -> OrganisationRead | None:
+        organisation = await self.repository.get_by_id(org_id)
+        if organisation:
+            return OrganisationRead.model_validate(organisation)
+        return None
+
+    async def update_organisation(self, org_id: str,
+                                  update_org: OrganisationUpdate
+                                  ) -> OrganisationRead | None:
+        update = await self.repository.update(org_id, update_org)
+        if not update:
+            return None
         await self.session.commit()
-        return update_org
-
-    async def delete_org(self, org_id: int) -> bool:
-        succes = await self.delete(org_id)
-        if succes:
-            await self.session.commit()
-            return True
-        return False
+        return OrganisationRead.model_validate(update)
