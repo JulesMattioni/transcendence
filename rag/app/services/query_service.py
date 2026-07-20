@@ -13,6 +13,9 @@ from app.config import (
     EXPANSION_PROMPT,
     TOP_K,
     RERANK_CANDIDATES,
+    HISTORY_RAW_LIMIT,
+    SUMMARY_PROMPT,
+    REWRITE_PROMPT,
 )
 import json
 
@@ -30,7 +33,7 @@ class QueryService(BaseService):
         self._llm = llm
 
     async def query(self, data: QueryRequest) -> QueryResponse:
-        chunks = await self._retrieve(data)
+        chunks = await self._retrieve(data.question, data.organisation_id)
         if not chunks:
             return QueryResponse(
                 answer=(
@@ -46,8 +49,17 @@ class QueryService(BaseService):
             answer=result.content, sources=self._build_sources(chunks)
         )
 
-    async def query_stream(self, data: QueryRequest):
-        chunks = await self._retrieve(data)
+    async def query_stream(
+        self, data: QueryRequest, history: list[dict] | None = None
+    ):
+        history = history or []
+        summary, recent = await self._build_history(history)
+
+        search_question = await self._rewrite_question(
+            data.question, summary, recent
+        )
+
+        chunks = await self._retrieve(search_question, data.organisation_id)
 
         yield ("sources", self._build_sources(chunks))
 
@@ -58,18 +70,20 @@ class QueryService(BaseService):
             )
             return
 
-        messages = self._build_messages(data.question, chunks)
+        messages = self._build_messages(data.question, chunks, summary, recent)
         async for token in self._llm.generate_stream(messages=messages):
             yield ("token", token)
 
-    async def _retrieve(self, data: QueryRequest) -> list[Chunk]:
-        queries = await self._expand_query(data.question)
+    async def _retrieve(
+        self, question: str, organisation_id: int
+    ) -> list[Chunk]:
+        queries = await self._expand_query(question)
         query_vectors = embedding_service.embed_texts(queries)
 
         ranked_lists = [
             await self._repository.search_similar(
                 embedding=vector,
-                organisation_id=data.organisation_id,
+                organisation_id=organisation_id,
                 k=10,
             )
             for vector in query_vectors
@@ -78,7 +92,7 @@ class QueryService(BaseService):
         candidates = self._fuse_rrf(ranked_lists, top_n=RERANK_CANDIDATES)
         if not candidates:
             return []
-        return self._rerank(data.question, candidates)
+        return self._rerank(question, candidates)
 
     def _build_context(self, chunks: list[Chunk]) -> str:
         blocks = [
@@ -133,16 +147,32 @@ class QueryService(BaseService):
         return [chunks[idx] for idx, _ in ranked[:TOP_K]]
 
     def _build_messages(
-        self, question: str, chunks: list[Chunk]
+        self,
+        question: str,
+        chunks: list[Chunk],
+        summary: str = "",
+        recent: list[dict] | None = None,
     ) -> list[dict]:
         context = self._build_context(chunks)
-        return [
-            {"role": "system", "content": SYSTEM_PROMPT},
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+        if summary:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": f"Summary of earlier conversation:\n{summary}",
+                }
+            )
+        for m in recent or []:
+            messages.append({"role": m["role"], "content": m["content"]})
+
+        messages.append(
             {
                 "role": "user",
                 "content": f"Excerpts:\n{context}\n\nQuestion: {question}",
-            },
-        ]
+            }
+        )
+        return messages
 
     def _build_sources(self, chunks: list[Chunk]) -> list[Source]:
         return [
@@ -153,3 +183,60 @@ class QueryService(BaseService):
             )
             for chunk in chunks
         ]
+
+    async def _summarize(self, messages: list[dict]) -> str:
+        transcript = "\n".join(
+            f"{m['role']}: {m['content']}" for m in messages
+        )
+        prompt = [
+            {"role": "system", "content": SUMMARY_PROMPT},
+            {"role": "user", "content": transcript},
+        ]
+        try:
+            result = await self._llm.generate(messages=prompt)
+            return result.content.strip()
+        except Exception:
+            return ""
+
+    async def _build_history(
+        self, messages: list[dict]
+    ) -> tuple[str, list[dict]]:
+        if len(messages) <= HISTORY_RAW_LIMIT:
+            return "", messages
+
+        old = messages[:-HISTORY_RAW_LIMIT]
+        recent = messages[-HISTORY_RAW_LIMIT:]
+        summary = await self._summarize(old)
+        return summary, recent
+
+    async def _rewrite_question(
+        self, question: str, summary: str, recent: list[dict]
+    ) -> str:
+        if not summary and not recent:
+            return question
+
+        context_parts = []
+        if summary:
+            context_parts.append(
+                f"Summary of earlier conversation:\n{summary}"
+            )
+        if recent:
+            transcript = "\n".join(
+                f"{m['role']}: {m['content']}" for m in recent
+            )
+            context_parts.append(f"Recent messages:\n{transcript}")
+        context = "\n\n".join(context_parts)
+
+        prompt = [
+            {"role": "system", "content": REWRITE_PROMPT},
+            {
+                "role": "user",
+                "content": f"{context}\n\nFollow-up question: {question}",
+            },
+        ]
+        try:
+            result = await self._llm.generate(messages=prompt)
+            rewritten = result.content.strip()
+            return rewritten or question
+        except Exception:
+            return question
