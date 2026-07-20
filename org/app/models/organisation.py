@@ -35,7 +35,7 @@ class OrganisationMember(Base):
         ForeignKey("organisation.id", ondelete="CASCADE")
     )
     user_id: Mapped[int] = mapped_column(Integer, index=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"))
+    role_id: Mapped[int] = mapped_column(Integer)
 
 
 class Organisation(Base):
