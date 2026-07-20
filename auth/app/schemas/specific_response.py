@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
-from app.schemas import TokenResponse, UserRead
+from app.schemas.token import TokenResponse
+from app.schemas import UserRead
 
 
 class LoginResponse(BaseModel):
