@@ -2,34 +2,13 @@ from app.repositories import (
     OrganisationRepository,
     OrganisationMemberRepository
 )
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.schemas.roles import Role
-from typing import List, Annotated
 from app.schemas.user import User
-from app.config import AUTH_BASE_URL
-import httpx
-
-
-async def get_current_user(
-    authorization: Annotated[str | None, Header()] = None,
-) -> User:
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="missing header"
-        )
-    auth_url = f"{AUTH_BASE_URL}/auth/me"
-    header = {"Authorization": authorization}
-    async with httpx.AsyncClient() as client:
-        response = await client.get(auth_url, headers=header)
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-            )
-        user_data = response.json()
-        return User.model_validate(user_data)
+from get_user import get_current_user
 
 
 def get_organisation(
