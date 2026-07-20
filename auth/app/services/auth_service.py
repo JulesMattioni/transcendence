@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
 from app.repositories import UserRepository, TokenRepository
 from app.schemas import LoginResponse, UserCreate, TokenResponse, UserRead
-from exceptions import (
+from app.exceptions import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
     InvalidTokenError,
@@ -122,8 +122,8 @@ class AuthService:
             access_token=access_token, refresh_token=refresh_token
         )
 
-    async def logout(self, refresh_value: str) -> None:
-        rt = await self._token_repository.get_by_token(refresh_value)
+    async def logout(self, refresh_token: str) -> None:
+        rt = await self._token_repository.get_by_token(refresh_token)
 
         if rt is None:
             return
@@ -132,4 +132,5 @@ class AuthService:
             await self._token_repository.delete_token(rt)
             await self._session.commit()
         except Exception:
-            self._session.rollback()
+            await self._session.rollback()
+            raise
