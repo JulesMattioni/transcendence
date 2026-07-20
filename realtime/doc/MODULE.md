@@ -119,8 +119,13 @@ il suffit d'ajouter une valeur à l'enum.
 
 ## À faire (ordre de dev)
 
-1. **WebSocket echo** — `@app.websocket("/ws/audit")` : accepter la connexion et
-   renvoyer un message. Valider de bout en bout via `wss://localhost:8443/ws/audit`
+1. ✅ **WebSocket echo** — `@router.websocket("/audit")` : accepter la connexion et
+   renvoyer un message. La route est déclarée **`/audit`** (sans `/ws/`) : le navigateur
+   se connecte sur `wss://localhost:8443/ws/audit`, mais la gateway route `/ws/` →
+   `realtime:8000/` et **strippe le préfixe**, donc realtime reçoit `/audit`. Déclarer
+   `/ws/audit` côté FastAPI donnerait un 403. Même convention que `/api/auth/` →
+   `auth:8000/`, et c'est déjà pourquoi `/health` répond sur `/ws/health`.
+   Validé de bout en bout via `wss://localhost:8443/ws/audit` le 2026-07-20
    (prouve que le tunnel WS marche à travers la gateway).
 2. **`ConnectionManager`** — classe qui garde la liste des WS connectés
    (`connect` / `disconnect` / `broadcast`). → présence en ligne.
