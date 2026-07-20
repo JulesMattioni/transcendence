@@ -59,7 +59,7 @@ Un point d'entrée HTTPS unique (**API Gateway** : Nginx + ModSecurity/WAF) rout
 | Conteneurisation | Docker Compose (lancement en une commande) |
 | CI/CD | GitHub Actions |
 
-## 5. Modules visés — 19 points
+## 5. Modules visés — 21 points
 
 | Module | Catégorie | Poids |
 |---|---|---|
@@ -72,6 +72,7 @@ Un point d'entrée HTTPS unique (**API Gateway** : Nginx + ModSecurity/WAF) rout
 | 2FA (TOTP) | User Management | Mineur (1) |
 | OAuth 2.0 | User Management | Mineur (1) |
 | RAG complet | Artificial Intelligence | Majeur (2) |
+| LLM System interface | Artificial Intelligence | Majeur (2) |
 | WAF/ModSecurity + Vault | Cybersecurity | Majeur (2) |
 | Backend en microservices | DevOps | Majeur (2) |
 

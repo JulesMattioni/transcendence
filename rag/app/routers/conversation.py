@@ -11,6 +11,7 @@ from app.schemas.conversation import (
     ConversationRead,
     ConversationDetail,
 )
+from app.get_user import get_current_user_id
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -20,11 +21,6 @@ def get_conversation_service(
 ) -> ConversationService:
     repository = ConversationRepository(session)
     return ConversationService(session, repository)
-
-
-def get_current_user_id() -> int:
-    """MOCK authentication: always returns user 1."""
-    return 1
 
 
 @router.post(
