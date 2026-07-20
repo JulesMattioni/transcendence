@@ -1,5 +1,5 @@
 from shared.database import Base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationships
 from sqlalchemy import DateTime, String, Integer, ForeignKey, func
 from datetime import datetime
 
@@ -8,6 +8,10 @@ class Role(Base):
     __tablename__ = "role"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True)
+    permission: Mapped[list["Permission"]] = relationships(
+        "permission_role",
+        lazy="selectin"  # async
+    )
 
 
 class Permission(Base):
@@ -31,7 +35,7 @@ class OrganisationMember(Base):
         ForeignKey("organisation.id", ondelete="CASCADE")
     )
     user_id: Mapped[int] = mapped_column(Integer, index=True)
-    role_id: Mapped[str] = mapped_column(ForeignKey("role.id"))
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"))
 
 
 class Organisation(Base):
