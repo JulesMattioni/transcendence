@@ -12,6 +12,8 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True)
+    location: Mapped[str | None] = mapped_column()
+    avatar_id: Mapped[int] = mapped_column(default=1)
     hashed_password: Mapped[str] = mapped_column(Text)
     is_2fa_enabled: Mapped[bool] = mapped_column(default=False)
     secret_2fa: Mapped[str | None] = mapped_column()

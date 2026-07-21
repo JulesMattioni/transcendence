@@ -10,6 +10,7 @@ from app.exceptions import (
     Auth2faError,
     UserNotFoundError,
     TwoFactorAlreadyEnabledError,
+    TwoFactorNotConfiguredError,
 )
 
 app = FastAPI(title="auth")
@@ -84,4 +85,14 @@ async def two_factor_already_enabled_handler(
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "2FA already enabled"},
+    )
+
+
+@app.exception_handler(TwoFactorNotConfiguredError)
+async def two_factor_not_configured_handler(
+    request: Request, exc: TwoFactorNotConfiguredError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "2FA not configured"},
     )
