@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { me } from '../../api/auth'
+import { connectRealtime } from '../../api/realtime'
 
 type AuthState = 'checking' | 'authenticated' | 'unauthenticated'
 
@@ -10,7 +11,10 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     me()
-      .then(() => setStatus('authenticated'))
+      .then(() => {
+        connectRealtime()
+        setStatus('authenticated')
+      })
       .catch(() => setStatus('unauthenticated'))
   }, [])
 

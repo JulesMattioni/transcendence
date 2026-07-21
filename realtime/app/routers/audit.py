@@ -4,7 +4,7 @@ from app.services.connection_manager import manager
 router = APIRouter()
 
 
-@router.websocket("/audit/")
+@router.websocket("/audit")
 async def audit(websocket: WebSocket, token: str) -> None:
     #demander user id a kevin 
     await manager.connect(websocket, user_id=0)
