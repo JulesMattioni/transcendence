@@ -20,6 +20,14 @@ export interface UserRead {
   first_name: string
   last_name: string
   email: string
+  location: string | null
+  avatar_id: number
+  is_2fa_enabled: boolean
+}
+
+export interface UserUpdate {
+  location: string
+  avatar_id: number
 }
 
 export interface TokenResponse {
@@ -95,4 +103,12 @@ export async function logout(): Promise<void> {
   } finally {
     clearSession()
   }
+}
+
+export function updateProfile(payload: UserUpdate): Promise<UserRead> {
+  return apiFetch<UserRead>('/auth/update', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 }
