@@ -8,6 +8,7 @@ from app.repositories import UserRepository, TokenRepository
 from app.schemas import (
     LoginResponse,
     UserCreate,
+    UserUpdate,
     TokenResponse,
     UserRead,
     TwoFactorRequired,
@@ -152,7 +153,7 @@ class AuthService:
         )
         return TwoFactorCredentials(otpauth_uri=uri, secret=secret)
 
-    async def enable_2fa_verify(self, user: User, code: str):
+    async def enable_2fa_verify(self, user: User, code: str) -> None:
         secret = user.secret_2fa
 
         if not secret:
@@ -163,6 +164,17 @@ class AuthService:
 
         try:
             await self._user_repository.enable_2fa(user=user)
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise
+
+    async def disable_2fa(self, user: User) -> None:
+        if not user.is_2fa_enabled:
+            raise TwoFactorNotConfiguredError()
+
+        try:
+            await self._user_repository.disable_2fa(user=user)
             await self._session.commit()
         except Exception:
             await self._session.rollback()
@@ -198,6 +210,23 @@ class AuthService:
         return TokenResponse(
             access_token=access_token, refresh_token=refresh_token
         )
+
+    async def update_user(
+        self,
+        user: User,
+        user_update: UserUpdate,
+    ) -> None:
+        try:
+            await self._user_repository.change_location(
+                user=user, location=user_update.location
+            )
+            await self._user_repository.change_avatar_id(
+                user=user, avatar_id=user_update.avatar_id
+            )
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise
 
     async def logout(self, refresh_token: str) -> None:
         rt = await self._token_repository.get_by_token(refresh_token)

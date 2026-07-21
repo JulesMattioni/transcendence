@@ -17,6 +17,9 @@ class UserRead(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    location: str | None
+    avatar_id: int
+    is_2fa_enabled: bool
 
 
 class UserLogin(BaseModel):
@@ -24,3 +27,10 @@ class UserLogin(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class UserUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    location: str
+    avatar_id: int
