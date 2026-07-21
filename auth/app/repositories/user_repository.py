@@ -43,5 +43,25 @@ class UserRepository:
         except IntegrityError as e:
             raise EmailAlreadyExistsError() from e
 
+    async def register_2fa_secret(self, user: User, secret: str) -> None:
+        user.secret_2fa = secret
+        await self._session.flush()
+
+    async def enable_2fa(self, user: User) -> None:
+        user.is_2fa_enabled = True
+        await self._session.flush()
+
+    async def disable_2fa(self, user: User) -> None:
+        user.is_2fa_enabled = False
+        await self._session.flush()
+
+    async def change_location(self, user: User, location: str) -> None:
+        user.location = location
+        await self._session.flush()
+
+    async def change_avatar_id(self, user: User, avatar_id: int) -> None:
+        user.avatar_id = avatar_id
+        await self._session.flush()
+
 
 # Norme Unit of Work Martin Fowler

@@ -1,4 +1,9 @@
-from app.core.security import hash_password, verify_password
+from app.core.security import (
+    hash_password,
+    verify_password,
+    verify_2fa,
+    generate_2fa_secret,
+)
 from app.core.tokens import (
     create_access_token,
     decode_token,
@@ -11,4 +16,6 @@ __all__ = [
     "create_access_token",
     "decode_token",
     "create_temporary_token",
+    "verify_2fa",
+    "generate_2fa_secret",
 ]

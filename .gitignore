@@ -135,5 +135,6 @@ logs/
 .DS_Store
 Thumbs.db
 
+CLAUDE.md
 
 gateway/crs/

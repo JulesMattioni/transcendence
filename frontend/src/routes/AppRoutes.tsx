@@ -1,14 +1,15 @@
-import { Routes, Route } from 'react-router-dom'
-import LandingPage from '../pages/LandingPage'
-import LoginPage from '../pages/LoginPage'
-import RegisterPage from '../pages/RegisterPage'
-import HomePage from '../pages/dashboard/HomePage'
-import FilesPage from '../pages/dashboard/FilesPage'
-import AdminPage from '../pages/dashboard/AdminPage'
-import RequireAuth from '../components/auth/RequireAuth'
-import ChatPage from '../pages/dashboard/ChatPage'
-
-
+import { Routes, Route } from "react-router-dom";
+import LandingPage from "../pages/LandingPage";
+import LoginPage from "../pages/LoginPage";
+import RegisterPage from "../pages/RegisterPage";
+import HomePage from "../pages/dashboard/HomePage";
+import FilesPage from "../pages/dashboard/FilesPage";
+import AdminPage from "../pages/dashboard/AdminPage";
+import RequireAuth from "../components/auth/RequireAuth";
+import ChatPage from "../pages/dashboard/ChatPage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
+import TermsOfServicePage from "../pages/TermsOfServicePage";
+import UserPage from "../pages/dashboard/UserPage";
 
 function AppRoutes() {
   return (
@@ -48,8 +49,18 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
+      <Route
+        path="/dashboard/user"
+        element={
+          <RequireAuth>
+            <UserPage />
+          </RequireAuth>
+        }
+      />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
     </Routes>
-  )
+  );
 }
 
-export default AppRoutes
+export default AppRoutes;

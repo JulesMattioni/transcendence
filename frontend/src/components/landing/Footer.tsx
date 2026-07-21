@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 function Footer() {
   return (
     <footer className="bg-keepr px-6 py-12 text-white sm:px-10">
@@ -12,12 +14,12 @@ function Footer() {
 
         {/* Links */}
         <nav className="flex items-center gap-6 text-sm">
-          <a href="#" className="text-white/80 transition-colors hover:text-white">
+          <Link to="/privacy" className="text-white/80 transition-colors hover:text-white">
             Privacy Policy
-          </a>
-          <a href="#" className="text-white/80 transition-colors hover:text-white">
+          </Link>
+          <Link to="/terms" className="text-white/80 transition-colors hover:text-white">
             Terms of Service
-          </a>
+          </Link>
         </nav>
       </div>
 

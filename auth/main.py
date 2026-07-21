@@ -7,6 +7,10 @@ from app.exceptions import (
     InvalidCredentialsError,
     InvalidTokenError,
     TokenExpiredError,
+    Auth2faError,
+    UserNotFoundError,
+    TwoFactorAlreadyEnabledError,
+    TwoFactorNotConfiguredError,
 )
 
 app = FastAPI(title="auth")
@@ -51,4 +55,44 @@ async def token_expired_handler(
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Token expired"},
+    )
+
+
+@app.exception_handler(Auth2faError)
+async def auth_2fa_failed_handler(
+    request: Request, exc: Auth2faError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "Invalid code"},
+    )
+
+
+@app.exception_handler(UserNotFoundError)
+async def user_not_found_handler(
+    request: Request, exc: UserNotFoundError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "User not found"},
+    )
+
+
+@app.exception_handler(TwoFactorAlreadyEnabledError)
+async def two_factor_already_enabled_handler(
+    request: Request, exc: TwoFactorAlreadyEnabledError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": "2FA already enabled"},
+    )
+
+
+@app.exception_handler(TwoFactorNotConfiguredError)
+async def two_factor_not_configured_handler(
+    request: Request, exc: TwoFactorNotConfiguredError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "2FA not configured"},
     )
