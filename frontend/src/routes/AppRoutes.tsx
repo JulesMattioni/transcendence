@@ -9,6 +9,7 @@ import RequireAuth from "../components/auth/RequireAuth";
 import ChatPage from "../pages/dashboard/ChatPage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
+import UserPage from "../pages/dashboard/UserPage";
 
 function AppRoutes() {
   return (
@@ -45,6 +46,14 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <ChatPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/user"
+        element={
+          <RequireAuth>
+            <UserPage />
           </RequireAuth>
         }
       />
