@@ -9,8 +9,8 @@ class OrganisationMemberRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create_user(self, org_id: int, user_id: int,
-                          role_id: int) -> OrganisationMember:
+    async def create_user_from_org(self, org_id: int, user_id: int,
+                                   role_id: int) -> OrganisationMember:
         new_member = OrganisationMember(
             org_id=org_id,
             user_id=user_id,
@@ -19,6 +19,19 @@ class OrganisationMemberRepository:
         self._session.add(new_member)
         await self._session.flush()
         return new_member
+
+    async def delete_user_from_org(self, org_id, user_id: int) -> bool:
+        delete_user = select(OrganisationMember.user_id).where(
+            OrganisationMember.user_id == user_id,
+            OrganisationMember.org_id == org_id
+        )
+        res = await self._session.execute(delete_user)
+        member = res.scalar_one_or_none()
+        if member:
+            await self._session.delete(member)
+            await self._session.flush()
+            return False
+        return False
 
     async def get_user_perm(self, user_id: int, org_id: int) -> Role | None:
         member_role = select(OrganisationMember.role_id).where(

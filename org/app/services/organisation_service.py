@@ -18,13 +18,20 @@ class OrganisationService(BaseService):
                                   ) -> OrganisationRead:
         new_org = await self.repository.create(name_org=org_name)
 
-        await self.member_repo.create_user(
+        await self.member_repo.create_user_from_org(
             org_id=new_org.id,
             user_id=user_id,
             role_id=1  # admin !
         )
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
+
+    async def delete_user_from_org(self, org_id: int, user_id: int):
+        delete_user = await self.member_repo.delete_user_from_org(
+            org_id, user_id)
+        if delete_user:
+            await self.session.commit()
+        return delete_user
 
     async def get_org_by_id(self, org_id: int) -> OrganisationRead | None:
         organisation = await self.repository.get_by_id(org_id)

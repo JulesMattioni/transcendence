@@ -55,6 +55,17 @@ async def edit_organisation(org_id: int,
     return update
 
 
+@router.delete("/{org_id}", status_code=status.HTTP_404_NOT_FOUND)
+async def del_user_from_organisation(org_id: int,
+                                     user_id: int,
+                                     service: OrganisationService
+                                     = Depends(get_organisation_service)):
+    deleted_user = await service.delete_user_from_org(org_id, user_id)
+    if not deleted_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User not found")
+    return deleted_user
+
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organisation(
     org_id: int,
