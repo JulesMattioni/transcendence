@@ -1,4 +1,5 @@
 import { Bell, User, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function Topbar() {
   return (
@@ -28,12 +29,13 @@ function Topbar() {
         >
           <Bell size={22} fill="currentColor" />
         </button>
-        <button
+        <Link
+          to="/dashboard/user"
           type="button"
           className="flex h-8 w-8 items-center justify-center rounded-full bg-keepr text-white"
         >
           <User size={18} />
-        </button>
+        </Link>
       </div>
     </header>
   );
