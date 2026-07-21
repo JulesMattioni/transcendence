@@ -47,3 +47,6 @@ class OrganisationService(BaseService):
             await self.session.commit()
             return True
         return False
+
+    async def get_user_organisation_endpoint(self, user_id: int):
+        return await self.member_repo.get_user_organisation_format(user_id)
