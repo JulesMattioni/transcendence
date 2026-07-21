@@ -16,3 +16,19 @@ class InvalidTokenError(AuthError):
 
 class TokenExpiredError(AuthError):
     pass
+
+
+class Auth2faError(AuthError):
+    pass
+
+
+class UserNotFoundError(AuthError):
+    pass
+
+
+class TwoFactorAlreadyEnabledError(AuthError):
+    pass
+
+
+class TwoFactorNotConfiguredError(AuthError):
+    pass

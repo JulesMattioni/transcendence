@@ -49,7 +49,9 @@ async def get_current_user(
     return user
 
 
-async def get_pending_user_id(pending_token: str) -> int:
+async def get_pending_user_id(
+    pending_token: str = Depends(oauth2_scheme),
+) -> int:
     payload = decode_token(pending_token)
 
     if payload.get("type") != "2fa_pending":
