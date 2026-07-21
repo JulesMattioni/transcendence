@@ -11,9 +11,9 @@ class OrganisationMemberRepository:
     async def create_user(self, org_id: int, user_id: int,
                           role_id: int) -> OrganisationMember:
         new_member = OrganisationMember(
-            org_id,
-            user_id,
-            role_id
+            org_id=org_id,
+            user_id=user_id,
+            role_id=role_id
         )
         self._session.add(new_member)
         await self._session.flush()

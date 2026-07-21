@@ -51,7 +51,8 @@ async def edit_organisation(org_id: int,
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organisation(
     org_id: int,
-    service: OrganisationService = Depends(get_organisation_service), _=Depends(
+    service: OrganisationService = Depends(get_organisation_service),
+    _=Depends(
         required_admin_role)):
     deleted = await service.delete_organisation(org_id)
     if not deleted:
