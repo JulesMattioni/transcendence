@@ -1,4 +1,5 @@
-import { apiFetch, ApiError } from "./client"
+import { apiFetch } from "./client"
+import { disconnectRealtime } from "./realtime"
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
@@ -137,6 +138,7 @@ export async function logout(): Promise<void> {
     )
   } finally {
     clearSession()
+    disconnectRealtime()
   }
 }
 
