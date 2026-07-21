@@ -1,26 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.services.connection_manager import manager
+from app.services.get_current_user import get_current_user
 import httpx
-from fastapi import Header, HTTPException
+from fastapi import HTTPException
 
 router = APIRouter()
-
-
-async def get_current_user(token: str):
-    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-        try:
-            response = await client.get(
-                "http://auth:8000/me",
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        except httpx.HTTPError:
-            raise HTTPException(
-                status_code=503, detail="Auth service unavailable"
-            )
-
-    if response.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return response
 
 
 @router.websocket("/audit")
