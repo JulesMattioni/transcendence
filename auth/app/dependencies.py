@@ -35,6 +35,10 @@ async def get_current_user(
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> User:
     payload = decode_token(token)
+
+    if payload.get("type") != "access":
+        raise HTTPException(401, "Invalid token")
+
     user_id = int(payload["sub"])
 
     user = await user_repo.get_by_id(user_id)
@@ -43,3 +47,12 @@ async def get_current_user(
         raise HTTPException(401, "User not found")
 
     return user
+
+
+async def get_pending_user_id(pending_token: str) -> int:
+    payload = decode_token(pending_token)
+
+    if payload.get("type") != "2fa_pending":
+        raise HTTPException(401, "Invalid token")
+
+    return int(payload["sub"])

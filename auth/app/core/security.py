@@ -1,3 +1,4 @@
+import pyotp
 from passlib.context import CryptContext
 from typing import Any
 
@@ -10,3 +11,7 @@ def hash_password(pwd: str) -> str:
 
 def verify_password(pwd: str, h: str) -> bool:
     return bool(pwd_context.verify(pwd, h))
+
+
+def generate_2fa_secret() -> str:
+    return pyotp.random_base32()
