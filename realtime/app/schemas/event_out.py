@@ -13,7 +13,6 @@ class EventOut(EventIn):
             event_id=str(uuid4()),
             timestamp=datetime.now(timezone.utc),
             event_type=event.event_type,
-            actor_id=event.actor_id,
-            target=event.target,
-            payload=event.payload,
+            user_id=event.user_id,
+            file_id=event.file_id,
         )
