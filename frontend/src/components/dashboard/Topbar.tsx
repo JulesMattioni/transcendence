@@ -1,7 +1,22 @@
+import { useEffect, useState } from "react";
 import { Bell, User, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { me } from "../../api/auth";
+import { getAvatarUrl } from "../../utils/avatars";
 
 function Topbar() {
+  const [avatarId, setAvatarId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    me()
+      .then((data) => active && setAvatarId(data.avatar_id))
+      .catch(() => {
+      });
+    return () => {
+      active = false;
+    };
+  }, [])
   return (
     <header className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
       {/* Logo */}
@@ -31,11 +46,19 @@ function Topbar() {
         </button>
         <Link
           to="/dashboard/user"
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-keepr text-white"
+          className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-keepr text-white"
         >
-          <User size={18} />
+          {avatarId !== null ? (
+            <img
+              src={getAvatarUrl(avatarId)}
+              alt="Profile"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <User size={18} />
+          )}
         </Link>
+
       </div>
     </header>
   );
