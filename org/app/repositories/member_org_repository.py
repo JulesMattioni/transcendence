@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.organisation import OrganisationMember
+from app.models.organisation import Organisation
 from sqlalchemy import select
 from app.schemas.roles import Role
 
@@ -29,3 +30,22 @@ class OrganisationMemberRepository:
         if role_id:
             return Role(role_id)
         return None
+
+    async def get_user_organisation(self, user_id: int):
+        stmt = (
+            select(Organisation, OrganisationMember.role_id)
+            .join(OrganisationMember, Organisation.id == OrganisationMember.org_id)
+            .where(OrganisationMember.user_id == user_id)
+        )
+        res = await self._session.execute(stmt)
+        org_list = []
+        for org, role_id in res.all():
+            org_list.append({
+                "org_id": org.id,
+                "name": org.name_org,
+                "role": role_id
+            })
+            return {
+                "user_id": user_id,
+                "organisation": org_list
+            }

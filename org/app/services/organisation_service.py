@@ -2,17 +2,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.base_service import BaseService
 from app.repositories.organisation_repository import OrganisationRepository
 from app.schemas.organisation import OrganisationRead, OrganisationUpdate
+from app.repositories import OrganisationMemberRepository
 
 
 class OrganisationService(BaseService):
     def __init__(self, repository: OrganisationRepository,
-                 session: AsyncSession) -> None:
+                 session: AsyncSession,
+                 member_repo: OrganisationMemberRepository) -> None:
         super().__init__()
         self.repository = repository
         self.session = session
+        self.member_repo = member_repo
 
-    async def create_organisation(self, org_name: str) -> OrganisationRead:
+    async def create_organisation(self, org_name: str, user_id: int
+                                  ) -> OrganisationRead:
         new_org = await self.repository.create(name_org=org_name)
+
+        await self.member_repo.create_user(
+            org_id=new_org.id,
+            user_id=user_id,
+            role_id=1  # admin !
+        )
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
 

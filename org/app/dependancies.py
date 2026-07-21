@@ -29,9 +29,14 @@ def get_organisation_service(
         session: AsyncSession = Depends(get_session),
         repo:
         OrganisationRepository = Depends(
-                                 get_organisation_repository
-                                 )) -> OrganisationService:
-    return OrganisationService(session=session, repository=repo)
+                                 get_organisation_repository),
+        member_repo: OrganisationMemberRepository = Depends(
+            get_organisation_repository)
+                                 ) -> OrganisationService:
+
+    return OrganisationService(session=session,
+                               repository=repo,
+                               member_repo=member_repo)
 
 
 class RoleChecker:
