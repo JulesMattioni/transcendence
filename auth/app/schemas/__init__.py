@@ -1,10 +1,11 @@
-from app.schemas.specific_response import (
-    LoginResponse,
-    TwoFactorRequired,
-    TwoFactorVerify,
-)
+from app.schemas.specific_response import LoginResponse
 from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserRead, UserLogin
+from app.schemas.two_factor import (
+    TwoFactorRequired,
+    TwoFactorVerify,
+    TwoFactorCredentials,
+)
 
 __all__ = [
     "LoginResponse",
@@ -14,4 +15,5 @@ __all__ = [
     "UserLogin",
     "TwoFactorRequired",
     "TwoFactorVerify",
+    "TwoFactorCredentials",
 ]
