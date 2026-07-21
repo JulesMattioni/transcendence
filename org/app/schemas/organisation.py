@@ -12,4 +12,4 @@ class OrganisationRead(BaseModel):
 
 
 class OrganisationUpdate(BaseModel):
-    pass
+    name: str | None = None

@@ -30,3 +30,10 @@ class OrganisationService(BaseService):
             return None
         await self.session.commit()
         return OrganisationRead.model_validate(update)
+
+    async def delete_organisation(self, org_id: int) -> bool:
+        organisation = await self.repository.delete_org(org_id)
+        if organisation:
+            await self.session.commit()
+            return True
+        return False

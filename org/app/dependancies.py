@@ -9,9 +9,10 @@ from shared.database import get_session
 from app.schemas.roles import Role
 from app.schemas.user import User
 from get_user import get_current_user
+from app.services.organisation_service import OrganisationService
 
 
-def get_organisation(
+def get_organisation_repository(
     session: AsyncSession = Depends(get_session),
 ) -> OrganisationRepository:
     return OrganisationRepository(session)
@@ -21,6 +22,16 @@ def get_org_member_repository(
     session: AsyncSession = Depends(get_session),
 ) -> OrganisationMemberRepository:
     return OrganisationMemberRepository(session)
+
+
+# apply sur repo
+def get_organisation_service(
+        session: AsyncSession = Depends(get_session),
+        repo:
+        OrganisationRepository = Depends(
+                                 get_organisation_repository
+                                 )) -> OrganisationService:
+    return OrganisationService(repo)
 
 
 class RoleChecker:
