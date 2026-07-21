@@ -1,15 +1,28 @@
 import secrets
+import pyotp
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
+from app.models.auth import User
 from app.repositories import UserRepository, TokenRepository
-from app.schemas import LoginResponse, UserCreate, TokenResponse, UserRead
+from app.schemas import (
+    LoginResponse,
+    UserCreate,
+    TokenResponse,
+    UserRead,
+    TwoFactorRequired,
+)
 from app.exceptions import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
     InvalidTokenError,
     TokenExpiredError,
 )
-from app.core import hash_password, create_access_token, verify_password
+from app.core import (
+    hash_password,
+    create_access_token,
+    verify_password,
+    create_temporary_token,
+)
 
 
 class AuthService:
@@ -70,6 +83,11 @@ class AuthService:
         if user is None or not verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
 
+        if user.is_2fa_enabled:
+            return TwoFactorRequired(
+                pending_token=create_temporary_token(user_id=user.id)
+            )
+
         now = datetime.now(timezone.utc)
         refresh_token = secrets.token_urlsafe(32)
 
@@ -78,7 +96,7 @@ class AuthService:
                 refresh_token, user, now + timedelta(days=7)
             )
 
-            access_token = create_access_token(user.id)
+            access_token = create_access_token(user_id=user.id)
 
             await self._session.commit()
 
@@ -92,6 +110,14 @@ class AuthService:
             ),
             user=UserRead.model_validate(user),
         )
+
+    async def verify_2fa(self, user_id: int, code: str) -> LoginResponse:
+        user: User = self._user_repository.get_by_id(user_id)
+
+        secret = user.secret_2fa
+        totp = pyotp.TOTP(secret)
+
+        return totp.verify(code, valid_window=1)
 
     async def refresh(self, refresh_token: str) -> TokenResponse:
         rt = await self._token_repository.get_by_token(refresh_token)
