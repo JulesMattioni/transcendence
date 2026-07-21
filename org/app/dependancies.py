@@ -31,7 +31,7 @@ def get_organisation_service(
         OrganisationRepository = Depends(
                                  get_organisation_repository
                                  )) -> OrganisationService:
-    return OrganisationService(repo)
+    return OrganisationService(session=session, repository=repo)
 
 
 class RoleChecker:
