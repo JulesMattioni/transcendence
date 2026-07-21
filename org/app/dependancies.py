@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.schemas.roles import Role
 from app.schemas.user import User
-from get_user import get_current_user
+from app.get_user import get_current_user
 from app.services.organisation_service import OrganisationService
 
 
