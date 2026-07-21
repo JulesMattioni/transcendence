@@ -1,4 +1,4 @@
-import { apiFetch } from "./client"
+import { apiFetch, ApiError } from "./client"
 import { disconnectRealtime } from "./realtime"
 
 const ACCESS_KEY = 'access_token'
