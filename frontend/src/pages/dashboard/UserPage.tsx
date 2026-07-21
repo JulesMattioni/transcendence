@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { MapPin, Mail, Shield, Check, Loader2 } from "lucide-react";
 import DashboardLayout from "../../components/dashboard/DashboardLayout";
-import { me, updateProfile, type UserRead } from "../../api/auth";
 import { getAvatarUrl, availableAvatarIds } from "../../utils/avatars";
+import { me, updateProfile, disable2fa, type UserRead } from "../../api/auth";
+import TwoFactorSetupModal from "../../components/dashboard/TwoFactorSetupModal";
 
 function UserPage() {
   const [user, setUser] = useState<UserRead | null>(null);
@@ -13,6 +14,9 @@ function UserPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
+  const [twoFaBusy, setTwoFaBusy] = useState(false);
+  const [twoFaError, setTwoFaError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +59,25 @@ function UserPage() {
     }
   }
 
+  function handleToggle2fa() {
+    if (!user) return;
+    setTwoFaError(null);
+    if (user.is_2fa_enabled) {
+      setTwoFaBusy(true);
+      disable2fa()
+        .then((updated) => setUser(updated))
+        .catch(() => setTwoFaError("Could not disable 2FA. Please try again."))
+        .finally(() => setTwoFaBusy(false));
+    } else {
+      setTwoFaModalOpen(true);
+    }
+  }
+
+  function handle2faEnabled() {
+    setUser((prev) => (prev ? { ...prev, is_2fa_enabled: true } : prev));
+  }
+
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -82,9 +105,7 @@ function UserPage() {
         Manage your personal information and profile picture.
       </p>
 
-      {/* Une seule card contenant tout */}
       <section className="mt-8 max-w-2xl border border-gray-200 bg-white p-6 sm:p-8">
-        {/* Header : avatar courant + identité + badge 2FA */}
         <div className="flex items-center gap-5 border-b border-gray-100 pb-6">
           <img
             src={getAvatarUrl(avatarId)}
@@ -99,20 +120,44 @@ function UserPage() {
               <Mail size={14} className="shrink-0" />
               {user.email}
             </p>
-            <span
-              className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-                user.is_2fa_enabled
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              <Shield size={12} />
-              {user.is_2fa_enabled ? "2FA enabled" : "2FA disabled"}
-            </span>
+            <div className="mt-2 flex items-center gap-3">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                  user.is_2fa_enabled
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                <Shield size={12} />
+                {user.is_2fa_enabled ? "2FA enabled" : "2FA disabled"}
+              </span>
+
+              {/* 2fa switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={user.is_2fa_enabled}
+                aria-label="Toggle two-factor authentication"
+                disabled={twoFaBusy}
+                onClick={handleToggle2fa}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  user.is_2fa_enabled ? "bg-keepr" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    user.is_2fa_enabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            {twoFaError && (
+              <p className="mt-1 text-xs text-red-600">{twoFaError}</p>
+            )}
+
           </div>
         </div>
 
-        {/* Choix de la photo de profil */}
         <div className="pt-6">
           <p className="text-sm font-medium text-black">Profile picture</p>
           <div className="mt-3 flex flex-wrap gap-3">
@@ -147,7 +192,7 @@ function UserPage() {
           </div>
         </div>
 
-        {/* Location éditable */}
+        {/* Location */}
         <div className="mt-6">
           <label htmlFor="location" className="text-sm font-medium text-black">
             Location
@@ -189,6 +234,11 @@ function UserPage() {
           {saveError && <span className="text-sm text-red-600">{saveError}</span>}
         </div>
       </section>
+      <TwoFactorSetupModal
+        isOpen={twoFaModalOpen}
+        onClose={() => setTwoFaModalOpen(false)}
+        onEnabled={handle2faEnabled}
+      />
     </DashboardLayout>
   );
 }
