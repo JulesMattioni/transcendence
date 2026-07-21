@@ -6,9 +6,15 @@ from app.schemas import (
     UserLogin,
     LoginResponse,
     TokenResponse,
+    TwoFactorRequired,
+    TwoFactorVerify,
 )
 from app.models.auth import User
-from app.dependencies import get_current_user, get_auth_service
+from app.dependencies import (
+    get_current_user,
+    get_auth_service,
+    get_pending_user_id,
+)
 
 router = APIRouter(tags=["auth"])
 
@@ -20,12 +26,25 @@ async def register(
     return await auth_service.register(user_create=user)
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse | TwoFactorRequired)
 async def login(
     user: UserLogin,
     auth_service: AuthService = Depends(get_auth_service),
-) -> LoginResponse:
+) -> LoginResponse | TwoFactorRequired:
     return await auth_service.login(email=user.email, password=user.password)
+
+
+@router.post("login/2fa/verify", response_model=LoginResponse)
+async def login_verify_2fa(
+    two_factor_verify: TwoFactorVerify,
+    user_id: int = Depends(get_pending_user_id),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> LoginResponse:
+    return await auth_service.verify_2fa(
+        user_id=user_id,
+        pending_token=two_factor_verify.pending_token,
+        code=two_factor_verify.code,
+    )
 
 
 @router.post("/refresh", response_model=TokenResponse)
