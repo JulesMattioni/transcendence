@@ -1,4 +1,4 @@
-import { apiFetch } from "./client"
+import { apiFetch, ApiError } from "./client"
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
@@ -69,15 +69,50 @@ export async function signup(payload: UserCreate): Promise<LoginResponse> {
   return data
 }
 
-export async function login(payload: UserLogin): Promise<LoginResponse> {
-  const data = await apiFetch<LoginResponse>('/auth/login', {
+export async function login(payload: UserLogin): Promise<LoginResult> {
+  const data = await apiFetch<LoginResponse | TwoFactorRequired>('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
+
+  if ('pending_token' in data) {
+    return { kind: '2fa_required', pendingToken: data.pending_token }
+  }
+
+  saveTokens(data.tokens.access_token, data.tokens.refresh_token)
+  return { kind: 'success', data }
+}
+
+export async function loginVerify2fa(
+  pendingToken: string,
+  code: string,
+): Promise<LoginResponse> {
+  const response = await fetch('/api/auth/login/2fa/verify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${pendingToken}`,
+    },
+    body: JSON.stringify({ code }),
+  })
+
+  if (!response.ok) {
+    let detail = 'Invalid code'
+    try {
+      const body = await response.json()
+      if (typeof body?.detail === 'string') detail = body.detail
+    } catch {
+      detail = `Request failed with status ${response.status}`
+    }
+    throw new ApiError(response.status, detail)
+  }
+
+  const data = (await response.json()) as LoginResponse
   saveTokens(data.tokens.access_token, data.tokens.refresh_token)
   return data
 }
+
 
 export function me(): Promise<UserRead> {
   return apiFetch<UserRead>('/auth/me')
@@ -112,3 +147,36 @@ export function updateProfile(payload: UserUpdate): Promise<UserRead> {
     body: JSON.stringify(payload),
   })
 }
+
+export interface TwoFactorCredentials {
+  secret: string
+  otpauth_uri: string
+}
+
+export function enable2fa(): Promise<TwoFactorCredentials> {
+  return apiFetch<TwoFactorCredentials>('/auth/2fa/enable', {
+    method: 'POST',
+  })
+}
+
+export function verify2fa(code: string): Promise<void> {
+  return apiFetch<void>('/auth/2fa/enable/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  })
+}
+
+export function disable2fa(): Promise<UserRead> {
+  return apiFetch<UserRead>('/auth/2fa/disable', {
+    method: 'POST',
+  })
+}
+
+export interface TwoFactorRequired {
+  pending_token: string
+}
+
+export type LoginResult =
+  | { kind: 'success'; data: LoginResponse }
+  | { kind: '2fa_required'; pendingToken: string }
