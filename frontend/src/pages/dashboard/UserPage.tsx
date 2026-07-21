@@ -1,10 +1,194 @@
+import { useEffect, useState } from "react";
+import { MapPin, Mail, Shield, Check, Loader2 } from "lucide-react";
 import DashboardLayout from "../../components/dashboard/DashboardLayout";
+import { me, updateProfile, type UserRead } from "../../api/auth";
+import { getAvatarUrl, availableAvatarIds } from "../../utils/avatars";
 
 function UserPage() {
+  const [user, setUser] = useState<UserRead | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useState("");
+  const [avatarId, setAvatarId] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    me()
+      .then((data) => {
+        if (!active) return;
+        setUser(data);
+        setLocation(data.location ?? "");
+        setAvatarId(data.avatar_id);
+      })
+      .catch(() => active && setError("Unable to load your profile."))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const dirty =
+    user != null &&
+    (location.trim() !== (user.location ?? "") || avatarId !== user.avatar_id);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setSaveError(null);
+    try {
+      const updated = await updateProfile({
+        location: location.trim(),
+        avatar_id: avatarId,
+      });
+      setUser(updated);
+      setLocation(updated.location ?? "");
+      setAvatarId(updated.avatar_id);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setSaveError("Could not save your changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-64 items-center justify-center text-muted">
+          <Loader2 className="mr-2 animate-spin" size={20} />
+          Loading profile…
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <DashboardLayout>
+        <h1 className="font-serif text-2xl font-bold text-black">My Profile</h1>
+        <p className="mt-4 text-red-600">{error ?? "Profile unavailable."}</p>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <h1 className="font-serif text-2xl font-bold text-black">User</h1>
-      <p className="mt-2 text-muted">User content will go here.</p>
+      <h1 className="font-serif text-2xl font-bold text-black">My Profile</h1>
+      <p className="mt-1 text-sm text-muted">
+        Manage your personal information and profile picture.
+      </p>
+
+      {/* Une seule card contenant tout */}
+      <section className="mt-8 max-w-2xl border border-gray-200 bg-white p-6 sm:p-8">
+        {/* Header : avatar courant + identité + badge 2FA */}
+        <div className="flex items-center gap-5 border-b border-gray-100 pb-6">
+          <img
+            src={getAvatarUrl(avatarId)}
+            alt="Profile avatar"
+            className="h-20 w-20 shrink-0 rounded-full border border-gray-200 object-cover"
+          />
+          <div className="min-w-0">
+            <h2 className="font-serif text-xl font-bold text-black">
+              {user.first_name} {user.last_name}
+            </h2>
+            <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-muted">
+              <Mail size={14} className="shrink-0" />
+              {user.email}
+            </p>
+            <span
+              className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                user.is_2fa_enabled
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              <Shield size={12} />
+              {user.is_2fa_enabled ? "2FA enabled" : "2FA disabled"}
+            </span>
+          </div>
+        </div>
+
+        {/* Choix de la photo de profil */}
+        <div className="pt-6">
+          <p className="text-sm font-medium text-black">Profile picture</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {availableAvatarIds.map((id) => {
+              const selected = id === avatarId;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setAvatarId(id)}
+                  aria-label={`Choose avatar ${id}`}
+                  aria-pressed={selected}
+                  className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition ${
+                    selected
+                      ? "border-keepr ring-2 ring-keepr/30"
+                      : "border-transparent hover:border-gray-300"
+                  }`}
+                >
+                  <img
+                    src={getAvatarUrl(id)}
+                    alt={`Avatar ${id}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {selected && (
+                    <span className="absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center rounded-full bg-keepr text-white">
+                      <Check size={12} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Location éditable */}
+        <div className="mt-6">
+          <label htmlFor="location" className="text-sm font-medium text-black">
+            Location
+          </label>
+          <div className="relative mt-2">
+            <MapPin
+              size={16}
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle"
+            />
+            <input
+              id="location"
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Paris, France"
+              maxLength={100}
+              className="w-full border border-gray-200 py-2.5 pr-4 pl-9 text-sm text-black outline-none focus:border-keepr"
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-8 flex items-center gap-4 border-t border-gray-100 pt-6">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!dirty || saving}
+            className="inline-flex items-center gap-2 bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving && <Loader2 className="animate-spin" size={16} />}
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-green-600">
+              <Check size={16} />
+              Saved
+            </span>
+          )}
+          {saveError && <span className="text-sm text-red-600">{saveError}</span>}
+        </div>
+      </section>
     </DashboardLayout>
   );
 }
