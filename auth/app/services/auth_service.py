@@ -21,6 +21,7 @@ from app.schemas import (
     TwoFactorRequired,
     TwoFactorCredentials,
     OAuthRedirect,
+    OAuthExchange,
 )
 from app.exceptions import (
     EmailAlreadyExistsError,
@@ -31,6 +32,7 @@ from app.exceptions import (
     UserNotFoundError,
     TwoFactorAlreadyEnabledError,
     TwoFactorNotConfiguredError,
+    UserByEmailNotFoundError,
 )
 from app.core import (
     hash_password,
@@ -41,6 +43,8 @@ from app.core import (
     generate_2fa_secret,
     generate_token,
     get_google_profile,
+    create_oauth_exchange_token,
+    decode_token,
 )
 
 
@@ -80,6 +84,37 @@ class AuthService:
             access_token=access_token, refresh_token=refresh_token
         )
 
+    def oauth_google_redirect(self, response: Response) -> OAuthRedirect:
+        state = generate_token()
+
+        response.set_cookie(
+            key="oauth_state",
+            value=state,
+            max_age=600,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+
+        params = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+        }
+
+        authorization_url = (
+            "https://accounts.google.com/o/oauth2/auth?" + urlencode(params)
+        )
+        return OAuthRedirect(authorization_url=authorization_url)
+
+    async def get_user_by_email(self, email: str) -> UserRead:
+        user = await self._user_repository.get_by_email(email)
+        if not user:
+            raise UserByEmailNotFoundError()
+        return UserRead.model_validate(user)
+
     async def register(self, user_create: UserCreate) -> LoginResponse:
         if (
             await self._user_repository.get_by_email(user_create.email)
@@ -109,31 +144,6 @@ class AuthService:
             user=UserRead.model_validate(user),
         )
 
-    def oauth_google_redirect(self, response: Response) -> OAuthRedirect:
-        state = generate_token()
-
-        response.set_cookie(
-            key="oauth_state",
-            value=state,
-            max_age=600,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-        )
-
-        params = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "redirect_uri": GOOGLE_REDIRECT_URI,
-            "response_type": "code",
-            "scope": "openid email profile",
-            "state": state,
-        }
-
-        authorization_url = (
-            "https://accounts.google.com/o/oauth2/auth?" + urlencode(params)
-        )
-        return OAuthRedirect(authorization_url=authorization_url)
-
     async def login(
         self, email: str, password: str
     ) -> LoginResponse | TwoFactorRequired:
@@ -156,7 +166,7 @@ class AuthService:
 
     async def oauth_google_login(
         self, code: str
-    ) -> LoginResponse | TwoFactorRequired:
+    ) -> OAuthExchange | TwoFactorRequired:
         profile_response = await get_google_profile(code=code)
 
         oauth_account = await self._oauth_repository.get_by_provider(
@@ -171,9 +181,11 @@ class AuthService:
                     )
                 )
 
-            tokens = await self.__issue_tokens(user=oauth_account.user)
-            return LoginResponse(
-                tokens=tokens, user=UserRead.model_validate(oauth_account.user)
+            await self._session.commit()
+            return OAuthExchange(
+                exchange_code=create_oauth_exchange_token(
+                    user_id=oauth_account.user.id
+                )
             )
 
         user = await self._user_repository.get_by_email(
@@ -199,10 +211,9 @@ class AuthService:
                     pending_token=create_temporary_token(user_id=user.id)
                 )
 
-            tokens = await self.__issue_tokens(user=user)
-            return LoginResponse(
-                tokens=tokens,
-                user=UserRead.model_validate(user),
+            await self._session.commit()
+            return OAuthExchange(
+                exchange_code=create_oauth_exchange_token(user_id=user.id)
             )
 
         try:
@@ -227,12 +238,30 @@ class AuthService:
             await self._session.rollback()
             raise
 
+        await self._session.commit()
+        return OAuthExchange(
+            exchange_code=create_oauth_exchange_token(user_id=user.id)
+        )
+
+    async def exchange_oauth_code(self, exchange_code: str) -> LoginResponse:
+        payload = decode_token(exchange_code)
+
+        if payload["type"] != "oauth_exchange":
+            raise InvalidTokenError()
+
+        try:
+            user = await self._user_repository.get_by_id(
+                id=int(payload["sub"])
+            )
+        except ValueError:
+            raise InvalidTokenError()
+
+        if user is None:
+            raise UserNotFoundError()
+
         tokens = await self.__issue_tokens(user=user)
 
-        return LoginResponse(
-            tokens=tokens,
-            user=UserRead.model_validate(user),
-        )
+        return LoginResponse(tokens=tokens, user=UserRead.model_validate(user))
 
     async def login_2fa(self, user_id: int, code: str) -> LoginResponse:
         user = await self._user_repository.get_by_id(user_id)

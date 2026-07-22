@@ -1,52 +1,81 @@
-# Comment utiliser le service `auth`
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white" alt="Pydantic" />
+  <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
+  <img src="https://img.shields.io/badge/TOTP-6E44FF?style=for-the-badge" alt="TOTP" />
+  <img src="https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google OAuth" />
+  <img src="https://img.shields.io/badge/httpx-000000?style=for-the-badge" alt="httpx" />
+  <img src="https://img.shields.io/badge/Argon2%2FBcrypt-0057B7?style=for-the-badge" alt="Argon2/Bcrypt" />
+</p>
 
-Ce document décrit comment dialoguer avec le service `auth` : les routes disponibles, ce qu'il faut envoyer, ce qu'on reçoit en retour, et comment gérer les tokens côté client.
+<h1 align="center">Comment utiliser le service <code>auth</code></h1>
 
-Ce guide couvre : signup, login, login 2FA, refresh, logout, `/me`, la gestion de la 2FA (activation, confirmation, désactivation) et la mise à jour du profil. Il n'existe aucune route OAuth (Google/42) dans le service.
+<p align="center"><em>Référence complète des routes exposées par le service <code>auth</code> — à l'usage du frontend et des autres services.</em></p>
 
----
+<hr/>
 
-## 1. Où taper
+<h2>📑 Sommaire</h2>
 
-Toutes les requêtes passent par la gateway :
+<ul>
+  <li><a href="#taper">1. Où taper</a></li>
+  <li><a href="#tokens">2. Les tokens</a></li>
+  <li><a href="#stockage">3. Stockage des tokens</a></li>
+  <li><a href="#routes-classiques">4. Routes — auth classique</a></li>
+  <li><a href="#routes-google">5. Routes — connexion Google</a></li>
+  <li><a href="#lookup">6. Route — recherche par email</a></li>
+  <li><a href="#schemas">7. Schémas de données</a></li>
+  <li><a href="#recap">8. Table récapitulative</a></li>
+  <li><a href="#attention">9. Points d'attention</a></li>
+</ul>
 
-```
-https://localhost:8443/api/auth/...
-```
+<hr/>
 
-Exemple complet : `https://localhost:8443/api/auth/signup`.
+<h2 id="taper">1. Où taper</h2>
 
----
+<p>Toutes les requêtes passent par la gateway :</p>
 
-## 2. Le principe général : deux tokens
+<pre>https://localhost:8443/api/auth/...</pre>
 
-Chaque connexion complète (signup, ou login sans 2FA, ou login 2FA validé) donne **deux tokens**, avec des rôles différents :
+<p>Exemple complet : <code>https://localhost:8443/api/auth/signup</code>.</p>
 
-| | `access_token` | `refresh_token` |
-|---|---|---|
-| Sert à | accéder aux routes protégées (`/me`, et les autres services qui valident ce même JWT) | obtenir un nouvel `access_token` sur `/refresh` |
-| Durée de vie | 15 minutes (configurable, voir §7) | 7 jours (configurable, voir §7) |
-| Où l'envoyer | header `Authorization: Bearer <access_token>` | paramètre de requête sur `/refresh` / `/logout` |
-| Révocable ? | non | oui — stocké en base, supprimé au `logout` et remplacé à chaque `refresh` |
+<hr/>
 
-Il existe un **troisième** token, temporaire, utilisé uniquement pour le login des comptes protégés par 2FA :
+<h2 id="tokens">2. Les tokens</h2>
 
-| | `pending_token` |
-|---|---|
-| Sert à | prouver qu'on a passé l'étape 1 du login (email + mot de passe) et autoriser l'appel à `/login/2fa/verify` |
-| Durée de vie | ~5 minutes (configurable, voir §7) |
-| Où l'envoyer | header `Authorization: Bearer <pending_token>` sur `/login/2fa/verify` |
-| Type interne | `"2fa_pending"` (distinct de l'access token) |
+<p>Chaque connexion complète (signup, login sans 2FA, login 2FA validé, ou login Google finalisé) donne <b>deux tokens</b> :</p>
 
-Flow standard (compte **sans** 2FA) :
+<table>
+  <tr><th></th><th><code>access_token</code></th><th><code>refresh_token</code></th></tr>
+  <tr><td>Sert à</td><td>accéder aux routes protégées (<code>/me</code>, et les autres services qui valident ce même JWT)</td><td>obtenir un nouvel <code>access_token</code> sur <code>/refresh</code></td></tr>
+  <tr><td>Durée de vie</td><td>15 min (configurable)</td><td>7 jours (configurable)</td></tr>
+  <tr><td>Où l'envoyer</td><td>header <code>Authorization: Bearer &lt;access_token&gt;</code></td><td>paramètre de requête sur <code>/refresh</code> / <code>/logout</code></td></tr>
+  <tr><td>Révocable ?</td><td>non</td><td>oui — stocké en base, supprimé au <code>logout</code> et remplacé à chaque <code>refresh</code></td></tr>
+</table>
 
-```
+<p>Deux tokens <b>temporaires</b>, jamais stockés en base, qui n'interviennent qu'en étape intermédiaire :</p>
+
+<table>
+  <tr><th></th><th><code>pending_token</code></th><th><code>exchange_code</code></th></tr>
+  <tr><td>Sert à</td><td>prouver qu'on a passé l'étape 1 du login (mot de passe <b>ou</b> Google) et autoriser l'appel à <code>/login/2fa/verify</code></td><td>prouver que le callback Google a résolu un compte, et autoriser l'appel à <code>/oauth/exchange</code></td></tr>
+  <tr><td>Durée de vie</td><td>~5 min (configurable)</td><td>~30 secondes (configurable)</td></tr>
+  <tr><td>Où l'envoyer</td><td>header <code>Authorization: Bearer &lt;pending_token&gt;</code> sur <code>/login/2fa/verify</code></td><td>body JSON <code>{ "exchange_code": ... }</code> sur <code>/oauth/exchange</code></td></tr>
+  <tr><td>Type interne</td><td><code>"2fa_pending"</code></td><td><code>"oauth_exchange"</code></td></tr>
+</table>
+
+<p><b>Flow standard</b> (compte sans 2FA) :</p>
+
+<pre>
 1. signup ou login
    → { tokens: { access_token, refresh_token }, user }
    → stocker les deux tokens + les infos user
 
 2. chaque requête vers une route protégée
-   → header "Authorization: Bearer <access_token>"
+   → header "Authorization: Bearer &lt;access_token&gt;"
 
 3. une requête renvoie 401 (access_token expiré ou invalide)
    → appeler /refresh avec le refresh_token
@@ -56,50 +85,52 @@ Flow standard (compte **sans** 2FA) :
 4. déconnexion
    → appeler /logout avec le refresh_token
    → effacer tokens + user côté client
-```
+</pre>
 
-Flow login (compte **avec** 2FA activée) :
+<p><b>Flow login avec 2FA</b> (mot de passe ou Google, même mécanique) :</p>
 
-```
-1. login (email + password)
+<pre>
+1. login (ou callback Google si 2FA active)
    → { pending_token }        (PAS de tokens ni de user à ce stade)
    → conserver le pending_token en mémoire
 
 2. login/2fa/verify
-   → header "Authorization: Bearer <pending_token>" + body { code }
+   → header "Authorization: Bearer &lt;pending_token&gt;" + body { code }
    → { tokens: { access_token, refresh_token }, user }
    → à partir d'ici, identique au flow standard
-```
+</pre>
 
-À chaque `refresh`, le `refresh_token` change (rotation) : l'ancien devient invalide immédiatement. Réutiliser un `refresh_token` déjà consommé renvoie `401`.
+<p>À chaque <code>refresh</code>, le <code>refresh_token</code> change (rotation) : l'ancien devient invalide immédiatement. Réutiliser un <code>refresh_token</code> déjà consommé renvoie <code>401</code>.</p>
 
-Si `/refresh` échoue, il n'y a pas de session récupérable : effacer la session locale et rediriger vers le login.
+<p>Si <code>/refresh</code> échoue, il n'y a pas de session récupérable : effacer la session locale et rediriger vers le login.</p>
 
----
+<hr/>
 
-## 3. Stockage des tokens
+<h2 id="stockage">3. Stockage des tokens</h2>
 
-Les tokens sont renvoyés dans le corps JSON de la réponse — le serveur ne pose aucun cookie. Le stockage (mémoire, `localStorage`, etc.) et le transport sont entièrement à la charge du client. Le `pending_token` est éphémère (~5 min) et n'a pas vocation à être persisté : garde-le en mémoire le temps de l'étape `/login/2fa/verify`.
+<p>Les tokens sont renvoyés dans le corps JSON de la réponse — le serveur ne pose aucun cookie <b>pour les tokens de session</b>. Le stockage (mémoire, <code>localStorage</code>, etc.) et le transport sont entièrement à la charge du client. Le <code>pending_token</code> et l'<code>exchange_code</code> sont éphémères et n'ont pas vocation à être persistés.</p>
 
----
+<p>Le seul cookie posé par le service est un cookie technique (<code>oauth_state</code>, <code>httpOnly</code>), utilisé en interne pour sécuriser le flow Google — le frontend n'a jamais besoin de le lire ni de le manipuler, le navigateur s'en charge tout seul.</p>
 
-## 4. Les routes
+<hr/>
 
-### `POST /signup` — créer un compte
+<h2 id="routes-classiques">4. Routes — auth classique</h2>
 
-**Body** (JSON) :
-```json
+<h3><code>POST /signup</code> — créer un compte</h3>
+
+<p><b>Body</b> (JSON) :</p>
+<pre>
 {
   "first_name": "Ada",
   "last_name": "Lovelace",
   "email": "ada@example.com",
   "password": "Sup3rSecret!"
 }
-```
-Les 4 champs sont obligatoires. `email` doit être un email valide. Aucune règle de complexité n'est appliquée sur `password`.
+</pre>
+<p>Les 4 champs sont obligatoires. <code>email</code> doit être un email valide. Aucune règle de complexité n'est appliquée sur <code>password</code>.</p>
 
-**Réponse succès — `200`** : le compte est créé et l'utilisateur est directement connecté (pas d'appel `/login` séparé nécessaire) :
-```json
+<p><b>Réponse succès — <code>200</code></b> : le compte est créé et l'utilisateur est directement connecté :</p>
+<pre>
 {
   "tokens": {
     "access_token": "eyJhbGciOi...",
@@ -116,104 +147,71 @@ Les 4 champs sont obligatoires. `email` doit être un email valide. Aucune règl
     "is_2fa_enabled": false
   }
 }
-```
+</pre>
 
-**Erreurs :**
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>409</code></td><td>l'email existe déjà</td><td><code>{"detail": "Email already registered"}</code></td></tr>
+  <tr><td><code>422</code></td><td>champ manquant ou email mal formé</td><td><code>{"detail": [{"type": "...", "loc": ["body", "email"], "msg": "..."}]}</code> — ici <code>detail</code> est une liste d'objets, pas une string</td></tr>
+</table>
 
-| Code | Quand | Body |
-|---|---|---|
-| `409` | l'email existe déjà | `{"detail": "Email already registered"}` |
-| `422` | champ manquant ou email mal formé | `{"detail": [{"type": "...", "loc": ["body", "email"], "msg": "..."}]}` — ici `detail` est une liste d'objets, pas une string |
+<hr/>
 
----
+<h3><code>POST /login</code> — se connecter</h3>
 
-### `POST /login` — se connecter
-
-**Body** (JSON) :
-```json
+<p><b>Body</b> (JSON) :</p>
+<pre>
 {
   "email": "ada@example.com",
   "password": "Sup3rSecret!"
 }
-```
+</pre>
 
-**Réponse succès — `200`, compte SANS 2FA** : identique à `signup` (`tokens` + `user`).
+<p><b>Réponse succès — <code>200</code>, compte SANS 2FA</b> : identique à <code>signup</code> (<code>tokens</code> + <code>user</code>).</p>
 
-**Réponse succès — `200`, compte AVEC 2FA activée** : la réponse **n'est plus** un `LoginResponse`. Elle contient uniquement un `pending_token` :
-```json
+<p><b>Réponse succès — <code>200</code>, compte AVEC 2FA activée</b> : la réponse n'est plus un <code>LoginResponse</code> :</p>
+<pre>
 {
   "pending_token": "eyJhbGciOi...2fa_pending..."
 }
-```
-Ce `pending_token` doit être renvoyé (en header `Authorization: Bearer`, **pas** en query) à `/login/2fa/verify` avec le code TOTP pour obtenir les vrais tokens. Tant que cette étape n'est pas faite, l'utilisateur n'est pas connecté.
+</pre>
+<p>Ce <code>pending_token</code> doit être renvoyé (en header <code>Authorization: Bearer</code>, <b>pas</b> en query) à <code>/login/2fa/verify</code> avec le code TOTP pour obtenir les vrais tokens.</p>
 
-**Erreurs :**
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td>mauvais mot de passe ou email inconnu (même message pour les deux, pour ne pas révéler quels emails existent)</td><td><code>{"detail": "Invalid credentials"}</code></td></tr>
+</table>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | mauvais mot de passe ou email inconnu | `{"detail": "Invalid credentials"}` |
+<hr/>
 
-Le message est identique dans les deux cas (email inconnu / mauvais mot de passe) : le serveur ne permet pas de distinguer les deux, pour ne pas révéler quels emails sont enregistrés.
+<h3><code>POST /login/2fa/verify</code> — valider le second facteur au login</h3>
 
----
+<p>Deuxième étape du login pour les comptes protégés par 2FA — que la première étape ait été <code>/login</code> (mot de passe) ou le callback Google (§5).</p>
 
-### `POST /login/2fa/verify` — valider le second facteur au login
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;pending_token&gt;</pre>
 
-Deuxième étape du login pour les comptes protégés par 2FA.
+<p><b>Body</b> (JSON) :</p>
+<pre>{ "code": "482913" }</pre>
 
-**Headers requis :**
-```
-Authorization: Bearer <pending_token>
-```
-(le `pending_token` reçu de `/login`, **pas** l'access token)
+<p><b>Réponse succès — <code>200</code></b> : identique à un login classique (<code>tokens</code> + <code>user</code>).</p>
 
-**Body** (JSON) :
-```json
-{
-  "code": "482913"
-}
-```
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td>code TOTP invalide</td><td><code>{"detail": "Invalid code"}</code></td></tr>
+  <tr><td><code>401</code></td><td><code>pending_token</code> absent, invalide ou expiré</td><td><code>{"detail": "Invalid token"}</code> / <code>{"detail": "Token expired"}</code></td></tr>
+  <tr><td><code>401</code></td><td>user du <code>pending_token</code> introuvable</td><td><code>{"detail": "User not found"}</code></td></tr>
+</table>
 
-**Réponse succès — `200`** : identique à un login classique (`tokens` + `user`) :
-```json
-{
-  "tokens": {
-    "access_token": "eyJhbGciOi...",
-    "refresh_token": "El1R_Kq5Y...",
-    "token_type": "bearer"
-  },
-  "user": {
-    "id": 1,
-    "first_name": "Ada",
-    "last_name": "Lovelace",
-    "email": "ada@example.com",
-    "location": null,
-    "avatar_id": 1,
-    "is_2fa_enabled": true
-  }
-}
-```
+<hr/>
 
-**Erreurs :**
+<h3><code>GET /me</code> — profil de l'utilisateur connecté</h3>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | code TOTP invalide | `{"detail": "Invalid code"}` |
-| `401` | `pending_token` absent, invalide ou expiré | `{"detail": "Invalid token"}` / `{"detail": "Token expired"}` |
-| `401` | user du `pending_token` introuvable | `{"detail": "User not found"}` |
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
 
----
-
-### `GET /me` — profil de l'utilisateur connecté
-
-**Headers requis :**
-```
-Authorization: Bearer <access_token>
-```
-Pas de body.
-
-**Réponse succès — `200`** :
-```json
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
 {
   "id": 1,
   "first_name": "Ada",
@@ -223,190 +221,294 @@ Pas de body.
   "avatar_id": 1,
   "is_2fa_enabled": false
 }
-```
+</pre>
 
-**Erreurs :**
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td>header <code>Authorization</code> absent</td><td><code>{"detail":"Not authenticated"}</code></td></tr>
+  <tr><td><code>401</code></td><td>token invalide (signature fausse, malformé)</td><td><code>{"detail":"Invalid token"}</code></td></tr>
+  <tr><td><code>401</code></td><td>token expiré</td><td><code>{"detail":"Token expired"}</code></td></tr>
+</table>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | header `Authorization` absent | `{"detail":"Not authenticated"}` |
-| `401` | token invalide (signature fausse, malformé) | `{"detail":"Invalid token"}` |
-| `401` | token expiré | `{"detail":"Token expired"}` |
+<hr/>
 
----
+<h3><code>POST /2fa/enable</code> — démarrer l'activation de la 2FA</h3>
 
-### `POST /2fa/enable` — démarrer l'activation de la 2FA
+<p>Génère un secret TOTP pour l'utilisateur connecté. <b>La 2FA n'est pas encore active</b> à ce stade : il faut confirmer avec <code>/2fa/enable/verify</code>.</p>
 
-Génère un secret TOTP pour l'utilisateur connecté et renvoie de quoi configurer une application d'authentification. **La 2FA n'est pas encore active** à ce stade : il faut confirmer avec `/2fa/enable/verify`.
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
 
-**Headers requis :**
-```
-Authorization: Bearer <access_token>
-```
-Pas de body.
-
-**Réponse succès — `200`** :
-```json
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
 {
   "secret": "JBSWY3DPEHPK3PXP",
   "otpauth_uri": "otpauth://totp/Keepr:ada@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Keepr"
 }
-```
-- `secret` : la chaîne à saisir manuellement dans l'application d'authentification.
-- `otpauth_uri` : l'URI à encoder en **QR code côté client**. Le service ne génère pas d'image — le frontend transforme cette chaîne en QR (librairie JS de type `qrcode`).
+</pre>
+<ul>
+  <li><code>secret</code> : la chaîne à saisir manuellement dans l'application d'authentification.</li>
+  <li><code>otpauth_uri</code> : l'URI à encoder en <b>QR code côté client</b>. Le service ne génère pas d'image.</li>
+</ul>
 
-**Erreurs :**
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>409</code></td><td>la 2FA est déjà active sur ce compte</td><td><code>{"detail": "2FA already enabled"}</code></td></tr>
+</table>
 
-| Code | Quand | Body |
-|---|---|---|
-| `409` | la 2FA est déjà active sur ce compte | `{"detail": "2FA already enabled"}` |
+<hr/>
 
----
+<h3><code>POST /2fa/enable/verify</code> — confirmer l'activation de la 2FA</h3>
 
-### `POST /2fa/enable/verify` — confirmer l'activation de la 2FA
+<p>Confirme que l'application d'authentification est bien configurée. C'est seulement ici que <code>is_2fa_enabled</code> passe à <code>true</code>.</p>
 
-Confirme que l'application d'authentification est bien configurée en validant un premier code. C'est seulement ici que `is_2fa_enabled` passe à `True`.
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
 
-**Headers requis :**
-```
-Authorization: Bearer <access_token>
-```
+<p><b>Body</b> (JSON) :</p>
+<pre>{ "code": "482913" }</pre>
 
-**Body** (JSON) :
-```json
-{
-  "code": "482913"
-}
-```
+<p><b>Réponse succès — <code>200</code></b>, body vide (<code>null</code>).</p>
 
-**Réponse succès — `200`**, body vide (`null`) : la 2FA est désormais active sur le compte.
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td>code TOTP invalide</td><td><code>{"detail": "Invalid code"}</code></td></tr>
+  <tr><td><code>401</code></td><td>2FA non configurée (aucun secret en attente)</td><td><code>{"detail": "2FA not configured"}</code></td></tr>
+</table>
 
-**Erreurs :**
+<hr/>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | code TOTP invalide | `{"detail": "Invalid code"}` |
-| `401` | 2FA non configurée (aucun secret en attente) | `{"detail": "2FA not configured"}` |
+<h3><code>POST /2fa/disable</code> — désactiver la 2FA</h3>
 
----
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
 
-### `POST /2fa/disable` — désactiver la 2FA
+<p><b>Réponse succès — <code>200</code></b> : le <code>UserRead</code> à jour (<code>is_2fa_enabled</code> repassé à <code>false</code>).</p>
 
-Désactive la 2FA pour l'utilisateur connecté.
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td>2FA non active sur ce compte</td><td><code>{"detail": "2FA not configured"}</code></td></tr>
+</table>
 
-**Headers requis :**
-```
-Authorization: Bearer <access_token>
-```
-Pas de body.
+<hr/>
 
-**Réponse succès — `200`** : le `UserRead` à jour (`is_2fa_enabled` repassé à `false`).
+<h3><code>PATCH /update</code> — mettre à jour le profil</h3>
 
-**Erreurs :**
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | 2FA non active sur ce compte | `{"detail": "2FA not configured"}` |
-
----
-
-### `PATCH /update` — mettre à jour le profil
-
-Met à jour le `location` et l'`avatar_id` de l'utilisateur connecté.
-
-**Headers requis :**
-```
-Authorization: Bearer <access_token>
-```
-
-**Body** (JSON) :
-```json
+<p><b>Body</b> (JSON) :</p>
+<pre>
 {
   "location": "Paris",
   "avatar_id": 3
 }
-```
-`location` et `avatar_id` sont **tous les deux obligatoires** : il n'y a pas de mise à jour partielle d'un seul champ.
+</pre>
+<p><code>location</code> et <code>avatar_id</code> sont <b>tous les deux obligatoires</b> : pas de mise à jour partielle d'un seul champ.</p>
 
-**Réponse succès — `200`** : le `UserRead` à jour.
+<p><b>Réponse succès — <code>200</code></b> : le <code>UserRead</code> à jour.</p>
 
----
+<hr/>
 
-### `POST /refresh` — renouveler l'access token
+<h3><code>POST /refresh</code> — renouveler l'access token</h3>
 
-`refresh_token` est un **paramètre de requête**, pas un body JSON :
-```
-POST /refresh?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY
-```
+<p><code>refresh_token</code> est un <b>paramètre de requête</b>, pas un body JSON :</p>
+<pre>POST /refresh?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY</pre>
 
-**Réponse succès — `200`** :
-```json
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
 {
   "access_token": "nouveau-token...",
   "refresh_token": "nouveau-refresh-token...",
   "token_type": "bearer"
 }
-```
-Les deux tokens précédemment stockés côté client doivent être remplacés par ceux-ci — l'ancien `refresh_token` est invalidé côté serveur dès cet appel.
+</pre>
+<p>Les deux tokens précédemment stockés côté client doivent être remplacés — l'ancien <code>refresh_token</code> est invalidé côté serveur dès cet appel.</p>
 
-**Erreurs :**
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td><code>refresh_token</code> invalide, déjà utilisé, ou inconnu</td><td><code>{"detail": "Invalid token"}</code></td></tr>
+  <tr><td><code>401</code></td><td><code>refresh_token</code> expiré (plus de 7 jours)</td><td><code>{"detail": "Token expired"}</code></td></tr>
+</table>
 
-| Code | Quand | Body |
-|---|---|---|
-| `401` | `refresh_token` invalide, déjà utilisé, ou inconnu | `{"detail": "Invalid token"}` |
-| `401` | `refresh_token` expiré (plus de 7 jours) | `{"detail": "Token expired"}` |
+<hr/>
 
----
+<h3><code>POST /logout</code> — déconnexion</h3>
 
-### `POST /logout` — déconnexion
+<p><code>refresh_token</code> en paramètre de requête, comme pour <code>refresh</code> :</p>
+<pre>POST /logout?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY</pre>
 
-`refresh_token` en paramètre de requête, comme pour `refresh` :
-```
-POST /logout?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY
-```
+<p><b>Réponse succès — <code>200</code></b>, body vide (<code>null</code>). La réponse est <code>200</code> que le token existait ou non côté serveur — elle ne renseigne jamais sur ce point.</p>
 
-**Réponse succès — `200`**, body vide (`null`). Le `refresh_token` est supprimé côté serveur. La réponse est `200` que le token existait ou non côté serveur — elle ne renseigne jamais sur ce point.
+<hr/>
 
----
+<h2 id="routes-google">5. Routes — connexion Google</h2>
 
-## 5. Les schémas de données
+<p>Contrairement aux routes précédentes, ce flow <b>ne se résume pas à des appels <code>fetch</code> classiques</b> : il passe par de vraies redirections de navigateur, parce que Google lui-même redirige l'utilisateur en dehors de l'application.</p>
 
-- **`UserCreate`** *(entrée de `/signup`)* : `first_name`, `last_name`, `email`, `password`.
-- **`UserLogin`** *(entrée de `/login`)* : `email`, `password`.
-- **`UserUpdate`** *(entrée de `/update`)* : `location`, `avatar_id` (les deux obligatoires).
-- **`TwoFactorVerify`** *(entrée de `/login/2fa/verify` et `/2fa/enable/verify`)* : `code`.
-- **`UserRead`** *(sortie, dans `/me`, `/update`, `/2fa/disable` et dans `user` de `signup`/`login`/`login/2fa/verify`)* : `id`, `first_name`, `last_name`, `email`, `location` (string ou `null`), `avatar_id` (int), `is_2fa_enabled` (bool). Ne contient jamais le mot de passe, son hash, ni le secret 2FA.
-- **`TokenResponse`** *(sortie de `/refresh`, et dans `tokens` de `signup`/`login`/`login/2fa/verify`)* : `access_token`, `refresh_token`, `token_type` (toujours `"bearer"`).
-- **`LoginResponse`** *(sortie de `/signup`, `/login` sans 2FA, et `/login/2fa/verify`)* : `tokens: TokenResponse` + `user: UserRead`.
-- **`TwoFactorRequired`** *(sortie de `/login` quand la 2FA est active)* : `pending_token`.
-- **`TwoFactorCredentials`** *(sortie de `/2fa/enable`)* : `secret`, `otpauth_uri`.
+<pre>
+1. GET /oauth/google/login
+   → { authorization_url: "https://accounts.google.com/..." }
+   → le frontend fait lui-même window.location.href = authorization_url
 
----
+2. l'utilisateur se connecte / consent sur google.com
+   → le service auth n'est pas impliqué à cette étape
 
-## 6. Table récapitulative
+3. Google redirige le navigateur vers GET /oauth/google/callback
+   → le service auth résout le compte (déjà lié, à lier, ou nouveau)
+   → il redirige À SON TOUR le navigateur vers le frontend :
 
-| Méthode | Route | Auth requise | Body/Query | Réponse succès |
-|---|---|---|---|---|
-| `POST` | `/signup` | non | body JSON (`UserCreate`) | `200` `LoginResponse` |
-| `POST` | `/login` | non | body JSON (`UserLogin`) | `200` `LoginResponse` (sans 2FA) ou `TwoFactorRequired` (avec 2FA) |
-| `POST` | `/login/2fa/verify` | `Bearer <pending_token>` | body JSON (`TwoFactorVerify`) | `200` `LoginResponse` |
-| `GET` | `/me` | `Bearer <access_token>` | — | `200` `UserRead` |
-| `POST` | `/2fa/enable` | `Bearer <access_token>` | — | `200` `TwoFactorCredentials` |
-| `POST` | `/2fa/enable/verify` | `Bearer <access_token>` | body JSON (`TwoFactorVerify`) | `200` `null` |
-| `POST` | `/2fa/disable` | `Bearer <access_token>` | — | `200` `UserRead` |
-| `PATCH` | `/update` | `Bearer <access_token>` | body JSON (`UserUpdate`) | `200` `UserRead` |
-| `POST` | `/refresh` | non (le refresh token fait foi) | query `?refresh_token=...` | `200` `TokenResponse` |
-| `POST` | `/logout` | non (le refresh token fait foi) | query `?refresh_token=...` | `200` `null` |
+   SI 2FA active sur ce compte :
+     {FRONTEND_URL}/oauth/callback?pending_token=...
+     → traiter EXACTEMENT comme l'étape 2 du flow 2FA classique (§4),
+       en appelant /login/2fa/verify avec ce pending_token
 
----
+   SINON :
+     {FRONTEND_URL}/oauth/callback?exchange_code=...
+     → le frontend lit ce paramètre dans l'URL et appelle :
 
-## 7. Points d'attention
+4. POST /oauth/exchange { exchange_code }
+   → { tokens: { access_token, refresh_token }, user }
+   → identique à un login classique réussi, à partir d'ici
+</pre>
 
-- Le flow de login **dépend de l'état 2FA** du compte : sans 2FA, `/login` renvoie directement les tokens ; avec 2FA, il renvoie un `pending_token` à valider via `/login/2fa/verify`. Le client doit gérer les deux cas (tester la présence de `pending_token` vs `tokens` dans la réponse).
-- Le champ `is_2fa_enabled` est désormais **exposé dans `UserRead`** (utile pour que le front sache s'il doit afficher le flow 2FA).
-- L'activation de la 2FA se fait en **deux temps** (`/2fa/enable` puis `/2fa/enable/verify`) : le secret est généré à la première étape mais la 2FA n'est active qu'après confirmation d'un code, pour éviter de verrouiller un utilisateur dont l'application d'authentification serait mal configurée.
-- Le service **ne génère pas d'image de QR code** : il renvoie l'`otpauth_uri`, à encoder en QR côté client.
-- Aucune route OAuth (Google/42) n'existe.
-- Aucun rate limiting ni lockout sur `/login`.
-- Aucune configuration CORS explicite sur le service — passer par la gateway (`/api/auth/...`) pour éviter les erreurs CORS dans le navigateur.
-- Les durées de tokens sont désormais pilotées par les variables d'environnement `ACCESS_TOKEN_EXPIRE_MINUTES` (défaut 15 min), `REFRESH_TOKEN_EXPIRE_DAYS` (défaut 7 jours) et `TEMPORARY_TOKEN_EXPIRE_MINUTES` (durée du `pending_token`, défaut ~5 min). Elles sont bien prises en compte par le service.
+<p><b>Ce que le frontend doit construire</b> : une page/route <code>{FRONTEND_URL}/oauth/callback</code> qui lit les query params de l'URL :</p>
+<pre>
+const params = new URLSearchParams(window.location.search);
+const pendingToken = params.get("pending_token");
+const exchangeCode = params.get("exchange_code");
+</pre>
+<p>— pas besoin de décoder quoi que ce soit, la présence de l'un ou l'autre paramètre suffit à savoir quoi faire ensuite.</p>
+
+<h3><code>GET /oauth/google/login</code> — démarrer la connexion Google</h3>
+
+<p>Pas d'authentification, pas de body.</p>
+
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
+{
+  "authorization_url": "https://accounts.google.com/o/oauth2/auth?client_id=...&redirect_uri=...&state=..."
+}
+</pre>
+<p>Le frontend doit faire naviguer le navigateur vers cette URL (<code>window.location.href = ...</code>), pas juste afficher la réponse.</p>
+
+<hr/>
+
+<h3><code>GET /oauth/google/callback</code> — jamais appelée directement par le frontend</h3>
+
+<p>Cette route est le <code>redirect_uri</code> enregistré côté Google — elle n'est atteinte que par la redirection du navigateur suite au consentement Google, jamais par un <code>fetch</code> du frontend.</p>
+
+<p><b>Réponse</b> : une redirection (<code>307</code>) vers <code>{FRONTEND_URL}/oauth/callback?pending_token=...</code> ou <code>?exchange_code=...</code>, selon que la 2FA est active ou non sur le compte résolu.</p>
+
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie posé par <code>/oauth/google/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
+  <tr><td><code>400</code></td><td>Google refuse le <code>code</code> (expiré, déjà utilisé, invalide)</td><td><code>{"detail": "Google authentication failed"}</code></td></tr>
+</table>
+
+<hr/>
+
+<h3><code>POST /oauth/exchange</code> — finaliser la connexion Google</h3>
+
+<p><b>Body</b> (JSON) :</p>
+<pre>{ "exchange_code": "eyJhbGciOi...oauth_exchange..." }</pre>
+<p>Le <code>exchange_code</code> reçu en query param sur <code>{FRONTEND_URL}/oauth/callback</code>.</p>
+
+<p><b>Réponse succès — <code>200</code></b> : identique à un login classique réussi (<code>tokens</code> + <code>user</code>).</p>
+
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td><code>exchange_code</code> invalide, mal formé, ou de mauvais type</td><td><code>{"detail": "Invalid token"}</code></td></tr>
+  <tr><td><code>401</code></td><td><code>exchange_code</code> expiré (~30s)</td><td><code>{"detail": "Token expired"}</code></td></tr>
+  <tr><td><code>401</code></td><td>user introuvable</td><td><code>{"detail": "User not found"}</code></td></tr>
+</table>
+
+<hr/>
+
+<h2 id="lookup">6. Route — recherche par email</h2>
+
+<h3><code>GET /users/by-email</code> — retrouver un utilisateur par email</h3>
+
+<p>Pensée pour un usage inter-services (org, core) via la dépendance d'auth partagée, plutôt que pour un appel direct depuis l'UI — mais accessible à quiconque possède un <code>access_token</code> valide.</p>
+
+<p><b>Headers requis :</b></p>
+<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+
+<p><b>Query param :</b></p>
+<pre>GET /users/by-email?email=ada@example.com</pre>
+
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
+{
+  "id": 1,
+  "email": "ada@example.com",
+  "first_name": "Ada",
+  "last_name": "Lovelace"
+}
+</pre>
+
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>404</code></td><td>aucun utilisateur avec cet email</td><td><code>{"detail": "No user with this email"}</code></td></tr>
+  <tr><td><code>401</code></td><td>pas d'<code>access_token</code> valide</td><td><code>{"detail":"Invalid token"}</code> / <code>{"detail":"Not authenticated"}</code></td></tr>
+</table>
+
+<hr/>
+
+<h2 id="schemas">7. Schémas de données</h2>
+
+<table>
+  <tr><th>Schéma</th><th>Champs</th><th>Utilisé dans</th></tr>
+  <tr><td><code>UserCreate</code></td><td><code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>password</code></td><td>entrée <code>/signup</code></td></tr>
+  <tr><td><code>UserLogin</code></td><td><code>email</code>, <code>password</code></td><td>entrée <code>/login</code></td></tr>
+  <tr><td><code>UserUpdate</code></td><td><code>location</code>, <code>avatar_id</code> (les deux obligatoires)</td><td>entrée <code>/update</code></td></tr>
+  <tr><td><code>TwoFactorVerify</code></td><td><code>code</code></td><td>entrée <code>/login/2fa/verify</code>, <code>/2fa/enable/verify</code></td></tr>
+  <tr><td><code>OAuthExchange</code></td><td><code>exchange_code</code></td><td>entrée <code>/oauth/exchange</code></td></tr>
+  <tr><td><code>UserRead</code></td><td><code>id</code>, <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>location</code> (ou <code>null</code>), <code>avatar_id</code>, <code>is_2fa_enabled</code></td><td>sortie <code>/me</code>, <code>/update</code>, <code>/2fa/disable</code>, et <code>user</code> de <code>signup</code>/<code>login</code>/<code>login/2fa/verify</code>/<code>oauth/exchange</code>. Ne contient jamais mot de passe, hash, ou secret 2FA.</td></tr>
+  <tr><td><code>UserLookup</code></td><td><code>id</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code></td><td>sortie <code>/users/by-email</code></td></tr>
+  <tr><td><code>TokenResponse</code></td><td><code>access_token</code>, <code>refresh_token</code>, <code>token_type</code> (toujours <code>"bearer"</code>)</td><td>sortie <code>/refresh</code>, et <code>tokens</code> de <code>signup</code>/<code>login</code>/<code>login/2fa/verify</code>/<code>oauth/exchange</code></td></tr>
+  <tr><td><code>LoginResponse</code></td><td><code>tokens: TokenResponse</code> + <code>user: UserRead</code></td><td>sortie <code>/signup</code>, <code>/login</code> (sans 2FA), <code>/login/2fa/verify</code>, <code>/oauth/exchange</code></td></tr>
+  <tr><td><code>TwoFactorRequired</code></td><td><code>pending_token</code></td><td>sortie <code>/login</code> et callback Google, quand la 2FA est active</td></tr>
+  <tr><td><code>TwoFactorCredentials</code></td><td><code>secret</code>, <code>otpauth_uri</code></td><td>sortie <code>/2fa/enable</code></td></tr>
+  <tr><td><code>OAuthRedirect</code></td><td><code>authorization_url</code></td><td>sortie <code>/oauth/google/login</code></td></tr>
+</table>
+
+<hr/>
+
+<h2 id="recap">8. Table récapitulative</h2>
+
+<table>
+  <tr><th>Méthode</th><th>Route</th><th>Auth requise</th><th>Body/Query</th><th>Réponse succès</th></tr>
+  <tr><td><code>POST</code></td><td><code>/signup</code></td><td>non</td><td>body (<code>UserCreate</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/login</code></td><td>non</td><td>body (<code>UserLogin</code>)</td><td><code>200</code> <code>LoginResponse</code> ou <code>TwoFactorRequired</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/login/2fa/verify</code></td><td><code>Bearer &lt;pending_token&gt;</code></td><td>body (<code>TwoFactorVerify</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
+  <tr><td><code>GET</code></td><td><code>/me</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>UserRead</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/2fa/enable</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>TwoFactorCredentials</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/2fa/enable/verify</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>body (<code>TwoFactorVerify</code>)</td><td><code>200</code> <code>null</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/2fa/disable</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>UserRead</code></td></tr>
+  <tr><td><code>PATCH</code></td><td><code>/update</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>body (<code>UserUpdate</code>)</td><td><code>200</code> <code>UserRead</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/refresh</code></td><td>non (refresh token fait foi)</td><td>query <code>?refresh_token=...</code></td><td><code>200</code> <code>TokenResponse</code></td></tr>
+  <tr><td><code>POST</code></td><td><code>/logout</code></td><td>non (refresh token fait foi)</td><td>query <code>?refresh_token=...</code></td><td><code>200</code> <code>null</code></td></tr>
+  <tr><td><code>GET</code></td><td><code>/oauth/google/login</code></td><td>non</td><td>—</td><td><code>200</code> <code>OAuthRedirect</code></td></tr>
+  <tr><td><code>GET</code></td><td><code>/oauth/google/callback</code></td><td>non (appelée par Google)</td><td>query <code>?code=...&amp;state=...</code></td><td>redirection vers le frontend</td></tr>
+  <tr><td><code>POST</code></td><td><code>/oauth/exchange</code></td><td>non (exchange_code fait foi)</td><td>body (<code>OAuthExchange</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
+  <tr><td><code>GET</code></td><td><code>/users/by-email</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>query <code>?email=...</code></td><td><code>200</code> <code>UserLookup</code></td></tr>
+</table>
+
+<hr/>
+
+<h2 id="attention">9. Points d'attention</h2>
+
+<ul>
+  <li>Le flow de login <b>dépend de l'état 2FA</b> du compte, que la connexion se fasse par mot de passe ou par Google : le client doit toujours gérer les deux formes de réponse possibles.</li>
+  <li>Le champ <code>is_2fa_enabled</code> est exposé dans <code>UserRead</code>.</li>
+  <li>L'activation de la 2FA se fait en <b>deux temps</b> (<code>/2fa/enable</code> puis <code>/2fa/enable/verify</code>) : le secret est généré à la première étape mais la 2FA n'est active qu'après confirmation d'un code, pour éviter de verrouiller un utilisateur dont l'application d'authentification serait mal configurée.</li>
+  <li>Le service <b>ne génère pas d'image de QR code</b> : il renvoie l'<code>otpauth_uri</code>, à encoder en QR côté client.</li>
+  <li>Seul Google est implémenté ; aucune route OAuth 42 n'existe pour l'instant.</li>
+  <li>Aucun rate limiting ni lockout sur <code>/login</code>.</li>
+  <li>Aucune configuration CORS explicite sur le service — passer par la gateway (<code>/api/auth/...</code>) pour éviter les erreurs CORS dans le navigateur.</li>
+  <li>Les durées de tokens sont pilotées par les variables d'environnement <code>ACCESS_TOKEN_EXPIRE_MINUTES</code> (défaut 15 min), <code>REFRESH_TOKEN_EXPIRE_DAYS</code> (défaut 7 jours), <code>TEMPORARY_TOKEN_EXPIRE_MINUTES</code> (durée du <code>pending_token</code>, défaut ~5 min) et <code>OAUTH_EXCHANGE_EXPIRE_SECONDS</code> (durée de l'<code>exchange_code</code>, défaut ~30s).</li>
+  <li><code>FRONTEND_URL</code> détermine où le callback Google redirige le navigateur — à synchroniser avec l'équipe frontend si son URL change.</li>
+</ul>
+
+<p align="center"><a href="#taper">⬆ retour en haut</a></p>

@@ -7,6 +7,7 @@ from app.config import (
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     TEMPORARY_TOKEN_EXPIRE_MINUTES,
+    OAUTH_EXCHANGE_EXPIRE_SECONDS,
 )
 
 
@@ -39,5 +40,17 @@ def create_temporary_token(user_id: int) -> str:
         "iat": now,
         "exp": now + timedelta(minutes=TEMPORARY_TOKEN_EXPIRE_MINUTES),
         "type": "2fa_pending",
+    }
+    return jwt.encode(payload=payload, key=SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_oauth_exchange_token(user_id: int) -> str:
+    now = datetime.now(timezone.utc)
+
+    payload = {
+        "sub": str(user_id),
+        "iat": now,
+        "exp": now + timedelta(seconds=OAUTH_EXCHANGE_EXPIRE_SECONDS),
+        "type": "oauth_exchange",
     }
     return jwt.encode(payload=payload, key=SECRET_KEY, algorithm=ALGORITHM)

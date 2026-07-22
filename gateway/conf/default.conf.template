@@ -28,6 +28,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
+        location /api/org/internal/ {
+        return 404;
+    }
+
     location /api/org/ {
         proxy_pass http://org:8000/;
         proxy_set_header Host $host;
@@ -53,10 +57,19 @@ server {
         proxy_set_header Connection $connection_upgrade;
     }
 
+    location ~ ^/(node_modules/|@vite/|@react-refresh|@fs/|src/|.vite/) {
+        modsecurity off;
+        proxy_pass http://frontend-dev:5173;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+
     location / {
         proxy_pass http://frontend-dev:5173;
         proxy_set_header Host $host;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
     }
+
 }
