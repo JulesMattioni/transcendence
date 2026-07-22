@@ -3,6 +3,11 @@ from shared.base_service import BaseService
 from app.repositories.organisation_repository import OrganisationRepository
 from app.schemas.organisation import OrganisationRead, OrganisationUpdate
 from app.repositories import OrganisationMemberRepository
+from app.exceptions import (
+    OrgnisationCreationError,
+    UserNotInOrganisationError,
+    OrganisationNotFoundError,
+)
 
 
 class OrganisationService(BaseService):
@@ -17,6 +22,8 @@ class OrganisationService(BaseService):
     async def create_organisation(self, org_name: str, user_id: int
                                   ) -> OrganisationRead:
         new_org = await self.repository.create_organisation(name_org=org_name)
+        if not new_org:
+            raise OrgnisationCreationError()
 
         await self.member_repo.create_user_from_org(
             org_id=new_org.id,
@@ -26,45 +33,53 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
 
-    async def creatuser_from_org(self, org_id: int,
-                                 user_id: int,
-                                 role_id: int):
+    async def create_user_from_org(self, org_id: int,
+                                   user_id: int,
+                                   role_id: int):
         add_member = await self.member_repo.create_user_from_org(
             org_id=org_id,
             user_id=user_id,
             role_id=role_id
         )
+        if not add_member:
+            raise UserNotInOrganisationError()
+
         await self.session.commit()
         return add_member
 
     async def delete_user_from_org(self, org_id: int, user_id: int):
         delete_user = await self.member_repo.delete_user_from_org(
             org_id, user_id)
-        if delete_user:
-            await self.session.commit()
+        if not delete_user:
+            raise UserNotInOrganisationError()
+
+        await self.session.commit()
         return delete_user
 
-    async def get_org_by_id(self, org_id: int) -> OrganisationRead | None:
+    async def get_org_by_id(self, org_id: int) -> OrganisationRead:
         organisation = await self.repository.get_by_id(org_id)
-        if organisation:
-            return OrganisationRead.model_validate(organisation)
-        return None
+        if not organisation:
+            raise OrganisationNotFoundError()
 
-    async def update_organisation(self, org_id: str,
+        return organisation
+
+    async def update_organisation(self, org_id: int,
                                   update_org: OrganisationUpdate
                                   ) -> OrganisationRead | None:
         update = await self.repository.update(org_id, update_org)
         if not update:
-            return None
+            raise OrganisationNotFoundError()
+
         await self.session.commit()
         return OrganisationRead.model_validate(update)
 
-    async def delete_organisation(self, org_id: int) -> bool:
+    async def delete_organisation(self, org_id: int):
         organisation = await self.repository.delete_org(org_id)
-        if organisation:
-            await self.session.commit()
-            return True
-        return False
+        if not organisation:
+            raise OrganisationNotFoundError()
+
+        await self.session.commit()
+        return organisation
 
     async def update_perm_from_organisation(self, org_id: int,
                                             user_id: int,
@@ -72,10 +87,11 @@ class OrganisationService(BaseService):
         new_role = await self.member_repo.update_role(org_id,
                                                       user_id,
                                                       new_role_id)
-        if new_role:
-            await self.session.commit()
-            return True
-        return False
+        if not new_role:
+            raise UserNotInOrganisationError()
+
+        await self.session.commit()
+        return new_role
 
     async def get_user_organisation_endpoint(self, user_id: int):
         return await self.member_repo.get_user_organisation_format(user_id)

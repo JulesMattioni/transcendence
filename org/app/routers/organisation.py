@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, status, Depends
 from app.schemas.organisation import (
     OrganisationCreate,
     OrganisationRead,
@@ -19,21 +19,17 @@ async def create_organisation(data: OrganisationCreate,
                               service: OrganisationService = Depends(
                                   get_organisation_service)):
     new_org = await service.create_organisation(data.name)
-    if not new_org:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Failed to create organisation")
     return new_org
 
 
 @router.post("/{org_id}/users/{user_id}", status_code=status.HTTP_201_CREATED)
-async def create_user_from_organisation(org_id: int, user_id: int,
+async def create_user_from_organisation(org_id: int,
+                                        user_id: int,
+                                        role_id: int,
                                         service: OrganisationService
                                         = Depends(get_organisation_service),
                                         _=Depends(required_admin_role)):
-    create_user = await service.creatuser_from_org(org_id, user_id)
-    if not create_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Create user failed")
+    create_user = await service.create_user_from_org(org_id, user_id, role_id)
     return create_user
 
 
@@ -42,9 +38,6 @@ async def get_organisation_by_id(org_id: int,
                                  service: OrganisationService = Depends(
                                      get_organisation_service)):
     organisation = await service.get_org_by_id(org_id)
-    if not organisation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Organisation not found")
     return organisation
 
 
@@ -63,11 +56,7 @@ async def edit_organisation(org_id: int,
                                 get_organisation_service
                             ),
                             _=Depends(required_admin_role)):
-    update = await service.update_organisation(org_id, data_updated)
-    if not update:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Organisation not found")
-    return update
+    return await service.update_organisation(org_id, data_updated)
 
 
 @router.patch("/{org_id}/users/{user_id}")
@@ -78,9 +67,6 @@ async def update_permission_member(org_id: int, user_id: int, new_role: int,
     update_role = await service.update_perm_from_organisation(org_id,
                                                               user_id,
                                                               new_role)
-    if not update_role:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User Not found")
     return update_role
 
 
@@ -91,11 +77,8 @@ async def del_user_from_organisation(org_id: int,
                                      service: OrganisationService
                                      = Depends(get_organisation_service),
                                      _=Depends(required_admin_role)):
-    deleted_user = await service.delete_user_from_org(org_id, user_id)
-    if not deleted_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User not found")
-    return deleted_user
+    await service.delete_user_from_org(org_id, user_id)
+    return None
 
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -104,8 +87,5 @@ async def delete_organisation(
     service: OrganisationService = Depends(get_organisation_service),
     _=Depends(
         required_admin_role)):
-    deleted = await service.delete_organisation(org_id)
-    if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Organisation not found")
-    return deleted
+    await service.delete_organisation(org_id)
+    return None
