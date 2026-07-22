@@ -10,12 +10,11 @@ class OrganisationMemberRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create_user_from_org(self, org_id: int, user_id: int,
-                                   role_id: int) -> OrganisationMember:
+    async def create_user_from_org(
+        self, org_id: int, user_id: int, role_id: int
+    ) -> OrganisationMember:
         new_member = OrganisationMember(
-            org_id=org_id,
-            user_id=user_id,
-            role_id=role_id
+            org_id=org_id, user_id=user_id, role_id=role_id
         )
         self._session.add(new_member)
         await self._session.flush()
@@ -24,7 +23,7 @@ class OrganisationMemberRepository:
     async def delete_user_from_org(self, org_id, user_id: int) -> bool:
         stmt = select(OrganisationMember).where(
             OrganisationMember.user_id == user_id,
-            OrganisationMember.org_id == org_id
+            OrganisationMember.org_id == org_id,
         )
         res = await self._session.execute(stmt)
         member = res.scalar_one_or_none()
@@ -37,7 +36,7 @@ class OrganisationMemberRepository:
     async def get_user_perm(self, user_id: int, org_id: int) -> Role | None:
         stmt = select(OrganisationMember.role_id).where(
             OrganisationMember.user_id == user_id,
-            OrganisationMember.org_id == org_id
+            OrganisationMember.org_id == org_id,
         )
         res = await self._session.execute(stmt)
         role_id = res.scalar_one_or_none()
@@ -45,14 +44,12 @@ class OrganisationMemberRepository:
             return Role(role_id)
         return None
 
-    async def update_role(self, org_id: int,
-                          user_id: int,
-                          new_role_id: int) -> bool:
-        stmt = (
-            select(OrganisationMember).where(
-                OrganisationMember.org_id == org_id,
-                OrganisationMember.user_id == user_id
-            )
+    async def update_role(
+        self, org_id: int, user_id: int, new_role_id: int
+    ) -> bool:
+        stmt = select(OrganisationMember).where(
+            OrganisationMember.org_id == org_id,
+            OrganisationMember.user_id == user_id,
         )
         res = await self._session.execute(stmt)
         new_role = res.scalar_one_or_none()
@@ -62,23 +59,28 @@ class OrganisationMemberRepository:
             return True
         return False
 
-    async def get_user_organisation_format(self, user_id: int
-                                           ) -> Dict[str, Any]:
+    async def get_user_organisation_format(
+        self, user_id: int
+    ) -> Dict[str, Any]:
         stmt = (
             select(Organisation, OrganisationMember.role_id)
-            .join(OrganisationMember,
-                  Organisation.id == OrganisationMember.org_id)
+            .join(
+                OrganisationMember,
+                Organisation.id == OrganisationMember.org_id,
+            )
             .where(OrganisationMember.user_id == user_id)
         )
         res = await self._session.execute(stmt)
         org_list = []
         for org, role_id in res.all():
-            org_list.append({
-                "org_id": org.id,
-                "name": org.name,
-                "role": role_id
-            })
-        return {
-            "user_id": user_id,
-            "organisation": org_list
-        }
+            org_list.append(
+                {"org_id": org.id, "name": org.name, "role": role_id}
+            )
+        return {"user_id": user_id, "organisation": org_list}
+
+    async def get_org_members(self, org_id: int) -> list[OrganisationMember]:
+        stmt = select(OrganisationMember).where(
+            OrganisationMember.org_id == org_id
+        )
+        res = await self._session.execute(stmt)
+        return list(res.scalars().all())

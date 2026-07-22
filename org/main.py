@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-from app.routers import health, organisation
+from app.routers import health, organisation, internal
 from app.exceptions import (
     OrganisationNotFoundError,
     OrgnisationCreationError,
@@ -10,6 +10,7 @@ from app.exceptions import (
 app = FastAPI(title="org")
 app.include_router(health.router)
 app.include_router(organisation.router)
+app.include_router(internal.router)
 
 
 @app.exception_handler(OrganisationNotFoundError)
