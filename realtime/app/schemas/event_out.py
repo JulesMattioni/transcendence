@@ -8,11 +8,15 @@ class EventOut(EventIn):
     timestamp: datetime
 
     @classmethod
-    def from_event_in(cls, event: EventIn) -> "EventOut":
+    def from_event_in(
+        cls, event: EventIn, first_name: str, last_name: str
+    ) -> "EventOut":
         return EventOut(
             event_id=str(uuid4()),
             timestamp=datetime.now(timezone.utc),
             event_type=event.event_type,
             user_id=event.user_id,
             file_id=event.file_id,
+            first_name=first_name,
+            last_name=last_name,
         )
