@@ -11,10 +11,21 @@ class OrganisationMemberRepository:
         self._session = session
 
     async def create_user_from_org(
-        self, org_id: int, user_id: int, role_id: int
+        self,
+        org_id: int,
+        user_id: int,
+        role_id: int,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
     ) -> OrganisationMember:
         new_member = OrganisationMember(
-            org_id=org_id, user_id=user_id, role_id=role_id
+            org_id=org_id,
+            user_id=user_id,
+            role_id=role_id,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
         )
         self._session.add(new_member)
         await self._session.flush()

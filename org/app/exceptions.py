@@ -12,3 +12,23 @@ class UserNotInOrganisationError(OrgError):
 
 class OrganisationNotFoundError(OrgError):
     pass
+
+
+class InvitedUserNotFoundError(OrgError):
+    pass
+
+
+class AlreadyMemberError(OrgError):
+    pass
+
+
+class InvitationAlreadyExistsError(OrgError):
+    pass
+
+
+class InvitationNotFoundError(OrgError):
+    pass
+
+
+class AuthServiceUnavailableError(OrgError):
+    pass
