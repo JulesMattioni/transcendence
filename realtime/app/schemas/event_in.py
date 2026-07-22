@@ -1,5 +1,4 @@
-from typing import Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.event_type import EventType
 
