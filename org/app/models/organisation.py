@@ -13,6 +13,9 @@ class OrganisationMember(Base):
     )
     user_id: Mapped[int] = mapped_column(Integer, index=True)
     role_id: Mapped[int] = mapped_column(Integer)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class Organisation(Base):
