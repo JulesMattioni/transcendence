@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.base_service import BaseService
 from app.repositories.organisation_repository import OrganisationRepository
-from app.schemas.organisation import OrganisationRead, OrganisationUpdate
+from app.schemas.organisation import (OrganisationRead,
+                                      OrganisationUpdate,
+                                      OrganisationMemberRead)
 from app.repositories import OrganisationMemberRepository
 from app.exceptions import (
     OrgnisationCreationError,
@@ -95,3 +97,12 @@ class OrganisationService(BaseService):
 
     async def get_user_organisation_endpoint(self, user_id: int):
         return await self.member_repo.get_user_organisation_format(user_id)
+
+    async def organisation_member_read(self,
+                                       org_id: int,
+                                       user_id: int,
+                                       role_id: int
+                                       ) -> OrganisationMemberRead:
+        return await self.member_repo.get_organisation_read(org_id,
+                                                            user_id,
+                                                            role_id)

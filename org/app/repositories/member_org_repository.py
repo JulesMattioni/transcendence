@@ -4,6 +4,7 @@ from app.models.organisation import Organisation
 from sqlalchemy import select
 from app.schemas.roles import Role
 from typing import Dict, Any
+from app.schemas.organisation import OrganisationMemberRead
 
 
 class OrganisationMemberRepository:
@@ -82,3 +83,24 @@ class OrganisationMemberRepository:
             "user_id": user_id,
             "organisation": org_list
         }
+
+    async def get_organisation_read(self, org_id: int,
+                                    user_id: int,
+                                    role_id: int) -> Dict[str, Any]:
+        stmt = (
+            select(Organisation).where(
+                OrganisationMember.org_id == org_id,
+                OrganisationMember.user_id == user_id,
+                OrganisationMember.role_id == role_id
+            )
+        )
+        res = await self._session.execute(stmt)
+        members = res.scalar.all()
+        return [
+            OrganisationMemberRead(
+                org_id=org_id,
+                user_id=user_id,
+                role_id=role_id
+            )
+            for members in members
+        ]

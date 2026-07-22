@@ -51,6 +51,17 @@ async def get_user_organisation_endpoint(user_id: int,
     return await service.get_user_organisation_endpoint(user_id)
 
 
+@router.get("/users/{user_id}/{org_id}")
+async def get_organisation_read(org_id: int, user_id: int, role_id: int,
+                                service: OrganisationService
+                                = Depends(get_organisation_service)):
+    return await service.organisation_member_read(
+        org_id,
+        user_id,
+        role_id
+    )
+
+
 @router.patch("/{org_id}", response_model=OrganisationRead)
 async def edit_organisation(org_id: int,
                             data_updated: OrganisationUpdate,
