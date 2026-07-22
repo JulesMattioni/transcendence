@@ -11,6 +11,7 @@ import Modal from '../../components/Modal'
 import FilePreview from '../../components/FilePreview'
 import MessageContent from '../../components/dashboard/MessageContent'
 import { me, type UserRead } from '../../api/auth'
+import { useOrg } from '../../context/orgContextValue'
 
 
 interface ChatMessage {
@@ -29,6 +30,7 @@ function ChatPage() {
   const [sourceError, setSourceError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [user, setUser] = useState<UserRead | null>(null)
+  const { currentOrg, loading: orgLoading } = useOrg()
 
   useEffect(() => {
     me().then(setUser).catch(() => setUser(null))
@@ -124,84 +126,97 @@ function ChatPage() {
         <Sidebar />
 
         <main className="flex min-h-0 flex-1 flex-col">
-          <div className="flex justify-end px-6 py-3">
-            <ChatMenu
-              activeId={conversationId}
-              onSelect={loadConversation}
-              onDeleted={handleDeleted}
-              onNewChat={newChat}
-              refreshKey={refreshKey}
-            />
-          </div>
-          {/* Chat zone */}
-          <div className="flex-1 space-y-4 overflow-y-auto p-6">
-            {messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="font-serif text-center font-bold text-2xl text-muted lg:text-4xl">
-                  {user ? (
-                    <>
-                      Welcome <span className="text-keepr">{user.first_name}</span>, how can I help you?
-                    </>
-                  ) : (
-                    'Welcome, how can I help you?'
-                  )}
-                </p>
-              </div>
-            ) : (
-              messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={m.role === 'user' ? 'text-right' : 'text-left'}
-                >
-                  <div
-                    className={`inline-block max-w-6xl whitespace-pre-wrap px-4 py-2 text-sm ${
-                      m.role === 'user'
-                        ? 'bg-keepr text-white'
-                        : 'text-black'
-                    }`}
-                  >
-                    <MessageContent
-                      content={m.content}
-                      sources={m.sources}
-                      onOpenSource={openSource}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-
-          {/* Input */}
-          {sourceError && (
-            <p className="px-6 pb-2 text-center text-sm text-red-500">
-              {sourceError}
-            </p>
-          )}
-
-          <div className="p-6 pb-24 lg:pb-6">
-            <div className="mx-auto flex max-w-8xl items-center gap-3 border border-keepr bg-white p-4">
-              <input
-                className="flex-1 bg-transparent font-mono text-sm text-black placeholder:text-subtle focus:outline-none"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask anything..."
-                disabled={streaming}
-              />
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={streaming || input.trim() === ''}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-keepr text-white transition-opacity transition-colors duration-200 hover:bg-blue-700 disabled:opacity-40"
-              >
-                <ArrowUp size={14} strokeWidth={3} />
-              </button>
+          {orgLoading ? (
+            <div className="flex flex-1 items-center justify-center">
+              <p className="text-muted">Loading…</p>
             </div>
-          </div>
+          ) : !currentOrg ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <p className="text-center font-serif text-xl font-bold text-muted">
+                Select or create an organisation to start chatting.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-end px-6 py-3">
+                <ChatMenu
+                  activeId={conversationId}
+                  onSelect={loadConversation}
+                  onDeleted={handleDeleted}
+                  onNewChat={newChat}
+                  refreshKey={refreshKey}
+                />
+              </div>
+              {/* Chat zone */}
+              <div className="flex-1 space-y-4 overflow-y-auto p-6">
+                {messages.length === 0 ? (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="font-serif text-center font-bold text-2xl text-muted lg:text-4xl">
+                      {user ? (
+                        <>
+                          Welcome <span className="text-keepr">{user.first_name}</span>, how can I help you?
+                        </>
+                      ) : (
+                        'Welcome, how can I help you?'
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((m, i) => (
+                    <div
+                      key={i}
+                      className={m.role === 'user' ? 'text-right' : 'text-left'}
+                    >
+                      <div
+                        className={`inline-block max-w-6xl whitespace-pre-wrap px-4 py-2 text-sm ${
+                          m.role === 'user'
+                            ? 'bg-keepr text-white'
+                            : 'text-black'
+                        }`}
+                      >
+                        <MessageContent
+                          content={m.content}
+                          sources={m.sources}
+                          onOpenSource={openSource}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={bottomRef} />
+              </div>
 
+              {/* Input */}
+              {sourceError && (
+                <p className="px-6 pb-2 text-center text-sm text-red-500">
+                  {sourceError}
+                </p>
+              )}
+
+              <div className="p-6 pb-24 lg:pb-6">
+                <div className="mx-auto flex max-w-8xl items-center gap-3 border border-keepr bg-white p-4">
+                  <input
+                    className="flex-1 bg-transparent font-mono text-sm text-black placeholder:text-subtle focus:outline-none"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="Ask anything..."
+                    disabled={streaming}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={streaming || input.trim() === ''}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-keepr text-white transition-opacity transition-colors duration-200 hover:bg-blue-700 disabled:opacity-40"
+                  >
+                    <ArrowUp size={14} strokeWidth={3} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </main>
+
       </div>
       <Modal
         isOpen={fileToView !== null}

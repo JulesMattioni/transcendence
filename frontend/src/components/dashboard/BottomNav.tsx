@@ -1,11 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { navItems } from './NavItems'
+import { useOrg } from '../../context/orgContextValue'
 
 function BottomNav() {
+  const { isAdmin } = useOrg()
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around py-4 lg:hidden">
       <nav className="flex items-center justify-around border border-gray-200 bg-white lg:hidden">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon
           return (
             <NavLink

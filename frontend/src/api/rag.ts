@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import { CURRENT_ORG_ID } from '../config'
+import { requireCurrentOrgId } from './currentOrg'
 
 export interface Source {
   file_id: number
@@ -28,20 +28,23 @@ export interface ConversationDetail extends Conversation {
 }
 
 export function listConversations(): Promise<Conversation[]> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<Conversation[]>(
-    `/rag/conversations?organisation_id=${CURRENT_ORG_ID}`,
+    `/rag/conversations?organisation_id=${orgId}`,
   )
 }
 
 export function getConversation(id: number): Promise<ConversationDetail> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<ConversationDetail>(
-    `/rag/conversations/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    `/rag/conversations/${id}?organisation_id=${orgId}`,
   )
 }
 
 export function deleteConversation(id: number): Promise<void> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<void>(
-    `/rag/conversations/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    `/rag/conversations/${id}?organisation_id=${orgId}`,
     { method: 'DELETE' },
   )
 }
@@ -60,6 +63,7 @@ export async function queryStream(
   handlers: QueryStreamHandlers,
 ): Promise<void> {
   try {
+    const orgId = requireCurrentOrgId()
     const token = localStorage.getItem('access_token')
     const response = await fetch('/api/rag/query/stream', {
       method: 'POST',
@@ -69,7 +73,7 @@ export async function queryStream(
       },
       body: JSON.stringify({
         question,
-        organisation_id: CURRENT_ORG_ID,
+        organisation_id: orgId,
         conversation_id: conversationId,
       }),
     })
