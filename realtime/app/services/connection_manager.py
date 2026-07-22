@@ -8,9 +8,7 @@ from shared.base_service import BaseService
 class User:
     websocket: WebSocket
     connected_at: datetime
-    organisations: list[dict]
-    first_name: str
-    last_name: str
+
 
 
 class ConnectionManager(BaseService):
@@ -30,9 +28,6 @@ class ConnectionManager(BaseService):
         self._users[user_id] = User(
             websocket=websocket,
             connected_at=datetime.now(timezone.utc),
-            organisations=organisations,
-            first_name=first_name,
-            last_name=last_name,
         )
 
     def disconnect(self, user_id: int):

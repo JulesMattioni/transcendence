@@ -24,17 +24,9 @@ async def audit(websocket: WebSocket, token: str) -> None:
     except HTTPException:
         await websocket.close(code=1008)
         return
-    try:
-        user_org = mock_org()  # mock
-    except HTTPException:
-        await websocket.close(code=1008)
-        return
     await manager.connect(
         websocket,
         user["id"],
-        user_org["organisations"],
-        user["first_name"],
-        user["last_name"],
     )
 
     # await dispatcher.add_client(user["id"])
