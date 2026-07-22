@@ -1,7 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.services.connection_manager import manager
 from app.services.get_current_user import get_current_user
-import httpx
 from fastapi import HTTPException
 
 router = APIRouter()
@@ -14,7 +13,8 @@ async def audit(websocket: WebSocket, token: str) -> None:
     except HTTPException:
         await websocket.close(code=1008)
         return
-    await manager.connect(websocket, user.id)
+    print(user, flush=True)
+    await manager.connect(websocket, user["id"])
     try:
         while True:
             message = await websocket.receive_text()

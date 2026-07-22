@@ -1,10 +1,17 @@
-import secrets
 import pyotp
+
+from fastapi import Response
+from urllib.parse import urlencode
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
-from app.config import REFRESH_TOKEN_EXPIRE_DAYS
-from app.models.auth import User
-from app.repositories import UserRepository, TokenRepository
+from app.config import (
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_REDIRECT_URI,
+)
+from app.models.auth import User, OAuthAccount
+from app.repositories import UserRepository, TokenRepository, OAuthRepository
 from app.schemas import (
     LoginResponse,
     UserCreate,
@@ -13,6 +20,7 @@ from app.schemas import (
     UserRead,
     TwoFactorRequired,
     TwoFactorCredentials,
+    OAuthRedirect,
 )
 from app.exceptions import (
     EmailAlreadyExistsError,
@@ -31,6 +39,8 @@ from app.core import (
     create_temporary_token,
     verify_2fa,
     generate_2fa_secret,
+    generate_token,
+    get_google_profile,
 )
 
 
@@ -39,18 +49,20 @@ class AuthService:
         self,
         user_repository: UserRepository,
         token_repository: TokenRepository,
+        oauth_repository: OAuthRepository,
         session: AsyncSession,
     ) -> None:
         self._user_repository = user_repository
         self._token_repository = token_repository
+        self._oauth_repository = oauth_repository
         self._session = session
 
     async def __issue_tokens(self, user: User) -> TokenResponse:
         now = datetime.now(timezone.utc)
-        refresh_token = secrets.token_urlsafe(32)
+        refresh_token = generate_token()
 
         try:
-            await self._token_repository.create_token(
+            await self._token_repository.create(
                 refresh_token,
                 user,
                 now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
@@ -80,10 +92,10 @@ class AuthService:
         try:
 
             user = await self._user_repository.create_user(
-                user_create.first_name,
-                user_create.last_name,
-                user_create.email,
-                hashed_password,
+                first_name=user_create.first_name,
+                last_name=user_create.last_name,
+                email=user_create.email,
+                hashed_password=hashed_password,
             )
 
         except Exception:
@@ -97,7 +109,34 @@ class AuthService:
             user=UserRead.model_validate(user),
         )
 
-    async def login(self, email: str, password: str) -> LoginResponse:
+    def oauth_google_redirect(self, response: Response) -> OAuthRedirect:
+        state = generate_token()
+
+        response.set_cookie(
+            key="oauth_state",
+            value=state,
+            max_age=600,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+
+        params = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+        }
+
+        authorization_url = (
+            "https://accounts.google.com/o/oauth2/auth?" + urlencode(params)
+        )
+        return OAuthRedirect(authorization_url=authorization_url)
+
+    async def login(
+        self, email: str, password: str
+    ) -> LoginResponse | TwoFactorRequired:
         user = await self._user_repository.get_by_email(email)
 
         if user is None or not verify_password(password, user.hashed_password):
@@ -115,8 +154,88 @@ class AuthService:
             user=UserRead.model_validate(user),
         )
 
+    async def oauth_google_login(
+        self, code: str
+    ) -> LoginResponse | TwoFactorRequired:
+        profile_response = await get_google_profile(code=code)
+
+        oauth_account = await self._oauth_repository.get_by_provider(
+            provider="google", provider_user_id=profile_response["sub"]
+        )
+
+        if oauth_account:
+            if oauth_account.user.is_2fa_enabled:
+                return TwoFactorRequired(
+                    pending_token=create_temporary_token(
+                        user_id=oauth_account.user.id
+                    )
+                )
+
+            tokens = await self.__issue_tokens(user=oauth_account.user)
+            return LoginResponse(
+                tokens=tokens, user=UserRead.model_validate(oauth_account.user)
+            )
+
+        user = await self._user_repository.get_by_email(
+            profile_response["email"]
+        )
+
+        if user is not None:
+            try:
+                oauth_account: OAuthAccount = (
+                    await self._oauth_repository.create(
+                        user=user,
+                        provider="google",
+                        provider_user_id=profile_response["sub"],
+                    )
+                )
+            except Exception:
+                await self._session.rollback()
+                raise
+
+            if user.is_2fa_enabled:
+                await self._session.commit()
+                return TwoFactorRequired(
+                    pending_token=create_temporary_token(user_id=user.id)
+                )
+
+            tokens = await self.__issue_tokens(user=user)
+            return LoginResponse(
+                tokens=tokens,
+                user=UserRead.model_validate(user),
+            )
+
+        try:
+            user = await self._user_repository.create_user(
+                first_name=profile_response["given_name"],
+                last_name=profile_response["family_name"],
+                email=profile_response["email"],
+                hashed_password="IMPOSSIBLE",
+            )
+
+        except Exception:
+            await self._session.rollback()
+            raise
+
+        try:
+            oauth_account: OAuthAccount = await self._oauth_repository.create(
+                user=user,
+                provider="google",
+                provider_user_id=profile_response["sub"],
+            )
+        except Exception:
+            await self._session.rollback()
+            raise
+
+        tokens = await self.__issue_tokens(user=user)
+
+        return LoginResponse(
+            tokens=tokens,
+            user=UserRead.model_validate(user),
+        )
+
     async def login_2fa(self, user_id: int, code: str) -> LoginResponse:
-        user: User = await self._user_repository.get_by_id(user_id)
+        user = await self._user_repository.get_by_id(user_id)
 
         if user is None:
             raise UserNotFoundError()
@@ -169,6 +288,7 @@ class AuthService:
             await self._session.rollback()
             raise
 
+    # May add password to confirm it s the user
     async def disable_2fa(self, user: User) -> None:
         if not user.is_2fa_enabled:
             raise TwoFactorNotConfiguredError()
@@ -191,10 +311,10 @@ class AuthService:
         if rt.expired_at < now:
             raise TokenExpiredError()
 
-        refresh_token = secrets.token_urlsafe(32)
+        refresh_token = generate_token()
 
         try:
-            token = await self._token_repository.create_token(
+            token = await self._token_repository.create(
                 refresh_token,
                 rt.user,
                 now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
