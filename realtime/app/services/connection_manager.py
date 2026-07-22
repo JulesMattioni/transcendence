@@ -42,11 +42,12 @@ class ConnectionManager(BaseService):
         del self._users[user_id]
 
     async def broadcast_id(self, message: dict, user_id):
-        try:
-            await self._users[user_id].websocket.send_json(message)
-        except Exception:
-            del self._users[user_id]
-            self._logger.warning("dropping dead socket", exc_info=True)
+        if user_id in self._users:
+            try:
+                await self._users[user_id].websocket.send_json(message)
+            except Exception:
+                del self._users[user_id]
+                self._logger.warning("dropping dead socket", exc_info=True)
 
     async def broadcast_all(self, message: dict):
         dead: list[int] = []
