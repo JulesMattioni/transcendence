@@ -75,7 +75,7 @@ class OrganisationMemberRepository:
         for org, role_id in res.all():
             org_list.append({
                 "org_id": org.id,
-                "name": org.name_org,
+                "name": org.name,
                 "role": role_id
             })
         return {

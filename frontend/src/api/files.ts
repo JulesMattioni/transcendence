@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { CURRENT_ORG_ID } from "../config";
+import { requireCurrentOrgId } from "./currentOrg";
 import { ApiError } from './client'
 
 
@@ -27,11 +27,16 @@ export interface FilePage {
   page_size: number
 }
 
-export function listFiles(page = 1, pageSize = 9): Promise<FilePage> {
+export function listFiles(
+  page = 1,
+  pageSize = 9,
+  orgId: number = requireCurrentOrgId(),
+): Promise<FilePage> {
   return apiFetch<FilePage>(
-    `/core/files?organisation_id=${CURRENT_ORG_ID}&page=${page}&page_size=${pageSize}`,
+    `/core/files?organisation_id=${orgId}&page=${page}&page_size=${pageSize}`,
   )
 }
+
 
 export function uploadFile(
     file: File,
@@ -39,10 +44,11 @@ export function uploadFile(
     description?: string,
 ): Promise<FileRead> {
     const form = new FormData()
+    const orgId = requireCurrentOrgId()
 
     form.append('upload', file)
     form.append('title', title)
-    form.append('organisation_id', String(CURRENT_ORG_ID))
+    form.append('organisation_id', String(orgId))
     if (description) {
         form.append('description', description)
     }
@@ -54,21 +60,24 @@ export function uploadFile(
 }
 
 export function getFile(id: number): Promise<FileRead> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<FileRead>(
-    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    `/core/files/${id}?organisation_id=${orgId}`,
   )
 }
 
 export function deleteFile(id: number): Promise<void> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<void>(
-    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    `/core/files/${id}?organisation_id=${orgId}`,
     { method: 'DELETE' },
   )
 }
 
 export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
+  const orgId = requireCurrentOrgId()
   return apiFetch<FileRead>(
-    `/core/files/${id}?organisation_id=${CURRENT_ORG_ID}`,
+    `/core/files/${id}?organisation_id=${orgId}`,
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -80,12 +89,13 @@ export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
 export async function fetchFileContent(id: number): Promise<Blob> {
   const token = localStorage.getItem('access_token')
   const headers = new Headers()
+  const orgId = requireCurrentOrgId()
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
   const response = await fetch(
-    `/api/core/files/${id}/content?organisation_id=${CURRENT_ORG_ID}`,
+    `/api/core/files/${id}/content?organisation_id=${orgId}`,
     { headers },
   )
   if (!response.ok) {
