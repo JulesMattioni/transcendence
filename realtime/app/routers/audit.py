@@ -7,16 +7,6 @@ from fastapi import HTTPException
 router = APIRouter()
 
 
-def mock_org():
-    return {
-        "user_id": 42,
-        "organisations": [
-            {"org_id": 1, "name": "Belle Organisation", "role": "admin"},
-            {"org_id": 2, "name": "Magnifique Organisation", "role": "reader"},
-        ],
-    }
-
-
 @router.websocket("/audit")
 async def audit(websocket: WebSocket, token: str) -> None:
     try:
@@ -24,9 +14,12 @@ async def audit(websocket: WebSocket, token: str) -> None:
     except HTTPException:
         await websocket.close(code=1008)
         return
+
     await manager.connect(
         websocket,
         user["id"],
+        user["first_name"],
+        user["last_name"],
     )
 
     # await dispatcher.add_client(user["id"])

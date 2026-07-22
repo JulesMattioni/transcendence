@@ -8,7 +8,8 @@ from shared.base_service import BaseService
 class User:
     websocket: WebSocket
     connected_at: datetime
-
+    first_name: str
+    last_name: str
 
 
 class ConnectionManager(BaseService):
@@ -20,7 +21,6 @@ class ConnectionManager(BaseService):
         self,
         websocket: WebSocket,
         user_id: int,
-        organisations,
         first_name,
         last_name,
     ):
@@ -28,7 +28,15 @@ class ConnectionManager(BaseService):
         self._users[user_id] = User(
             websocket=websocket,
             connected_at=datetime.now(timezone.utc),
+            first_name=first_name,
+            last_name=last_name,
         )
+
+    def get_data(self, user_id: int):
+        return {
+            "first_name": self._users[user_id].first_name,
+            "last_name": self._users[user_id].last_name,
+        }
 
     def disconnect(self, user_id: int):
         del self._users[user_id]
