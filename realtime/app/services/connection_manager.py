@@ -5,48 +5,56 @@ from shared.base_service import BaseService
 
 
 @dataclass
-class Connection:
-    user_id: int
+class User:
+    websocket: WebSocket
     connected_at: datetime
+    organisations: list[dict]
+    first_name: str
+    last_name: str
 
 
 class ConnectionManager(BaseService):
     def __init__(self) -> None:
         super().__init__()
-        self._connections: dict[WebSocket, Connection] = {}
-        self._index: dict[str, WebSocket] = {}
+        self._users: dict[int, User] = {}
 
-    async def connect(self, websocket: WebSocket, user_id: int):
+    async def connect(
+        self,
+        websocket: WebSocket,
+        user_id: int,
+        organisations,
+        first_name,
+        last_name,
+    ):
         await websocket.accept()
-        self._connections[websocket] = Connection(
-            user_id=user_id,
+        self._users[user_id] = User(
+            websocket=websocket,
             connected_at=datetime.now(timezone.utc),
+            organisations=organisations,
+            first_name=first_name,
+            last_name=last_name,
         )
-        self._index[user_id] = WebSocket
 
-    def disconnect(self, websocket: WebSocket) -> None:
-        self._connections.pop(websocket, None)
+    def disconnect(self, user_id: int):
+        del self._users[user_id]
 
-    async def broadcast_id(self, message: dict, id):
-        dead: list[WebSocket] = []
+    async def broadcast_id(self, message: dict, user_id):
         try:
-            await self._index[id].send_json(message)
+            await self._users[user_id].websocket.send_json(message)
         except Exception:
-            dead.append(self._index[id])
+            del self._users[user_id]
             self._logger.warning("dropping dead socket", exc_info=True)
-        for websocket in dead:
-            self.disconnect(websocket)
 
     async def broadcast_all(self, message: dict):
-        dead: list[WebSocket] = []
-        for websocket, connection in list(self._connections.items()):
+        dead: list[int] = []
+        for user_id, user in list(self._users.items()):
             try:
-                await websocket.send_json(message)
+                await user.websocket.send_json(message)
             except Exception:
-                dead.append(websocket)
+                dead.append(user_id)
                 self._logger.warning("dropping dead socket", exc_info=True)
-        for websocket in dead:
-            self.disconnect(websocket)
+        for user_id in dead:
+            del self._users[user_id]
 
 
 manager = ConnectionManager()
