@@ -13,6 +13,7 @@ from app.exceptions import (
     TwoFactorNotConfiguredError,
     InvalidOAuthStateError,
     GoogleAuthError,
+    UserByEmailNotFoundError,
 )
 
 app = FastAPI(title="auth")
@@ -118,4 +119,14 @@ async def google_auth_failed_handler(
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": "Google authentication failed"},
+    )
+
+
+@app.exception_handler(UserByEmailNotFoundError)
+async def user_by_email_not_found_handler(
+    request: Request, exc: UserByEmailNotFoundError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "No user with this email"},
     )

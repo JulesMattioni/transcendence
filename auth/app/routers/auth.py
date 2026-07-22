@@ -10,6 +10,7 @@ from app.schemas import (
     TwoFactorRequired,
     TwoFactorVerify,
     TwoFactorCredentials,
+    UserLookup,
 )
 from app.models.auth import User
 from app.dependencies import (
@@ -103,3 +104,13 @@ async def update_user(
 @router.get("/me", response_model=UserRead)
 async def get_user(user: User = Depends(get_current_user)) -> UserRead:
     return UserRead.model_validate(user)
+
+
+@router.get("/users/by-email", response_model=UserLookup)
+async def get_user_by_email(
+    email: str,
+    _: User = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> UserLookup:
+    user = await auth_service.get_user_by_email(email)
+    return UserLookup.model_validate(user)

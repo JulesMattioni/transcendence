@@ -3,10 +3,13 @@ import { logout } from '../../api/auth'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { PanelLeft, LogOut } from 'lucide-react'
 import { navItems } from './NavItems'
+import { useOrg } from '../../context/orgContextValue'
 
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
+  const { isAdmin } = useOrg()
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   async function handleLogout() {
     try {
@@ -15,8 +18,6 @@ function Sidebar() {
       navigate('/')
     }
   }
-
-
 
   return (
     <aside
@@ -36,7 +37,7 @@ function Sidebar() {
 
       {/* Nav Items */}
       <nav className="flex-1">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon
           return (
             <NavLink

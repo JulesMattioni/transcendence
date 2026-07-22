@@ -5,11 +5,11 @@ import RegisterPage from "../pages/RegisterPage";
 import HomePage from "../pages/dashboard/HomePage";
 import FilesPage from "../pages/dashboard/FilesPage";
 import AdminPage from "../pages/dashboard/AdminPage";
-import RequireAuth from "../components/auth/RequireAuth";
 import ChatPage from "../pages/dashboard/ChatPage";
+import UserPage from "../pages/dashboard/UserPage";
+import ProtectedLayout from "../components/auth/ProtectedLayout";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
-import UserPage from "../pages/dashboard/UserPage";
 
 function AppRoutes() {
   return (
@@ -17,46 +17,15 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAuth>
-            <HomePage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/dashboard/files"
-        element={
-          <RequireAuth>
-            <FilesPage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/dashboard/admin"
-        element={
-          <RequireAuth>
-            <AdminPage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/dashboard/chat"
-        element={
-          <RequireAuth>
-            <ChatPage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/dashboard/user"
-        element={
-          <RequireAuth>
-            <UserPage />
-          </RequireAuth>
-        }
-      />
+
+      <Route path="/dashboard" element={<ProtectedLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="files" element={<FilesPage />} />
+        <Route path="admin" element={<AdminPage />} />
+        <Route path="chat" element={<ChatPage />} />
+        <Route path="user" element={<UserPage />} />
+      </Route>
+
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
     </Routes>
