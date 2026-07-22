@@ -8,3 +8,4 @@ from auth_models.models import (
     auth,
 )  # noqa: F401
 from rag_models.models import chunk, conversation, message  # noqa: F401
+from organisations_models.models import organisation
