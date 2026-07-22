@@ -22,7 +22,7 @@ class TokenRepository:
     async def delete_token(self, token: RefreshToken) -> None:
         await self._session.delete(token)
 
-    async def create_token(
+    async def create(
         self, token_str: str, user: User, expired_at: datetime
     ) -> RefreshToken:
         token = RefreshToken(token=token_str, user=user, expired_at=expired_at)

@@ -1,4 +1,6 @@
 import pyotp
+import secrets
+
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -20,3 +22,7 @@ def verify_2fa(secret: str, code: str) -> bool:
     totp = pyotp.TOTP(secret)
 
     return totp.verify(code, valid_window=1)
+
+
+def generate_token() -> str:
+    return secrets.token_urlsafe(32)

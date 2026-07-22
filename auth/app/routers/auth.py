@@ -73,7 +73,7 @@ async def disable_2fa(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> UserRead:
     await auth_service.disable_2fa(user=user)
-    return user
+    return UserRead.model_validate(user)
 
 
 @router.post("/refresh", response_model=TokenResponse)

@@ -10,6 +10,7 @@ dependencies = [
     "email-validator>=2.3.0",
     "fastapi>=0.139.0",
     "flake8>=7.3.0",
+    "httpx>=0.28.1",
     "mypy>=2.3.0",
     "passlib>=1.7.4",
     "pydantic[email]>=2.13.4",

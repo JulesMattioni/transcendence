@@ -2,9 +2,9 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
-from app.repositories import UserRepository, TokenRepository
+from app.repositories import UserRepository, TokenRepository, OAuthRepository
 from app.models.auth import User
-from app.services.auth_service import AuthService
+from app.services import AuthService
 from app.core.tokens import decode_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -22,12 +22,24 @@ def get_token_repository(
     return TokenRepository(session)
 
 
+def get_oauth_repository(
+    session: AsyncSession = Depends(get_session),
+) -> OAuthRepository:
+    return OAuthRepository(session)
+
+
 def get_auth_service(
     user_repo: UserRepository = Depends(get_user_repository),
     token_repo: TokenRepository = Depends(get_token_repository),
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     session: AsyncSession = Depends(get_session),
 ) -> AuthService:
-    return AuthService(user_repo, token_repo, session)
+    return AuthService(
+        user_repository=user_repo,
+        token_repository=token_repo,
+        oauth_repository=oauth_repo,
+        session=session,
+    )
 
 
 async def get_current_user(

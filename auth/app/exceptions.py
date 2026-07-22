@@ -32,3 +32,11 @@ class TwoFactorAlreadyEnabledError(AuthError):
 
 class TwoFactorNotConfiguredError(AuthError):
     pass
+
+
+class InvalidOAuthStateError(AuthError):
+    pass
+
+
+class GoogleAuthError(AuthError):
+    pass

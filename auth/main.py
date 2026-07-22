@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from app.routers import health, auth
+from app.routers import health, auth, oauth
 from app.exceptions import (
     EmailAlreadyExistsError,
     InvalidCredentialsError,
@@ -11,11 +11,14 @@ from app.exceptions import (
     UserNotFoundError,
     TwoFactorAlreadyEnabledError,
     TwoFactorNotConfiguredError,
+    InvalidOAuthStateError,
+    GoogleAuthError,
 )
 
 app = FastAPI(title="auth")
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(oauth.router)
 
 
 @app.exception_handler(EmailAlreadyExistsError)
@@ -95,4 +98,24 @@ async def two_factor_not_configured_handler(
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "2FA not configured"},
+    )
+
+
+@app.exception_handler(InvalidOAuthStateError)
+async def invalid_oauth_state_handler(
+    request: Request, exc: InvalidOAuthStateError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "OAuth state error"},
+    )
+
+
+@app.exception_handler(GoogleAuthError)
+async def google_auth_failed_handler(
+    request: Request, exc: GoogleAuthError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": "Google authentication failed"},
     )
