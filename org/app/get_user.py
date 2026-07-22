@@ -12,7 +12,7 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="missing header"
         )
-    auth_url = f"{AUTH_BASE_URL}/auth/me"
+    auth_url = f"{AUTH_BASE_URL}/me"
     header = {"Authorization": authorization}
     try:
         async with httpx.AsyncClient() as client:

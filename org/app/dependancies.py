@@ -1,6 +1,6 @@
 from app.repositories import (
     OrganisationRepository,
-    OrganisationMemberRepository
+    OrganisationMemberRepository,
 )
 from fastapi import Depends, HTTPException, status
 from typing import List
@@ -26,17 +26,16 @@ def get_org_member_repository(
 
 # apply sur repo
 def get_organisation_service(
-        session: AsyncSession = Depends(get_session),
-        repo:
-        OrganisationRepository = Depends(
-                                 get_organisation_repository),
-        member_repo: OrganisationMemberRepository = Depends(
-            get_organisation_repository)
-                                 ) -> OrganisationService:
+    session: AsyncSession = Depends(get_session),
+    repo: OrganisationRepository = Depends(get_organisation_repository),
+    member_repo: OrganisationMemberRepository = Depends(
+        get_org_member_repository
+    ),
+) -> OrganisationService:
 
-    return OrganisationService(session=session,
-                               repository=repo,
-                               member_repo=member_repo)
+    return OrganisationService(
+        session=session, repository=repo, member_repo=member_repo
+    )
 
 
 class RoleChecker:
@@ -47,8 +46,9 @@ class RoleChecker:
         self,
         org_id: int,
         get_user: User = Depends(get_current_user),
-        user_repo:
-        OrganisationMemberRepository = Depends(get_org_member_repository),
+        user_repo: OrganisationMemberRepository = Depends(
+            get_org_member_repository
+        ),
     ):
         user_id = get_user.id
         user_roles = await user_repo.get_user_perm(user_id, org_id)
@@ -61,5 +61,5 @@ class RoleChecker:
 
 
 required_admin_role = RoleChecker([Role.ADMIN])
-required_member = RoleChecker([Role.GUEST])
-required_modo_role = RoleChecker([Role.MODERATOR])
+required_editor_role = RoleChecker([Role.ADMIN, Role.EDITOR])
+required_reader_role = RoleChecker([Role.ADMIN, Role.EDITOR, Role.READER])

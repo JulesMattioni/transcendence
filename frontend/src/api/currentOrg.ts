@@ -1,0 +1,9 @@
+let currentOrgId: number | null = null
+
+export function getCurrentOrgId(): number | null {
+  return currentOrgId
+}
+
+export function setCurrentOrgId(id: number | null): void {
+  currentOrgId = id
+}

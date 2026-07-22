@@ -3,9 +3,11 @@ import { Bell, User, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { me } from "../../api/auth";
 import { getAvatarUrl } from "../../utils/avatars";
+import { useOrg } from "../../context/orgContextValue";
 
 function Topbar() {
   const [avatarId, setAvatarId] = useState<number | null>(null);
+  const { orgs, currentOrg, loading, setCurrentOrg } = useOrg();
 
   useEffect(() => {
     let active = true;
@@ -26,15 +28,31 @@ function Topbar() {
 
       {/* Org selector */}
       <div className="relative">
-        <select className="appearance-none py-2 pr-9 pl-4 text-sm text-black focus:outline-none">
-          <option>My Organisation</option>
-          <option>Another Org</option>
-        </select>
-        <ChevronDown
-          size={16}
-          className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-700"
-        />
+        {loading ? (
+          <span className="px-4 text-sm text-muted">Loading…</span>
+        ) : orgs.length === 0 ? (
+          <span className="px-4 text-sm text-muted">No organisation yet</span>
+        ) : (
+          <>
+            <select
+              value={currentOrg?.org_id ?? ""}
+              onChange={(e) => setCurrentOrg(Number(e.target.value))}
+              className="appearance-none py-2 pr-9 pl-4 text-sm text-black focus:outline-none"
+            >
+              {orgs.map((org) => (
+                <option key={org.org_id} value={org.org_id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={16}
+              className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-700"
+            />
+          </>
+        )}
       </div>
+
 
       {/* Profile */}
       <div className="flex items-center gap-4">
