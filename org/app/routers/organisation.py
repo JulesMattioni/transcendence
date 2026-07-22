@@ -4,7 +4,9 @@ from app.schemas.organisation import (
     OrganisationRead,
     OrganisationUpdate
 )
-from app.dependancies import get_organisation_service, required_admin_role
+from app.dependancies import (get_organisation_service,
+                              get_current_user,
+                              required_admin_role)
 from app.services.organisation_service import OrganisationService
 
 router = APIRouter(
@@ -16,9 +18,10 @@ router = APIRouter(
 @router.post("/", response_model=OrganisationRead,
              status_code=status.HTTP_201_CREATED)
 async def create_organisation(data: OrganisationCreate,
+                              user_id=Depends(get_current_user),
                               service: OrganisationService = Depends(
                                   get_organisation_service)):
-    new_org = await service.create_organisation(data.name)
+    new_org = await service.create_organisation(data.name, user_id=user_id)
     return new_org
 
 
