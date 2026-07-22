@@ -14,7 +14,7 @@ class ConnectionManager(BaseService):
     def __init__(self) -> None:
         super().__init__()
         self._connections: dict[WebSocket, Connection] = {}
-        self._index: dict[str, WebSocket]
+        self._index: dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
