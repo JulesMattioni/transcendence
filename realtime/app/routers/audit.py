@@ -21,8 +21,6 @@ async def audit(websocket: WebSocket, token: str) -> None:
         user["first_name"],
         user["last_name"],
     )
-
-    # await dispatcher.add_client(user["id"])
     try:
         while True:
             message = await websocket.receive_text()
