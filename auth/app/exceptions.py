@@ -40,3 +40,7 @@ class InvalidOAuthStateError(AuthError):
 
 class GoogleAuthError(AuthError):
     pass
+
+
+class UserByEmailNotFoundError(AuthError):
+    pass

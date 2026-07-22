@@ -34,3 +34,12 @@ class UserUpdate(BaseModel):
 
     location: str
     avatar_id: int
+
+
+class UserLookup(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: EmailStr
+    first_name: str
+    last_name: str
