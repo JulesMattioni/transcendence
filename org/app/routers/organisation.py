@@ -66,6 +66,7 @@ async def del_user_from_organisation(org_id: int,
                             detail="User not found")
     return deleted_user
 
+
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organisation(
     org_id: int,

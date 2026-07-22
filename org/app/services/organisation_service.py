@@ -26,6 +26,15 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
 
+    async def creatuser_from_org(self, org_id: int, user_id: int, role_id: int):
+        add_member = await self.member_repo.create_user_from_org(
+            org_id=org_id,
+            user_id=user_id,
+            role_id=role_id
+        )
+        await self.session.commit()
+        return add_member
+
     async def delete_user_from_org(self, org_id: int, user_id: int):
         delete_user = await self.member_repo.delete_user_from_org(
             org_id, user_id)
