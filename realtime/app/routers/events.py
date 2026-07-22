@@ -6,8 +6,7 @@ from app.services.event_dispatcher import dispatcher
 router = APIRouter()
 
 
-@router.post("/events", status_code=202)
+@router.post("/internal/events", status_code=202)
 async def ingest(event: EventIn) -> dict:
-    event_out = EventOut.from_event_in(event)
-    await dispatcher.dispatch(event_out)
-    return {"event_id": event_out.event_id}
+    await dispatcher.publish_event(event)
+    return "OK"

@@ -6,13 +6,7 @@ from app.schemas.event_in import EventIn
 class EventOut(EventIn):
     event_id: str
     timestamp: datetime
+    user_id: int | None
+    first_name: str | None
+    last_name: str | None
 
-    @classmethod
-    def from_event_in(cls, event: EventIn) -> "EventOut":
-        return EventOut(
-            event_id=str(uuid4()),
-            timestamp=datetime.now(timezone.utc),
-            event_type=event.event_type,
-            user_id=event.user_id,
-            file_id=event.file_id,
-        )
