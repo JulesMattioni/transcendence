@@ -16,4 +16,5 @@ async def get_current_user(token: str):
 
     if response.status_code != 200:
         raise HTTPException(status_code=401, detail="Invalid token")
+    response = response.json()
     return response
