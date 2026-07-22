@@ -12,7 +12,7 @@ from app.schemas.two_factor import (
     TwoFactorVerify,
     TwoFactorCredentials,
 )
-from app.schemas.oauth import OAuthRedirect
+from app.schemas.oauth import OAuthRedirect, OAuthExchange
 
 __all__ = [
     "LoginResponse",
@@ -25,5 +25,6 @@ __all__ = [
     "TwoFactorCredentials",
     "UserUpdate",
     "OAuthRedirect",
+    "OAuthExchange",
     "UserLookup",
 ]
