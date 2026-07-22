@@ -31,6 +31,7 @@ from app.exceptions import (
     UserNotFoundError,
     TwoFactorAlreadyEnabledError,
     TwoFactorNotConfiguredError,
+    UserByEmailNotFoundError,
 )
 from app.core import (
     hash_password,
@@ -360,3 +361,9 @@ class AuthService:
         except Exception:
             await self._session.rollback()
             raise
+
+    async def get_user_by_email(self, email: str) -> UserRead:
+        user = await self._user_repository.get_by_email(email)
+        if not user:
+            raise UserByEmailNotFoundError()
+        return UserRead.model_validate(user)
