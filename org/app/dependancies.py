@@ -1,6 +1,7 @@
 from app.repositories import (
     OrganisationRepository,
     OrganisationMemberRepository,
+    InvitationRepository,
 )
 from fastapi import Depends, HTTPException, status
 from typing import List
@@ -10,6 +11,7 @@ from app.schemas.roles import Role
 from app.schemas.user import User
 from app.get_user import get_current_user
 from app.services.organisation_service import OrganisationService
+from app.services.invitation_service import InvitationService
 
 
 def get_organisation_repository(
@@ -63,3 +65,25 @@ class RoleChecker:
 required_admin_role = RoleChecker([Role.ADMIN])
 required_editor_role = RoleChecker([Role.ADMIN, Role.EDITOR])
 required_reader_role = RoleChecker([Role.ADMIN, Role.EDITOR, Role.READER])
+
+
+def get_invitation_repository(
+    session: AsyncSession = Depends(get_session),
+) -> InvitationRepository:
+    return InvitationRepository(session)
+
+
+def get_invitation_service(
+    session: AsyncSession = Depends(get_session),
+    invitation_repo: InvitationRepository = Depends(get_invitation_repository),
+    member_repo: OrganisationMemberRepository = Depends(
+        get_org_member_repository
+    ),
+    org_repo: OrganisationRepository = Depends(get_organisation_repository),
+) -> InvitationService:
+    return InvitationService(
+        session=session,
+        invitation_repo=invitation_repo,
+        member_repo=member_repo,
+        org_repo=org_repo,
+    )

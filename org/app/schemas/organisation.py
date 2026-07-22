@@ -23,3 +23,21 @@ class OrganisationMemberRead(BaseModel):
     email: str | None = None
     first_name: str | None = None
     last_name: str | None = None
+
+
+class InvitationCreate(BaseModel):
+    email: str
+    role_id: int
+
+
+class InvitationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    org_id: int
+    invited_user_id: int
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+    role_id: int
+    status: str
