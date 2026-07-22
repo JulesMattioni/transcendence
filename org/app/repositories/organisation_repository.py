@@ -7,7 +7,7 @@ class OrganisationRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def create(self, name_org: str):
+    async def create_organisation(self, name_org: str):
         new_org = Organisation(name_org=name_org)
         self.session.add(new_org)
         await self.session.flush()

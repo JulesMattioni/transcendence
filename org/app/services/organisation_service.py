@@ -16,7 +16,7 @@ class OrganisationService(BaseService):
 
     async def create_organisation(self, org_name: str, user_id: int
                                   ) -> OrganisationRead:
-        new_org = await self.repository.create(name_org=org_name)
+        new_org = await self.repository.create_organisation(name_org=org_name)
 
         await self.member_repo.create_user_from_org(
             org_id=new_org.id,
@@ -26,7 +26,9 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
 
-    async def creatuser_from_org(self, org_id: int, user_id: int, role_id: int):
+    async def creatuser_from_org(self, org_id: int,
+                                 user_id: int,
+                                 role_id: int):
         add_member = await self.member_repo.create_user_from_org(
             org_id=org_id,
             user_id=user_id,
@@ -60,6 +62,17 @@ class OrganisationService(BaseService):
     async def delete_organisation(self, org_id: int) -> bool:
         organisation = await self.repository.delete_org(org_id)
         if organisation:
+            await self.session.commit()
+            return True
+        return False
+
+    async def update_perm_from_organisation(self, org_id: int,
+                                            user_id: int,
+                                            new_role_id: int):
+        new_role = await self.member_repo.update_role(org_id,
+                                                      user_id,
+                                                      new_role_id)
+        if new_role:
             await self.session.commit()
             return True
         return False

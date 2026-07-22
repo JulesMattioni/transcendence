@@ -19,7 +19,22 @@ async def create_organisation(data: OrganisationCreate,
                               service: OrganisationService = Depends(
                                   get_organisation_service)):
     new_org = await service.create_organisation(data.name)
+    if not new_org:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Failed to create organisation")
     return new_org
+
+
+@router.post("/{org_id}/users/{user_id}", status_code=status.HTTP_201_CREATED)
+async def create_user_from_organisation(org_id: int, user_id: int,
+                                        service: OrganisationService
+                                        = Depends(get_organisation_service),
+                                        _=Depends(required_admin_role)):
+    create_user = await service.creatuser_from_org(org_id, user_id)
+    if not create_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Create user failed")
+    return create_user
 
 
 @router.get("/{org_id}", response_model=OrganisationRead)
@@ -33,7 +48,7 @@ async def get_organisation_by_id(org_id: int,
     return organisation
 
 
-@router.get("/users/{user_id}/organisations", response_model=OrganisationRead)
+@router.get("/users/{user_id}/organisations")
 async def get_user_organisation_endpoint(user_id: int,
                                          service: OrganisationService
                                          = Depends(get_organisation_service)):
@@ -55,11 +70,27 @@ async def edit_organisation(org_id: int,
     return update
 
 
-@router.delete("/{org_id}", status_code=status.HTTP_404_NOT_FOUND)
+@router.patch("/{org_id}/users/{user_id}")
+async def update_permission_member(org_id: int, user_id: int, new_role: int,
+                                   service: OrganisationService
+                                   = Depends(get_organisation_service),
+                                   _=Depends(required_admin_role)):
+    update_role = await service.update_perm_from_organisation(org_id,
+                                                              user_id,
+                                                              new_role)
+    if not update_role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User Not found")
+    return update_role
+
+
+@router.delete("/{org_id}/users/{user_id}",
+               status_code=status.HTTP_204_NO_CONTENT)
 async def del_user_from_organisation(org_id: int,
                                      user_id: int,
                                      service: OrganisationService
-                                     = Depends(get_organisation_service)):
+                                     = Depends(get_organisation_service),
+                                     _=Depends(required_admin_role)):
     deleted_user = await service.delete_user_from_org(org_id, user_id)
     if not deleted_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
