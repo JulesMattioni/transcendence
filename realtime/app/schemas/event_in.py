@@ -7,5 +7,7 @@ class EventIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     event_type: EventType
     user_id: int | None = None
+    first_name: str | None = None
+    last_name: str | None = None
     org_id: int | None = None
     file_name: str | None = None

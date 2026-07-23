@@ -32,14 +32,8 @@ class ConnectionManager(BaseService):
             last_name=last_name,
         )
 
-    def get_data(self, user_id: int):
-        return {
-            "first_name": self._users[user_id].first_name,
-            "last_name": self._users[user_id].last_name,
-        }
-
     def disconnect(self, user_id: int):
-        del self._users[user_id]
+        self._users.pop(user_id, None)
 
     async def broadcast_id(self, message: dict, user_id):
         if user_id in self._users:
