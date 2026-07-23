@@ -179,3 +179,9 @@ export async function listMyConnections(
 
   return Array.from(byUser.values());
 }
+
+export async function deleteOrganisation(orgId: number): Promise<void> {
+  await apiFetch<void>(`/org/organisations/${orgId}`, {
+    method: "DELETE",
+  });
+}

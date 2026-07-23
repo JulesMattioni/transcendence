@@ -62,47 +62,51 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
   }
 
   return (
-    <div className="border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col border border-gray-200 bg-white">
+      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
         <h2 className="font-sans text-lg font-semibold text-black">
           Invitations
         </h2>
       </div>
-      {error && <p className="px-4 py-2 text-sm text-red-600">{error}</p>}
-      {loading ? (
-        <p className="px-4 py-3 text-sm text-muted">Loading…</p>
-      ) : invitations.length === 0 ? (
-        <p className="px-4 py-3 text-sm text-muted">No pending invitations.</p>
-      ) : (
-        <ul className="divide-y divide-gray-200">
-          {invitations.map((inv) => (
-            <li key={inv.id} className="px-4 py-3">
-              <p className="text-sm text-black">
-                Invitation to join an organisation
-              </p>
-              <p className="text-xs text-muted">
-                Role: {roleName(inv.role_id)}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => handleAccept(inv.id)}
-                  disabled={busyId === inv.id}
-                  className="bg-keepr px-3 py-1 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleDecline(inv.id)}
-                  disabled={busyId === inv.id}
-                  className="px-3 py-1 text-sm text-muted transition-colors duration-200 hover:text-red-600 disabled:opacity-50"
-                >
-                  Decline
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {error && <p className="px-4 py-2 text-sm text-red-600">{error}</p>}
+        {loading ? (
+          <p className="px-4 py-3 text-sm text-muted">Loading…</p>
+        ) : invitations.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-muted">
+            No pending invitations.
+          </p>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {invitations.map((inv) => (
+              <li key={inv.id} className="px-4 py-3">
+                <p className="text-sm text-black">
+                  Invitation to join an organisation
+                </p>
+                <p className="text-xs text-muted">
+                  Role: {roleName(inv.role_id)}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => handleAccept(inv.id)}
+                    disabled={busyId === inv.id}
+                    className="bg-keepr px-3 py-1 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleDecline(inv.id)}
+                    disabled={busyId === inv.id}
+                    className="px-3 py-1 text-sm text-muted transition-colors duration-200 hover:text-red-600 disabled:opacity-50"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

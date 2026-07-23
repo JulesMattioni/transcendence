@@ -6,13 +6,13 @@ const MOCK_AUDIT = [
 
 function AuditPanel() {
   return (
-    <div className="border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col border border-gray-200 bg-white">
+      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
         <h2 className="font-sans text-lg font-semibold text-black">
           Audit feed
         </h2>
       </div>
-      <ul>
+      <ul className="min-h-0 flex-1 overflow-y-auto">
         {MOCK_AUDIT.map((e) => (
           <li key={e.id} className="px-4 py-3">
             <p className="text-sm text-muted">{e.text}</p>

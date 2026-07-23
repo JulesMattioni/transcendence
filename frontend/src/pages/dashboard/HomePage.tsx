@@ -46,7 +46,7 @@ function HomePage() {
         </div>
 
         {/* Audit + Invit */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6 lg:h-96">
           <AuditPanel />
           <InvitationsPanel
             key={refreshKey}
