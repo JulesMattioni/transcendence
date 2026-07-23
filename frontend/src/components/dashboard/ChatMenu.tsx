@@ -1,64 +1,66 @@
-import { useEffect, useRef, useState } from 'react'
-import { Menu, Trash2, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from "react";
+import { Menu, Trash2, Plus } from "lucide-react";
 import {
   listConversations,
   deleteConversation,
   type Conversation,
-} from '../../api/rag'
+} from "../../api/rag";
 
 interface ChatMenuProps {
-  activeId: number | null
-  onSelect: (id: number) => void
-  onDeleted: (id: number) => void
-  onNewChat: () => void
-  refreshKey: number
+  orgId: number;
+  activeId: number | null;
+  onSelect: (id: number) => void;
+  onDeleted: (id: number) => void;
+  onNewChat: () => void;
+  refreshKey: number;
 }
 
 function ChatMenu({
+  orgId,
   activeId,
   onSelect,
   onDeleted,
   onNewChat,
   refreshKey,
 }: ChatMenuProps) {
-  const [open, setOpen] = useState(false)
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    listConversations()
+    listConversations(orgId)
       .then(setConversations)
-      .catch(() => setConversations([]))
-  }, [refreshKey])
+      .catch(() => setConversations([]));
+  }, [refreshKey, orgId]);
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     function onClickOutside(e: MouseEvent) {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
       ) {
-        setOpen(false)
+        setOpen(false);
       }
     }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [open])
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
 
   async function handleDelete(id: number) {
-    await deleteConversation(id)
-    setConversations((prev) => prev.filter((c) => c.id !== id))
-    onDeleted(id)
+    await deleteConversation(id, orgId);
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    onDeleted(id);
   }
 
   function handleSelect(id: number) {
-    onSelect(id)
-    setOpen(false)
+    onSelect(id);
+    setOpen(false);
   }
 
   function handleNewChat() {
-    onNewChat()
-    setOpen(false)
+    onNewChat();
+    setOpen(false);
   }
 
   return (
@@ -87,15 +89,17 @@ function ChatMenu({
           {/* List */}
           <nav className="max-h-80 overflow-y-auto">
             {conversations.length === 0 && (
-              <p className="px-4 py-3 text-sm text-gray-400">No conversations yet.</p>
+              <p className="px-4 py-3 text-sm text-gray-400">
+                No conversations yet.
+              </p>
             )}
             {conversations.map((c) => (
               <div
                 key={c.id}
                 className={`group flex items-center justify-between px-4 py-3 text-sm transition-colors duration-200 ${
                   c.id === activeId
-                    ? 'bg-blue-100 text-keepr'
-                    : 'text-muted hover:bg-blue-50'
+                    ? "bg-blue-100 text-keepr"
+                    : "text-muted hover:bg-blue-50"
                 }`}
               >
                 <button
@@ -118,7 +122,7 @@ function ChatMenu({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ChatMenu
+export default ChatMenu;
