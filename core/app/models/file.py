@@ -5,6 +5,13 @@ from datetime import datetime
 
 
 class File(Base):
+    """
+    ORM model of an uploaded file (table "files").
+
+    filepath is the internal storage location and is never exposed to
+    clients; filename keeps the original upload name for downloads.
+    """
+
     __tablename__ = "files"
     id: Mapped[int] = mapped_column(primary_key=True)
     filepath: Mapped[str] = mapped_column(String(1024))

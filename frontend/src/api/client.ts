@@ -56,7 +56,18 @@ async function doFetch(path: string, options: RequestInit): Promise<Response> {
   return fetch(`${API_BASE}${path}`, { ...options, headers })
 }
 
-async function tryRefresh(): Promise<boolean> {
+let refreshInFlight: Promise<boolean> | null = null
+
+function tryRefresh(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null
+    })
+  }
+  return refreshInFlight
+}
+
+async function doRefresh(): Promise<boolean> {
   const refreshToken = localStorage.getItem('refresh_token')
   if (!refreshToken) return false
 

@@ -3,13 +3,21 @@ import secrets
 
 SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = os.environ.get("ALGORITHM", "HS256")
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://localhost:8443")
+
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_REDIRECT_URI = os.environ.get(
     "GOOGLE_REDIRECT_URI",
     "https://localhost:8443/api/auth/oauth/google/callback",
 )
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://localhost:8443")
+
+FT_CLIENT_ID = os.environ.get("FT_CLIENT_ID", "")
+FT_REDIRECT_URI = os.environ.get(
+    "FT_REDIRECT_URI", "https://localhost:8443/api/auth/oauth/42/callback"
+)
+FT_CLIENT_SECRET = os.environ.get("FT_CLIENT_SECRET", "")
 
 try:
     ACCESS_TOKEN_EXPIRE_MINUTES = int(

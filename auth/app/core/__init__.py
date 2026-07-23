@@ -12,6 +12,7 @@ from app.core.tokens import (
     create_oauth_exchange_token,
 )
 from app.core.google_oauth import get_google_profile
+from app.core.ft_oauth import get_ft_profile
 
 __all__ = [
     "hash_password",
@@ -24,4 +25,5 @@ __all__ = [
     "generate_token",
     "get_google_profile",
     "create_oauth_exchange_token",
+    "get_ft_profile",
 ]

@@ -12,6 +12,19 @@ from app.config import (
 
 
 def decode_token(token: str) -> dict[str, Any]:
+    """
+    Decode and validate a JWT token.
+
+    Args:
+        token: Encoded JWT token to decode.
+
+    Returns:
+        The decoded token payload as a dictionary.
+
+    Raises:
+        HTTPException: If the token is expired or invalid.
+    """
+
     try:
         return jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:
@@ -21,6 +34,16 @@ def decode_token(token: str) -> dict[str, Any]:
 
 
 def create_access_token(user_id: int) -> str:
+    """
+    Create a signed JWT access token for an authenticated user.
+
+    Args:
+        user_id: ID of the user to encode in the token.
+
+    Returns:
+        The encoded JWT access token.
+    """
+
     now = datetime.now(timezone.utc)
 
     payload = {
@@ -33,6 +56,16 @@ def create_access_token(user_id: int) -> str:
 
 
 def create_temporary_token(user_id: int) -> str:
+    """
+    Create a short-lived JWT token for a user pending 2FA verification.
+
+    Args:
+        user_id: ID of the user to encode in the token.
+
+    Returns:
+        The encoded JWT temporary token.
+    """
+
     now = datetime.now(timezone.utc)
 
     payload = {
@@ -45,6 +78,17 @@ def create_temporary_token(user_id: int) -> str:
 
 
 def create_oauth_exchange_token(user_id: int) -> str:
+    """
+    Create a short-lived JWT token to exchange for a full session after OAuth
+    login.
+
+    Args:
+        user_id: ID of the user to encode in the token.
+
+    Returns:
+        The encoded JWT OAuth exchange token.
+    """
+
     now = datetime.now(timezone.utc)
 
     payload = {

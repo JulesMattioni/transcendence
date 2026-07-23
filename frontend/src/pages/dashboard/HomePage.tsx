@@ -1,13 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import DashboardLayout from "../../components/dashboard/DashboardLayout";
 import Modal from "../../components/Modal";
 import CreateOrgForm from "../../components/CreateOrgForm";
+import ConnectionsPanel from "../../components/dashboard/home/ConnectionsPanel";
+import AuditPanel from "../../components/dashboard/home/AuditPanel";
+import InvitationsPanel from "../../components/dashboard/home/InvitationsPanel";
 import { useOrg } from "../../context/orgContextValue";
+import { me } from "../../api/auth";
 
 function HomePage() {
-  const { orgs, currentOrg, loading, reloadOrgs, setCurrentOrg } = useOrg();
+  const { reloadOrgs, setCurrentOrg } = useOrg();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    me()
+      .then((u) => active && setMyUserId(u.id))
+      .catch(() => active && setMyUserId(null));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <DashboardLayout>
@@ -21,22 +37,26 @@ function HomePage() {
         </button>
       </div>
 
-      {loading && <p className="mt-4 text-muted">Loading…</p>}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Connections */}
+        <div>
+          {myUserId !== null && (
+            <ConnectionsPanel key={refreshKey} myUserId={myUserId} />
+          )}
+        </div>
 
-      {!loading && orgs.length === 0 && (
-        <p className="mt-4 text-muted">
-          You don't belong to any organisation yet. Create one to get started.
-        </p>
-      )}
-
-      {!loading && orgs.length > 0 && (
-        <p className="mt-4 text-muted">
-          Current organisation:{" "}
-          <span className="font-medium text-black">
-            {currentOrg?.name ?? "—"}
-          </span>
-        </p>
-      )}
+        {/* Audit + Invit */}
+        <div className="flex flex-col gap-6 lg:h-96">
+          <AuditPanel />
+          <InvitationsPanel
+            key={refreshKey}
+            onAccepted={async () => {
+              await reloadOrgs();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
+        </div>
+      </div>
 
       <Modal
         isOpen={isCreateOpen}
@@ -48,6 +68,7 @@ function HomePage() {
             setIsCreateOpen(false);
             await reloadOrgs();
             setCurrentOrg(org.id);
+            setRefreshKey((k) => k + 1);
           }}
         />
       </Modal>

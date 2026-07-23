@@ -13,6 +13,24 @@ from typing import List
 
 
 class User(Base):
+    """
+    Database model representing an application user.
+
+    Attributes:
+        id: Primary key.
+        first_name: User's first name.
+        last_name: User's last name.
+        email: User's unique email address, used for login.
+        location: Optional user location.
+        avatar_id: ID of the user's selected avatar.
+        hashed_password: Bcrypt hash of the user's password.
+        is_2fa_enabled: Whether two-factor authentication is enabled.
+        secret_2fa: Base32 TOTP secret used for 2FA, if enabled.
+        tokens: Refresh tokens issued to this user.
+        oauth_accounts: OAuth accounts linked to this user.
+        created_at: Timestamp of user creation.
+    """
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -34,6 +52,18 @@ class User(Base):
 
 
 class RefreshToken(Base):
+    """
+    Database model representing a refresh token issued to a user.
+
+    Attributes:
+        id: Primary key.
+        token: The refresh token string.
+        user_id: ID of the user the token belongs to.
+        user: The user the token belongs to.
+        created_at: Timestamp of token creation.
+        expired_at: Timestamp at which the token expires.
+    """
+
     __tablename__ = "tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -49,6 +79,18 @@ class RefreshToken(Base):
 
 
 class OAuthAccount(Base):
+    """
+    Database model representing an OAuth account linked to a user.
+
+    Attributes:
+        id: Primary key.
+        provider: Name of the OAuth provider (e.g. "google", "42").
+        provider_user_id: User ID as returned by the OAuth provider.
+        user_id: ID of the linked user.
+        user: The linked user.
+        created_at: Timestamp of account linking.
+    """
+
     __tablename__ = "oauth_accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True)

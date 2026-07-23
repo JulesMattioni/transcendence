@@ -23,14 +23,24 @@ class OrganisationService(BaseService):
         self.member_repo = member_repo
 
     async def create_organisation(
-        self, org_name: str, user_id: int
+        self,
+        org_name: str,
+        user_id: int,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
     ) -> OrganisationRead:
         new_org = await self.repository.create_organisation(name_org=org_name)
         if not new_org:
             raise OrgnisationCreationError()
 
         await self.member_repo.create_user_from_org(
-            org_id=new_org.id, user_id=user_id, role_id=1  # admin !
+            org_id=new_org.id,
+            user_id=user_id,
+            role_id=1,  # admin !
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
         )
         await self.session.commit()
         return OrganisationRead.model_validate(new_org)
