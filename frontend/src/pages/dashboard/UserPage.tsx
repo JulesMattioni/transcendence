@@ -105,7 +105,7 @@ function UserPage() {
         Manage your personal information and profile picture.
       </p>
 
-      <section className="mt-8 max-w-2xl border border-gray-200 bg-white p-6 sm:p-8">
+      <section className="mt-8 border border-gray-200 bg-white p-6 sm:p-8">
         <div className="flex items-center gap-5 border-b border-gray-100 pb-6">
           <img
             src={getAvatarUrl(avatarId)}
