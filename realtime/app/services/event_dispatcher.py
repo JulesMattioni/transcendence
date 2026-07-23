@@ -1,7 +1,6 @@
 from app.services.connection_manager import manager
 from app.schemas.event_out import EventOut, EventIn
 from app.schemas.event_type import EventType
-
 from datetime import timezone, datetime
 from app.schemas.roles import Role
 from uuid import uuid4
@@ -95,6 +94,7 @@ class Dispatcher:
         await self.send_event_to_all_org(event.org_id, event)
 
     async def build_event_out(self, event: EventIn):
+
         if event.event_type not in (
             EventType.AUTH_LOGIN,
             EventType.AUTH_LOGOUT,
@@ -119,6 +119,9 @@ class Dispatcher:
             EventType.FILE_UPDATED,
             EventType.FILE_DELETED,
         ):
+            user = manager.get_name_from_id(event.user_id)
+            if not user:
+                raise ValueError("User not found")
             if not event.org_id or not event.file_name:
                 raise ValueError("Organisation id or file name not provided")
             responses = await self.get_organisation_name_from_org_id(
@@ -132,24 +135,25 @@ class Dispatcher:
                 file_name=event.file_name,
                 org_name=org_name,
                 org_id=event.org_id,
+                first_name=user["first_name"],
+                last_name=user["last_name"],
+                user_id=event.user_id,
             )
 
     async def publish_event(self, event_in: EventIn):
-        try:
-            event_out = await self.build_event_out(event_in)
-            if event_out.event_type in (
-                EventType.AUTH_LOGIN,
-                EventType.AUTH_LOGOUT,
-            ):
-                await self.send_auth_event_to_concerned(event_out)
-            elif event_out.event_type in (
-                EventType.FILE_CREATED,
-                EventType.FILE_UPDATED,
-                EventType.FILE_DELETED,
-            ):
-                await self.send_file_event_to_concerned(event_out)
-        except HTTPException:
-            raise
+
+        event_out = await self.build_event_out(event_in)
+        if event_out.event_type in (
+            EventType.AUTH_LOGIN,
+            EventType.AUTH_LOGOUT,
+        ):
+            await self.send_auth_event_to_concerned(event_out)
+        elif event_out.event_type in (
+            EventType.FILE_CREATED,
+            EventType.FILE_UPDATED,
+            EventType.FILE_DELETED,
+        ):
+            await self.send_file_event_to_concerned(event_out)
 
 
 dispatcher = Dispatcher()

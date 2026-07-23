@@ -32,6 +32,15 @@ class ConnectionManager(BaseService):
             last_name=last_name,
         )
 
+    def get_name_from_id(self, user_id: int):
+        response = self._users.get(user_id, None)
+        if not response:
+            return None
+        return {
+            "first_name": response.first_name,
+            "last_name": response.last_name,
+        }
+
     def disconnect(self, user_id: int):
         self._users.pop(user_id, None)
 
