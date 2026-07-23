@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from fastapi import WebSocket
 from shared.base_service import BaseService
+from app.services.get_members_from_organisation_id import (
+    get_members_from_organisation_id,
+)
+
+from app.services.get_orgs_from_user_id import get_orgs_from_user_id
 
 
 @dataclass
@@ -31,6 +36,16 @@ class ConnectionManager(BaseService):
             first_name=first_name,
             last_name=last_name,
         )
+
+    async def get_connected_friends(self, user_id):
+        orgs = await get_orgs_from_user_id(user_id)
+        friends = {}
+        for org in orgs["organisation"]:
+            org_members = await get_members_from_organisation_id(org["id"])
+            for member in org_members:
+                if member["user_id"] in self._users:
+                    friends[member["user_id"]] = member
+        return list(friends.values())
 
     def get_name_from_id(self, user_id: int):
         response = self._users.get(user_id, None)

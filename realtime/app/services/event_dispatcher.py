@@ -6,13 +6,16 @@ from app.schemas.roles import Role
 from uuid import uuid4
 import httpx
 from fastapi import HTTPException
+from app.services.get_members_from_organisation_id import (
+    get_members_from_organisation_id,
+)
+
+from app.services.get_orgs_from_user_id import get_orgs_from_user_id
 
 
 class Dispatcher:
 
-    async def get_organisation_name_from_org_id(
-        self, org_id: int
-    ) -> list[dict]:
+    async def get_org_name_from_org_id(self, org_id: int) -> list[dict]:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             try:
                 response = await client.get(
@@ -29,45 +32,10 @@ class Dispatcher:
             )
         return response.json()
 
-    async def get_organisations_from_user_id(self, user_id: int) -> list[dict]:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-            try:
-                response = await client.get(
-                    f"http://org:8000/organisations/users/"
-                    f"{user_id}/organisations"
-                )
-            except httpx.HTTPError:
-                raise HTTPException(
-                    status_code=503, detail="Org service unavailable"
-                )
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Error getting organisation from user id {user_id}",
-            )
-        return response.json()
-
-    async def get_members_from_organisation_id(self, org_id):
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
-            try:
-                response = await client.get(
-                    f"http://org:8000/internal/organisations/{org_id}/members"
-                )
-            except httpx.HTTPError:
-                raise HTTPException(
-                    status_code=503, detail="Org service unavailable"
-                )
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Error getting organisation from user id {org_id}",
-            )
-        return response.json()
-
     async def send_event_to_admins_of_org(self, org_id: int, event: EventOut):
         members = [
             member["user_id"]
-            for member in await self.get_members_from_organisation_id(org_id)
+            for member in await get_members_from_organisation_id(org_id)
             if member["role_id"] == Role.ADMIN
         ]
         for member in members:
@@ -76,15 +44,13 @@ class Dispatcher:
     async def send_event_to_all_org(self, org_id: int, event: EventOut):
         members = [
             member["user_id"]
-            for member in await self.get_members_from_organisation_id(org_id)
+            for member in await get_members_from_organisation_id(org_id)
         ]
         for member in members:
             await manager.broadcast_id(event.model_dump(mode="json"), member)
 
     async def send_auth_event_to_concerned(self, event: EventOut):
-        organisations = await self.get_organisations_from_user_id(
-            event.user_id
-        )
+        organisations = await get_orgs_from_user_id(event.user_id)
         for organisation in organisations["organisation"]:
             await self.send_event_to_admins_of_org(
                 organisation["org_id"], event
@@ -124,9 +90,7 @@ class Dispatcher:
                 raise ValueError("User not found")
             if not event.org_id or not event.file_name:
                 raise ValueError("Organisation id or file name not provided")
-            responses = await self.get_organisation_name_from_org_id(
-                event.org_id
-            )
+            responses = await self.get_org_name_from_org_id(event.org_id)
             org_name = responses["name"]
             return EventOut(
                 event_id=str(uuid4()),
