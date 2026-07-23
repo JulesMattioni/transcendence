@@ -3,6 +3,7 @@ from app.services.connection_manager import manager
 from app.services.get_current_user import get_current_user
 from app.services.event_dispatcher import dispatcher
 from fastapi import HTTPException
+from app.schemas.event_in import EventIn 
 
 router = APIRouter()
 
@@ -11,10 +12,9 @@ router = APIRouter()
 async def audit(websocket: WebSocket, token: str) -> None:
     try:
         user = await get_current_user(token)
-    except HTTPException:
+    except Exception:
         await websocket.close(code=1008)
         return
-
     await manager.connect(
         websocket,
         user["id"],
@@ -25,7 +25,7 @@ async def audit(websocket: WebSocket, token: str) -> None:
         while True:
             message = await websocket.receive_text()
             await websocket.send_text(message)
-    except WebSocketDisconnect:
+    except Exception:
         pass
     finally:
         manager.disconnect(user["id"])
