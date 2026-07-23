@@ -30,4 +30,4 @@ async def audit(websocket: WebSocket, token: str) -> None:
     except Exception as e:
         logger.warning(e)
     finally:
-        manager.disconnect(user["id"])
+        manager.disconnect(user["id"], websocket)
