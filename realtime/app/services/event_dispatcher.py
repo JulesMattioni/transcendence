@@ -10,6 +10,7 @@ from fastapi import HTTPException
 
 
 class Dispatcher:
+
     async def get_organisation_name_from_org_id(
         self, org_id: int
     ) -> list[dict]:
@@ -101,22 +102,16 @@ class Dispatcher:
             EventType.FILE_UPDATED,
             EventType.FILE_DELETED,
         ):
-            raise HTTPException(
-                status_code=422, detail="unknow event"
-            )
+            raise HTTPException(status_code=422, detail="unknow event")
         if event.event_type in (EventType.AUTH_LOGIN, EventType.AUTH_LOGOUT):
-            user_data = manager.get_data(event.user_id)
-            if not user_data:
-                raise HTTPException(status_code=422, detail="unknow user")
             return EventOut(
                 event_id=str(uuid4()),
                 timestamp=datetime.now(timezone.utc),
                 event_type=event.event_type,
+                first_name=event.first_name,
+                last_name=event.last_name,
                 user_id=event.user_id,
-                org_id=None,
                 org_name=None,
-                first_name=user_data["first_name"],
-                last_name=user_data["last_name"],
                 file_name=None,
             )
         elif event.event_type in (
@@ -137,8 +132,6 @@ class Dispatcher:
                 file_name=event.file_name,
                 org_name=org_name,
                 org_id=event.org_id,
-                first_name=None,
-                last_name=None,
             )
 
     async def publish_event(self, event_in: EventIn):
