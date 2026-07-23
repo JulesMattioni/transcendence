@@ -3,6 +3,7 @@ import {
   listMyInvitations,
   acceptInvitation,
   declineInvitation,
+  getOrganisation,
   roleName,
   type Invitation,
 } from "../../../api/org";
@@ -13,28 +14,51 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [orgNames, setOrgNames] = useState<Record<number, string>>({});
+
+  const loadOrgNames = useCallback((invs: Invitation[]) => {
+    const ids = [...new Set(invs.map((i) => i.org_id))];
+    Promise.all(
+      ids.map((id) =>
+        getOrganisation(id)
+          .then((org) => [id, org.name] as const)
+          .catch(() => null),
+      ),
+    ).then((entries) => {
+      const names: Record<number, string> = {};
+      for (const e of entries) if (e) names[e[0]] = e[1];
+      setOrgNames(names);
+    });
+  }, []);
 
   const load = useCallback(() => {
     return listMyInvitations()
-      .then((data) => setInvitations(data))
+      .then((data) => {
+        setInvitations(data);
+        loadOrgNames(data);
+      })
       .catch((err) => {
         const message =
           err instanceof ApiError ? err.message : "Could not load invitations.";
         setError(message);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadOrgNames]);
 
   useEffect(() => {
     let active = true;
     listMyInvitations()
-      .then((data) => active && setInvitations(data))
+      .then((data) => {
+        if (!active) return;
+        setInvitations(data);
+        loadOrgNames(data);
+      })
       .catch(() => active && setError("Could not load invitations."))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadOrgNames]);
 
   async function handleAccept(id: number) {
     setBusyId(id);
@@ -81,7 +105,10 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
             {invitations.map((inv) => (
               <li key={inv.id} className="px-4 py-3">
                 <p className="text-sm text-black">
-                  Invitation to join an organisation
+                  Invitation to join{" "}
+                  <span className="font-medium">
+                    {orgNames[inv.org_id] ?? "an organisation"}
+                  </span>
                 </p>
                 <p className="text-xs text-muted">
                   Role: {roleName(inv.role_id)}
