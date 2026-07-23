@@ -15,7 +15,7 @@ from app.services.get_orgs_from_user_id import get_orgs_from_user_id
 
 class Dispatcher:
 
-    async def get_org_name_from_org_id(self, org_id: int) -> list[dict]:
+    async def get_org_name_from_org_id(self, org_id: int) -> dict:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             try:
                 response = await client.get(
@@ -57,6 +57,10 @@ class Dispatcher:
             )
 
     async def send_file_event_to_concerned(self, event: EventOut):
+        if event.org_id is None:
+            raise HTTPException(
+                status_code=422, detail="org_id is required"
+            )
         await self.send_event_to_all_org(event.org_id, event)
 
     async def build_event_out(self, event: EventIn):
@@ -69,7 +73,14 @@ class Dispatcher:
             EventType.FILE_DELETED,
         ):
             raise HTTPException(status_code=422, detail="unknow event")
+        if event.user_id is None:
+            raise HTTPException(status_code=422, detail="user_id is required")
         if event.event_type in (EventType.AUTH_LOGIN, EventType.AUTH_LOGOUT):
+            if event.first_name is None or event.last_name is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="first_name and last_name are required",
+                )
             return EventOut(
                 event_id=str(uuid4()),
                 timestamp=datetime.now(timezone.utc),

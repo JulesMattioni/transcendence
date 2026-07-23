@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket
 from app.services.connection_manager import manager
 from app.services.get_current_user import get_current_user
-from app.services.event_dispatcher import dispatcher
+
 
 import logging
 
