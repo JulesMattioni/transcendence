@@ -10,6 +10,7 @@ import UserPage from "../pages/dashboard/UserPage";
 import ProtectedLayout from "../components/auth/ProtectedLayout";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
+import OAuthCallbackPage from "../pages/OAuthCallbackPage";
 
 function AppRoutes() {
   return (
@@ -17,6 +18,7 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
       <Route path="/dashboard" element={<ProtectedLayout />}>
         <Route index element={<HomePage />} />

@@ -15,5 +15,7 @@ COPY conf/setup.conf.template /etc/nginx/templates/modsecurity.d/setup.conf.temp
 
 COPY conf/default.conf.template /etc/nginx/templates/conf.d/default.conf.template
 
+COPY conf/modsecurity-override.conf /etc/nginx/templates/modsecurity.d/modsecurity-override.conf.template
+
 COPY certs/server.crt /etc/nginx/conf/server.crt
 COPY certs/server.key /etc/nginx/conf/server.key

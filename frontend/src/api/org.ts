@@ -39,6 +39,10 @@ export async function createOrg(name: string): Promise<OrganisationRead> {
   });
 }
 
+export async function getOrganisation(orgId: number): Promise<OrganisationRead> {
+  return apiFetch<OrganisationRead>(`/org/organisations/${orgId}`);
+}
+
 export function isAdminRole(role: number | null | undefined): boolean {
   return role === OrgRole.Admin;
 }
