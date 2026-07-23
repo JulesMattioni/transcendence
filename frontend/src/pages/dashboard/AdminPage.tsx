@@ -136,13 +136,13 @@ function AdminPage() {
       {error && <p className="mt-4 text-red-600">{error}</p>}
       {loading && <p className="mt-4 text-muted">Loading…</p>}
 
-      {/* Invitations en attente */}
+      {/* Invitations */}
       {!loading && invitations.length > 0 && (
         <div className="mt-6">
           <h2 className="font-sans text-lg font-semibold text-black">
             Pending invitations
           </h2>
-          <ul className="mt-2 divide-y divide-gray-200 border border-gray-200">
+          <ul className="mt-2 border border-gray-200">
             {invitations.map((inv) => (
               <li
                 key={inv.id}
@@ -158,7 +158,7 @@ function AdminPage() {
         </div>
       )}
 
-      {/* Membres */}
+      {/* Members*/}
       {!loading && (
         <div className="mt-6">
           <h2 className="font-sans text-lg font-semibold text-black">
