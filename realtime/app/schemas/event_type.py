@@ -1,7 +1,7 @@
-from enum import StrEnum
+from enum import Enum
 
 
-class EventType(StrEnum):
+class EventType(str, Enum):
     AUTH_LOGIN = "auth.login"
     AUTH_LOGOUT = "auth.logout"
     FILE_CREATED = "file.created"

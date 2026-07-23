@@ -27,7 +27,13 @@ async def create_organisation(
     user_id=Depends(get_current_user),
     service: OrganisationService = Depends(get_organisation_service),
 ):
-    new_org = await service.create_organisation(data.name, user_id=user_id.id)
+    new_org = await service.create_organisation(
+        data.name,
+        user_id=user_id.id,
+        email=user_id.email,
+        first_name=user_id.first_name,
+        last_name=user_id.last_name,
+    )
 
     return new_org
 

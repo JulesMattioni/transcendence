@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, User, ChevronDown } from "lucide-react";
+import { User, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { me } from "../../api/auth";
 import { getAvatarUrl } from "../../utils/avatars";
@@ -10,7 +10,7 @@ function Topbar() {
   const { orgs, currentOrg, loading, setCurrentOrg } = useOrg();
 
   useEffect(() => {
-    let active = true;
+    let active = true; 
     me()
       .then((data) => active && setAvatarId(data.avatar_id))
       .catch(() => {
@@ -56,12 +56,6 @@ function Topbar() {
 
       {/* Profile */}
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          className="text-keepr transition-colors duration-200 hover:text-blue-700"
-        >
-          <Bell size={22} fill="currentColor" />
-        </button>
         <Link
           to="/dashboard/user"
           className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-keepr text-white"
