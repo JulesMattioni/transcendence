@@ -150,6 +150,3 @@ class UserRepository:
 
         user.avatar_id = avatar_id
         await self._session.flush()
-
-
-# Norme Unit of Work Martin Fowler

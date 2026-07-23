@@ -19,6 +19,8 @@ FT_REDIRECT_URI = os.environ.get(
 )
 FT_CLIENT_SECRET = os.environ.get("FT_CLIENT_SECRET", "")
 
+REALTIME_BASE_URL = os.environ.get("REALTIME_BASE_URL", "http://realtime:8000")
+
 try:
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
         os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 15)

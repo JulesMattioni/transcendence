@@ -14,6 +14,7 @@ from app.config import (
 )
 from app.models.auth import User, OAuthAccount
 from app.repositories import UserRepository, TokenRepository, OAuthRepository
+from app.clients import RealtimeClient
 from app.schemas import (
     LoginResponse,
     UserCreate,
@@ -61,6 +62,7 @@ class AuthService:
         user_repository: UserRepository,
         token_repository: TokenRepository,
         oauth_repository: OAuthRepository,
+        realtime_client: RealtimeClient,
         session: AsyncSession,
     ) -> None:
         """
@@ -70,12 +72,15 @@ class AuthService:
             user_repository: Repository for User persistence.
             token_repository: Repository for RefreshToken persistence.
             oauth_repository: Repository for OAuthAccount persistence.
+            realtime_client: Client notifying the realtime service of auth
+            events.
             session: Async SQLAlchemy session used for database operations.
         """
 
         self._user_repository = user_repository
         self._token_repository = token_repository
         self._oauth_repository = oauth_repository
+        self._realtime_client = realtime_client
         self._session = session
 
     async def __issue_tokens(self, user: User) -> TokenResponse:
@@ -208,6 +213,7 @@ class AuthService:
     async def register(self, user_create: UserCreate) -> LoginResponse:
         """
         Register a new user, hashing their password and issuing session tokens.
+        Notifies the realtime service of the login once registration succeeds.
 
         Args:
             user_create: New user's registration data.
@@ -245,6 +251,13 @@ class AuthService:
 
         tokens = await self.__issue_tokens(user=user)
 
+        self._realtime_client.notify_log_event(
+            event_type="auth.login",
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
+
         return LoginResponse(
             tokens=tokens,
             user=UserRead.model_validate(user),
@@ -255,6 +268,7 @@ class AuthService:
     ) -> LoginResponse | TwoFactorRequired:
         """
         Authenticate a user with email and password.
+        Notifies the realtime service of the login if 2FA is disabled.
 
         Args:
             email: User's email address.
@@ -281,6 +295,13 @@ class AuthService:
             )
 
         tokens = await self.__issue_tokens(user=user)
+
+        self._realtime_client.notify_log_event(
+            event_type="auth.login",
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
 
         return LoginResponse(
             tokens=tokens,
@@ -478,6 +499,7 @@ class AuthService:
     async def exchange_oauth_code(self, exchange_code: str) -> LoginResponse:
         """
         Exchange a one-time OAuth exchange code for a full login session.
+        Notifies the realtime service of the login.
 
         Args:
             exchange_code: One-time exchange code issued after an OAuth login.
@@ -509,11 +531,19 @@ class AuthService:
 
         tokens = await self.__issue_tokens(user=user)
 
+        self._realtime_client.notify_log_event(
+            event_type="auth.login",
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
+
         return LoginResponse(tokens=tokens, user=UserRead.model_validate(user))
 
     async def login_2fa(self, user_id: int, code: str) -> LoginResponse:
         """
         Complete login by verifying a 2FA code for a pending user.
+        Notifies the realtime service of the login once the code is verified.
 
         Args:
             user_id: ID of the user pending 2FA verification.
@@ -538,6 +568,13 @@ class AuthService:
             raise Auth2faError()
 
         tokens = await self.__issue_tokens(user=user)
+
+        self._realtime_client.notify_log_event(
+            event_type="auth.login",
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
 
         return LoginResponse(
             tokens=tokens,
@@ -705,6 +742,7 @@ class AuthService:
     async def logout(self, refresh_token: str) -> None:
         """
         Log out a user by deleting their refresh token, if it exists.
+        Notifies the realtime service of the logout before revoking the token.
 
         Args:
             refresh_token: Refresh token to revoke.
@@ -714,6 +752,13 @@ class AuthService:
 
         if rt is None:
             return
+
+        self._realtime_client.notify_log_event(
+            event_type="auth.logout",
+            user_id=rt.user.id,
+            first_name=rt.user.first_name,
+            last_name=rt.user.last_name,
+        )
 
         try:
             await self._token_repository.delete_token(rt)

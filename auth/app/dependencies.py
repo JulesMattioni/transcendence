@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.repositories import UserRepository, TokenRepository, OAuthRepository
+from app.clients import RealtimeClient
 from app.models.auth import User
 from app.services import AuthService
 from app.core.tokens import decode_token
@@ -58,10 +59,21 @@ def get_oauth_repository(
     return OAuthRepository(session)
 
 
+def get_realtime_client() -> RealtimeClient:
+    """
+    Build a RealtimeClient for notifying the realtime service of auth events.
+
+    Returns:
+        A RealtimeClient instance.
+    """
+    return RealtimeClient()
+
+
 def get_auth_service(
     user_repo: UserRepository = Depends(get_user_repository),
     token_repo: TokenRepository = Depends(get_token_repository),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
+    realtime_client: RealtimeClient = Depends(get_realtime_client),
     session: AsyncSession = Depends(get_session),
 ) -> AuthService:
     """
@@ -71,6 +83,7 @@ def get_auth_service(
         user_repo: Injected UserRepository.
         token_repo: Injected TokenRepository.
         oauth_repo: Injected OAuthRepository.
+        realtime_client: Injected RealtimeClient.
         session: Async SQLAlchemy session injected for the current request.
 
     Returns:
@@ -81,6 +94,7 @@ def get_auth_service(
         user_repository=user_repo,
         token_repository=token_repo,
         oauth_repository=oauth_repo,
+        realtime_client=realtime_client,
         session=session,
     )
 

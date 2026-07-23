@@ -1,143 +1,132 @@
-<h1 align="center">🔐 Service Auth — Keepr</h1>
+# Auth Service — Usage Guide
 
-<p align="center">
-  <em>Guide d'utilisation complet</em>
-</p>
+![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Auth](https://img.shields.io/badge/auth-JWT%20%2B%20TOTP%20%2B%20OAuth-8A2BE2)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white" alt="Pydantic" />
-  <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-</p>
-<p align="center">
-  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
-  <img src="https://img.shields.io/badge/TOTP-6E44FF?style=for-the-badge" alt="TOTP" />
-  <img src="https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google OAuth" />
-  <img src="https://img.shields.io/badge/42_OAuth-000000?style=for-the-badge&logo=42&logoColor=white" alt="42 OAuth" />
-  <img src="https://img.shields.io/badge/httpx-000000?style=for-the-badge" alt="httpx" />
-  <img src="https://img.shields.io/badge/Argon2%2FBcrypt-0057B7?style=for-the-badge" alt="Argon2/Bcrypt" />
-</p>
+_Complete reference of the routes exposed by the `auth` service — for the
+frontend and other services consuming it. For architecture, the data model
+and configuration, see [README.md](README.md)._
 
-<h1 align="center">Comment utiliser le service <code>auth</code></h1>
+## Table of contents
 
-<p align="center"><em>Référence complète des routes exposées par le service <code>auth</code> — à l'usage du frontend et des autres services.</em></p>
+1. [Base URL](#1-base-url)
+2. [Tokens](#2-tokens)
+3. [Token storage](#3-token-storage)
+4. [Routes — classic auth](#4-routes--classic-auth)
+5. [Routes — OAuth login (Google & 42)](#5-routes--oauth-login-google--42)
+6. [Route — email lookup](#6-route--email-lookup)
+7. [Data schemas](#7-data-schemas)
+8. [Summary table](#8-summary-table)
+9. [Points of attention](#9-points-of-attention)
 
-<hr/>
+## 1. Base URL
 
-<h2>📑 Sommaire</h2>
+All requests go through the gateway:
 
-<ul>
-  <li><a href="#taper">1. Où taper</a></li>
-  <li><a href="#tokens">2. Les tokens</a></li>
-  <li><a href="#stockage">3. Stockage des tokens</a></li>
-  <li><a href="#routes-classiques">4. Routes — auth classique</a></li>
-  <li><a href="#routes-oauth">5. Routes — connexion OAuth (Google &amp; 42)</a></li>
-  <li><a href="#lookup">6. Route — recherche par email</a></li>
-  <li><a href="#schemas">7. Schémas de données</a></li>
-  <li><a href="#recap">8. Table récapitulative</a></li>
-  <li><a href="#attention">9. Points d'attention</a></li>
-</ul>
+```
+https://localhost:8443/api/auth/...
+```
 
-<hr/>
+Full example: `https://localhost:8443/api/auth/signup`.
 
-<h2 id="taper">1. Où taper</h2>
+## 2. Tokens
 
-<p>Toutes les requêtes passent par la gateway :</p>
+Every completed login (signup, login without 2FA, login with 2FA verified, or
+a finished Google/42 login) returns **two tokens**:
 
-<pre>https://localhost:8443/api/auth/...</pre>
+|                    | `access_token`                                                                | `refresh_token`                                                          |
+| -------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Purpose               | Access protected routes (`/me`, and any other service validating the same JWT)     | Obtain a new `access_token` via `/refresh`                                      |
+| Lifetime               | 15 min (configurable)                                                               | 7 days (configurable)                                                              |
+| Where to send it         | `Authorization: Bearer <access_token>` header                                        | Query parameter on `/refresh` / `/logout`                                           |
+| Revocable?                | No                                                                                      | Yes — stored in the DB, deleted on `logout`, replaced on every `refresh`               |
 
-<p>Exemple complet : <code>https://localhost:8443/api/auth/signup</code>.</p>
+Two **temporary** tokens, never persisted, used only as an intermediate step:
 
-<hr/>
+|                    | `pending_token`                                                                                        | `exchange_code`                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Purpose               | Proves step 1 of login succeeded (password, Google **or** 42) and authorizes calling `/login/2fa/verify`     | Proves the OAuth callback (Google or 42) resolved an account and authorizes calling `/oauth/exchange` |
+| Lifetime               | ~5 min (configurable)                                                                                          | ~30 seconds (configurable)                                                                     |
+| Where to send it         | `Authorization: Bearer <pending_token>` header on `/login/2fa/verify`                                           | JSON body `{ "exchange_code": ... }` on `/oauth/exchange`                                        |
+| Internal `type`           | `"2fa_pending"`                                                                                                    | `"oauth_exchange"`                                                                                  |
 
-<h2 id="tokens">2. Les tokens</h2>
+**Standard flow** (account without 2FA):
 
-<p>Chaque connexion complète (signup, login sans 2FA, login 2FA validé, ou login Google finalisé) donne <b>deux tokens</b> :</p>
+```text
+1. signup or login
+   -> { tokens: { access_token, refresh_token }, user }
+   -> store both tokens + user info
 
-<table>
-  <tr><th></th><th><code>access_token</code></th><th><code>refresh_token</code></th></tr>
-  <tr><td>Sert à</td><td>accéder aux routes protégées (<code>/me</code>, et les autres services qui valident ce même JWT)</td><td>obtenir un nouvel <code>access_token</code> sur <code>/refresh</code></td></tr>
-  <tr><td>Durée de vie</td><td>15 min (configurable)</td><td>7 jours (configurable)</td></tr>
-  <tr><td>Où l'envoyer</td><td>header <code>Authorization: Bearer &lt;access_token&gt;</code></td><td>paramètre de requête sur <code>/refresh</code> / <code>/logout</code></td></tr>
-  <tr><td>Révocable ?</td><td>non</td><td>oui — stocké en base, supprimé au <code>logout</code> et remplacé à chaque <code>refresh</code></td></tr>
-</table>
+2. every request to a protected route
+   -> header "Authorization: Bearer <access_token>"
 
-<p>Deux tokens <b>temporaires</b>, jamais stockés en base, qui n'interviennent qu'en étape intermédiaire :</p>
+3. a request comes back 401 (access_token expired or invalid)
+   -> call /refresh with the refresh_token
+   -> replace BOTH access_token AND refresh_token with the new ones received
+   -> retry the original request
 
-<table>
-  <tr><th></th><th><code>pending_token</code></th><th><code>exchange_code</code></th></tr>
-  <tr><td>Sert à</td><td>prouver qu'on a passé l'étape 1 du login (mot de passe, Google <b>ou</b> 42) et autoriser l'appel à <code>/login/2fa/verify</code></td><td>prouver que le callback OAuth (Google ou 42) a résolu un compte, et autoriser l'appel à <code>/oauth/exchange</code></td></tr>
-  <tr><td>Durée de vie</td><td>~5 min (configurable)</td><td>~30 secondes (configurable)</td></tr>
-  <tr><td>Où l'envoyer</td><td>header <code>Authorization: Bearer &lt;pending_token&gt;</code> sur <code>/login/2fa/verify</code></td><td>body JSON <code>{ "exchange_code": ... }</code> sur <code>/oauth/exchange</code></td></tr>
-  <tr><td>Type interne</td><td><code>"2fa_pending"</code></td><td><code>"oauth_exchange"</code></td></tr>
-</table>
+4. logout
+   -> call /logout with the refresh_token
+   -> clear tokens + user on the client
+```
 
-<p><b>Flow standard</b> (compte sans 2FA) :</p>
+**Login flow with 2FA** (password, Google or 42 — same mechanics):
 
-<pre>
-1. signup ou login
-   → { tokens: { access_token, refresh_token }, user }
-   → stocker les deux tokens + les infos user
-
-2. chaque requête vers une route protégée
-   → header "Authorization: Bearer &lt;access_token&gt;"
-
-3. une requête renvoie 401 (access_token expiré ou invalide)
-   → appeler /refresh avec le refresh_token
-   → remplacer access_token ET refresh_token par les nouveaux reçus
-   → rejouer la requête initiale
-
-4. déconnexion
-   → appeler /logout avec le refresh_token
-   → effacer tokens + user côté client
-</pre>
-
-<p><b>Flow login avec 2FA</b> (mot de passe, Google ou 42, même mécanique) :</p>
-
-<pre>
-1. login (ou callback Google/42 si 2FA active)
-   → { pending_token }        (PAS de tokens ni de user à ce stade)
-   → conserver le pending_token en mémoire
+```text
+1. login (or Google/42 callback, if 2FA is enabled on the account)
+   -> { pending_token }        (NO tokens, NO user at this stage)
+   -> keep the pending_token in memory
 
 2. login/2fa/verify
-   → header "Authorization: Bearer &lt;pending_token&gt;" + body { code }
-   → { tokens: { access_token, refresh_token }, user }
-   → à partir d'ici, identique au flow standard
-</pre>
+   -> header "Authorization: Bearer <pending_token>" + body { code }
+   -> { tokens: { access_token, refresh_token }, user }
+   -> identical to the standard flow from here on
+```
 
-<p>À chaque <code>refresh</code>, le <code>refresh_token</code> change (rotation) : l'ancien devient invalide immédiatement. Réutiliser un <code>refresh_token</code> déjà consommé renvoie <code>401</code>.</p>
+On every `refresh`, the `refresh_token` changes (rotation): the old one
+becomes invalid immediately. Reusing an already-consumed `refresh_token`
+returns `401`.
 
-<p>Si <code>/refresh</code> échoue, il n'y a pas de session récupérable : effacer la session locale et rediriger vers le login.</p>
+If `/refresh` fails, there is no recoverable session: clear the local
+session and redirect to login.
 
-<hr/>
+## 3. Token storage
 
-<h2 id="stockage">3. Stockage des tokens</h2>
+Tokens are returned in the JSON response body — the server sets **no
+cookie for session tokens**. Storage (memory, `localStorage`, etc.) and
+transport are entirely the client's responsibility. The `pending_token` and
+`exchange_code` are ephemeral and not meant to be persisted.
 
-<p>Les tokens sont renvoyés dans le corps JSON de la réponse — le serveur ne pose aucun cookie <b>pour les tokens de session</b>. Le stockage (mémoire, <code>localStorage</code>, etc.) et le transport sont entièrement à la charge du client. Le <code>pending_token</code> et l'<code>exchange_code</code> sont éphémères et n'ont pas vocation à être persistés.</p>
+The only cookies set by the service are technical ones (`oauth_state_google`
+and `oauth_state_ft`, `httpOnly`), one per provider, used internally to
+secure the Google and 42 flows respectively — the frontend never needs to
+read or handle them, the browser manages them on its own.
 
-<p>Les seuls cookies posés par le service sont des cookies techniques (<code>oauth_state_google</code> et <code>oauth_state_ft</code>, <code>httpOnly</code>), un par provider, utilisés en interne pour sécuriser respectivement le flow Google et le flow 42 — le frontend n'a jamais besoin de les lire ni de les manipuler, le navigateur s'en charge tout seul.</p>
+## 4. Routes — classic auth
 
-<hr/>
+### `POST /signup` — create an account
 
-<h2 id="routes-classiques">4. Routes — auth classique</h2>
+**Body** (JSON):
 
-<h3><code>POST /signup</code> — créer un compte</h3>
-
-<p><b>Body</b> (JSON) :</p>
-<pre>
+```json
 {
   "first_name": "Ada",
   "last_name": "Lovelace",
   "email": "ada@example.com",
   "password": "Sup3rSecret!"
 }
-</pre>
-<p>Les 4 champs sont obligatoires. <code>email</code> doit être un email valide. Aucune règle de complexité n'est appliquée sur <code>password</code>.</p>
+```
 
-<p><b>Réponse succès — <code>200</code></b> : le compte est créé et l'utilisateur est directement connecté :</p>
-<pre>
+All 4 fields are required. `email` must be a valid email address. No
+complexity rule is enforced on `password`.
+
+**Success response — `200`**: the account is created and the user is logged
+in directly:
+
+```json
 {
   "tokens": {
     "access_token": "eyJhbGciOi...",
@@ -154,71 +143,81 @@
     "is_2fa_enabled": false
   }
 }
-</pre>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>409</code></td><td>l'email existe déjà</td><td><code>{"detail": "Email already registered"}</code></td></tr>
-  <tr><td><code>422</code></td><td>champ manquant ou email mal formé</td><td><code>{"detail": [{"type": "...", "loc": ["body", "email"], "msg": "..."}]}</code> — ici <code>detail</code> est une liste d'objets, pas une string</td></tr>
-</table>
+| Code  | When                              | Body |
+| ------ | ----------------------------------- | ---- |
+| `409`   | Email already exists                  | `{"detail": "Email already registered"}` |
+| `422`   | Missing field or malformed email        | `{"detail": [{"type": "...", "loc": ["body", "email"], "msg": "..."}]}` — here `detail` is a list of objects, not a string |
 
-<hr/>
+### `POST /login` — log in
 
-<h3><code>POST /login</code> — se connecter</h3>
+**Body** (JSON):
 
-<p><b>Body</b> (JSON) :</p>
-<pre>
+```json
 {
   "email": "ada@example.com",
   "password": "Sup3rSecret!"
 }
-</pre>
+```
 
-<p><b>Réponse succès — <code>200</code>, compte SANS 2FA</b> : identique à <code>signup</code> (<code>tokens</code> + <code>user</code>).</p>
+**Success response — `200`, account WITHOUT 2FA**: identical to `signup`
+(`tokens` + `user`).
 
-<p><b>Réponse succès — <code>200</code>, compte AVEC 2FA activée</b> : la réponse n'est plus un <code>LoginResponse</code> :</p>
-<pre>
+**Success response — `200`, account WITH 2FA enabled**: the response is no
+longer a `LoginResponse`:
+
+```json
 {
   "pending_token": "eyJhbGciOi...2fa_pending..."
 }
-</pre>
-<p>Ce <code>pending_token</code> doit être renvoyé (en header <code>Authorization: Bearer</code>, <b>pas</b> en query) à <code>/login/2fa/verify</code> avec le code TOTP pour obtenir les vrais tokens.</p>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td>mauvais mot de passe ou email inconnu (même message pour les deux, pour ne pas révéler quels emails existent)</td><td><code>{"detail": "Invalid credentials"}</code></td></tr>
-</table>
+This `pending_token` must be sent back (as an `Authorization: Bearer`
+header, **not** a query param) to `/login/2fa/verify` along with the TOTP
+code, to obtain real tokens.
 
-<hr/>
+| Code  | When                                                                       | Body |
+| ------ | ----------------------------------------------------------------------------- | ---- |
+| `401`   | Wrong password or unknown email (same message for both, to avoid revealing which emails exist) | `{"detail": "Invalid credentials"}` |
 
-<h3><code>POST /login/2fa/verify</code> — valider le second facteur au login</h3>
+### `POST /login/2fa/verify` — verify the second factor at login
 
-<p>Deuxième étape du login pour les comptes protégés par 2FA — que la première étape ait été <code>/login</code> (mot de passe) ou le callback Google/42 (§5).</p>
+Second step of login for accounts protected by 2FA — whether the first step
+was `/login` (password) or the Google/42 callback (§5).
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;pending_token&gt;</pre>
+**Required headers:**
 
-<p><b>Body</b> (JSON) :</p>
-<pre>{ "code": "482913" }</pre>
+```
+Authorization: Bearer <pending_token>
+```
 
-<p><b>Réponse succès — <code>200</code></b> : identique à un login classique (<code>tokens</code> + <code>user</code>).</p>
+**Body** (JSON):
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td>code TOTP invalide</td><td><code>{"detail": "Invalid code"}</code></td></tr>
-  <tr><td><code>401</code></td><td><code>pending_token</code> absent, invalide ou expiré</td><td><code>{"detail": "Invalid token"}</code> / <code>{"detail": "Token expired"}</code></td></tr>
-  <tr><td><code>401</code></td><td>user du <code>pending_token</code> introuvable</td><td><code>{"detail": "User not found"}</code></td></tr>
-</table>
+```json
+{ "code": "482913" }
+```
 
-<hr/>
+**Success response — `200`**: identical to a classic login (`tokens` +
+`user`).
 
-<h3><code>GET /me</code> — profil de l'utilisateur connecté</h3>
+| Code  | When                                        | Body |
+| ------ | ---------------------------------------------- | ---- |
+| `401`   | Invalid TOTP code                                 | `{"detail": "Invalid code"}` |
+| `401`   | `pending_token` missing, invalid or expired         | `{"detail": "Invalid token"}` / `{"detail": "Token expired"}` |
+| `401`   | User referenced by the `pending_token` not found      | `{"detail": "User not found"}` |
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+### `GET /me` — current user's profile
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+**Required headers:**
+
+```
+Authorization: Bearer <access_token>
+```
+
+**Success response — `200`**:
+
+```json
 {
   "id": 1,
   "first_name": "Ada",
@@ -228,334 +227,387 @@
   "avatar_id": 1,
   "is_2fa_enabled": false
 }
-</pre>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td>header <code>Authorization</code> absent</td><td><code>{"detail":"Not authenticated"}</code></td></tr>
-  <tr><td><code>401</code></td><td>token invalide (signature fausse, malformé)</td><td><code>{"detail":"Invalid token"}</code></td></tr>
-  <tr><td><code>401</code></td><td>token expiré</td><td><code>{"detail":"Token expired"}</code></td></tr>
-</table>
+| Code  | When                                       | Body |
+| ------ | --------------------------------------------- | ---- |
+| `401`   | `Authorization` header missing                   | `{"detail":"Not authenticated"}` |
+| `401`   | Invalid token (bad signature, malformed)            | `{"detail":"Invalid token"}` |
+| `401`   | Expired token                                          | `{"detail":"Token expired"}` |
 
-<hr/>
+### `POST /2fa/enable` — start enabling 2FA
 
-<h3><code>POST /2fa/enable</code> — démarrer l'activation de la 2FA</h3>
+Generates a TOTP secret for the current user. **2FA is not active yet** at
+this stage — it must be confirmed via `/2fa/enable/verify`.
 
-<p>Génère un secret TOTP pour l'utilisateur connecté. <b>La 2FA n'est pas encore active</b> à ce stade : il faut confirmer avec <code>/2fa/enable/verify</code>.</p>
+**Required headers:**
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+```
+Authorization: Bearer <access_token>
+```
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+**Success response — `200`**:
+
+```json
 {
   "secret": "JBSWY3DPEHPK3PXP",
   "otpauth_uri": "otpauth://totp/Keepr:ada@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Keepr"
 }
-</pre>
-<ul>
-  <li><code>secret</code> : la chaîne à saisir manuellement dans l'application d'authentification.</li>
-  <li><code>otpauth_uri</code> : l'URI à encoder en <b>QR code côté client</b>. Le service ne génère pas d'image.</li>
-</ul>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>409</code></td><td>la 2FA est déjà active sur ce compte</td><td><code>{"detail": "2FA already enabled"}</code></td></tr>
-</table>
+- `secret`: the string to type manually into an authenticator app.
+- `otpauth_uri`: the URI to encode as a **QR code on the client side**. The
+  service does not generate an image.
 
-<hr/>
+| Code  | When                              | Body |
+| ------ | ------------------------------------ | ---- |
+| `409`   | 2FA is already enabled on this account | `{"detail": "2FA already enabled"}` |
 
-<h3><code>POST /2fa/enable/verify</code> — confirmer l'activation de la 2FA</h3>
+### `POST /2fa/enable/verify` — confirm enabling 2FA
 
-<p>Confirme que l'application d'authentification est bien configurée. C'est seulement ici que <code>is_2fa_enabled</code> passe à <code>true</code>.</p>
+Confirms the authenticator app is correctly configured. Only here does
+`is_2fa_enabled` flip to `true`.
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+**Required headers:**
 
-<p><b>Body</b> (JSON) :</p>
-<pre>{ "code": "482913" }</pre>
+```
+Authorization: Bearer <access_token>
+```
 
-<p><b>Réponse succès — <code>200</code></b>, body vide (<code>null</code>).</p>
+**Body** (JSON):
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td>code TOTP invalide</td><td><code>{"detail": "Invalid code"}</code></td></tr>
-  <tr><td><code>401</code></td><td>2FA non configurée (aucun secret en attente)</td><td><code>{"detail": "2FA not configured"}</code></td></tr>
-</table>
+```json
+{ "code": "482913" }
+```
 
-<hr/>
+**Success response — `200`**, empty body (`null`).
 
-<h3><code>POST /2fa/disable</code> — désactiver la 2FA</h3>
+| Code  | When                                    | Body |
+| ------ | ------------------------------------------ | ---- |
+| `401`   | Invalid TOTP code                             | `{"detail": "Invalid code"}` |
+| `401`   | 2FA not configured (no pending secret)          | `{"detail": "2FA not configured"}` |
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+### `POST /2fa/disable` — disable 2FA
 
-<p><b>Réponse succès — <code>200</code></b> : le <code>UserRead</code> à jour (<code>is_2fa_enabled</code> repassé à <code>false</code>).</p>
+**Required headers:**
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td>2FA non active sur ce compte</td><td><code>{"detail": "2FA not configured"}</code></td></tr>
-</table>
+```
+Authorization: Bearer <access_token>
+```
 
-<hr/>
+**Success response — `200`**: the updated `UserRead` (`is_2fa_enabled` back
+to `false`).
 
-<h3><code>PATCH /update</code> — mettre à jour le profil</h3>
+| Code  | When                          | Body |
+| ------ | -------------------------------- | ---- |
+| `401`   | 2FA is not enabled on this account | `{"detail": "2FA not configured"}` |
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+### `PATCH /update` — update the profile
 
-<p><b>Body</b> (JSON) :</p>
-<pre>
+**Required headers:**
+
+```
+Authorization: Bearer <access_token>
+```
+
+**Body** (JSON):
+
+```json
 {
   "location": "Paris",
   "avatar_id": 3
 }
-</pre>
-<p><code>location</code> et <code>avatar_id</code> sont <b>tous les deux obligatoires</b> : pas de mise à jour partielle d'un seul champ.</p>
+```
 
-<p><b>Réponse succès — <code>200</code></b> : le <code>UserRead</code> à jour.</p>
+`location` and `avatar_id` are **both required** — no partial update of a
+single field.
 
-<hr/>
+**Success response — `200`**: the updated `UserRead`.
 
-<h3><code>POST /refresh</code> — renouveler l'access token</h3>
+### `POST /refresh` — renew the access token
 
-<p><code>refresh_token</code> est un <b>paramètre de requête</b>, pas un body JSON :</p>
-<pre>POST /refresh?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY</pre>
+`refresh_token` is a **query parameter**, not a JSON body:
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+```
+POST /refresh?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY
+```
+
+**Success response — `200`**:
+
+```json
 {
-  "access_token": "nouveau-token...",
-  "refresh_token": "nouveau-refresh-token...",
+  "access_token": "new-token...",
+  "refresh_token": "new-refresh-token...",
   "token_type": "bearer"
 }
-</pre>
-<p>Les deux tokens précédemment stockés côté client doivent être remplacés — l'ancien <code>refresh_token</code> est invalidé côté serveur dès cet appel.</p>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td><code>refresh_token</code> invalide, déjà utilisé, ou inconnu</td><td><code>{"detail": "Invalid token"}</code></td></tr>
-  <tr><td><code>401</code></td><td><code>refresh_token</code> expiré (plus de 7 jours)</td><td><code>{"detail": "Token expired"}</code></td></tr>
-</table>
+Both tokens previously stored on the client must be replaced — the old
+`refresh_token` is invalidated server-side as soon as this call is made.
 
-<hr/>
+| Code  | When                                          | Body |
+| ------ | ------------------------------------------------ | ---- |
+| `401`   | `refresh_token` invalid, already used, or unknown   | `{"detail": "Invalid token"}` |
+| `401`   | `refresh_token` expired (older than 7 days)           | `{"detail": "Token expired"}` |
 
-<h3><code>POST /logout</code> — déconnexion</h3>
+### `POST /logout` — log out
 
-<p><code>refresh_token</code> en paramètre de requête, comme pour <code>refresh</code> :</p>
-<pre>POST /logout?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY</pre>
+`refresh_token` is a query parameter, same as `refresh`:
 
-<p><b>Réponse succès — <code>200</code></b>, body vide (<code>null</code>). La réponse est <code>200</code> que le token existait ou non côté serveur — elle ne renseigne jamais sur ce point.</p>
+```
+POST /logout?refresh_token=El1R_Kq5YdjetznpohPSRbs5ywmZigcgIExwBNFtSMY
+```
 
-<hr/>
+**Success response — `200`**, empty body (`null`). The response is `200`
+whether or not the token existed server-side — it never reveals which.
 
-<h2 id="routes-oauth">5. Routes — connexion OAuth (Google &amp; 42)</h2>
+## 5. Routes — OAuth login (Google & 42)
 
-<p>Contrairement aux routes précédentes, ce flow <b>ne se résume pas à des appels <code>fetch</code> classiques</b> : il passe par de vraies redirections de navigateur, parce que le provider (Google ou 42) redirige lui-même l'utilisateur en dehors de l'application. Les deux providers suivent <b>exactement la même mécanique</b>, seuls les URLs et le nom du cookie technique changent.</p>
+Unlike the routes above, this flow **is not a series of plain `fetch`
+calls**: it involves real browser redirects, because the provider (Google or
+42) itself redirects the user outside of the application. Both providers
+follow **the exact same mechanics** — only the URLs and the technical
+cookie's name differ.
 
-<pre>
-1. GET /oauth/google/login   (ou GET /oauth/42/login)
-   → { authorization_url: "https://accounts.google.com/..." }   (ou "https://api.intra.42.fr/oauth/authorize?...")
-   → le frontend fait lui-même window.location.href = authorization_url
+```text
+1. GET /oauth/google/login   (or GET /oauth/42/login)
+   -> { authorization_url: "https://accounts.google.com/..." }   (or "https://api.intra.42.fr/oauth/authorize?...")
+   -> the frontend itself does window.location.href = authorization_url
 
-2. l'utilisateur se connecte / consent chez le provider
-   → le service auth n'est pas impliqué à cette étape
+2. the user logs in / consents with the provider
+   -> the auth service is not involved at this stage
 
-3. le provider redirige le navigateur vers GET /oauth/google/callback (ou /oauth/42/callback)
-   → le service auth résout le compte (déjà lié, à lier, ou nouveau)
-   → il redirige À SON TOUR le navigateur vers le frontend :
+3. the provider redirects the browser to GET /oauth/google/callback (or /oauth/42/callback)
+   -> the auth service resolves the account (already linked, to be linked, or brand new)
+   -> it redirects the browser AGAIN, this time to the frontend:
 
-   SI 2FA active sur ce compte :
+   IF 2FA is enabled on this account:
      {FRONTEND_URL}/oauth/callback?pending_token=...
-     → traiter EXACTEMENT comme l'étape 2 du flow 2FA classique (§4),
-       en appelant /login/2fa/verify avec ce pending_token
+     -> handle it EXACTLY like step 2 of the classic 2FA flow (§4),
+        calling /login/2fa/verify with this pending_token
 
-   SINON :
+   OTHERWISE:
      {FRONTEND_URL}/oauth/callback?exchange_code=...
-     → le frontend lit ce paramètre dans l'URL et appelle :
+     -> the frontend reads this parameter from the URL and calls:
 
 4. POST /oauth/exchange { exchange_code }
-   → { tokens: { access_token, refresh_token }, user }
-   → identique à un login classique réussi, à partir d'ici
-   → cette route est UNIQUE et partagée par les deux providers : elle ne fait que
-     décoder le exchange_code (JWT type="oauth_exchange"), elle ne sait pas et n'a
-     pas besoin de savoir d'où vient l'utilisateur
-</pre>
+   -> { tokens: { access_token, refresh_token }, user }
+   -> identical to a successful classic login, from here on
+   -> this route is UNIQUE and shared by both providers: it only decodes the
+      exchange_code (JWT type="oauth_exchange"), it doesn't know and doesn't
+      need to know where the user came from
+```
 
-<p><b>Ce que le frontend doit construire</b> : une page/route <code>{FRONTEND_URL}/oauth/callback</code> qui lit les query params de l'URL, commune aux deux providers :</p>
-<pre>
+**What the frontend must build**: a `{FRONTEND_URL}/oauth/callback`
+page/route that reads the URL's query params, common to both providers:
+
+```js
 const params = new URLSearchParams(window.location.search);
 const pendingToken = params.get("pending_token");
 const exchangeCode = params.get("exchange_code");
-</pre>
-<p>— pas besoin de décoder quoi que ce soit, ni de savoir si l'utilisateur vient de Google ou de 42 : la présence de l'un ou l'autre paramètre suffit à savoir quoi faire ensuite.</p>
+```
 
-<h3 id="routes-google">5.1 Google</h3>
+No need to decode anything, or to know whether the user came from Google or
+42 — the presence of one parameter or the other is enough to know what to do
+next.
 
-<h4><code>GET /oauth/google/login</code> — démarrer la connexion Google</h4>
+### 5.1 Google
 
-<p>Pas d'authentification, pas de body.</p>
+#### `GET /oauth/google/login` — start Google login
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+No authentication, no body.
+
+**Success response — `200`**:
+
+```json
 {
   "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=openid+email+profile&state=..."
 }
-</pre>
-<p>Le frontend doit faire naviguer le navigateur vers cette URL (<code>window.location.href = ...</code>), pas juste afficher la réponse. Un cookie technique <code>oauth_state_google</code> (<code>httpOnly</code>, 10 min) est posé à cette étape.</p>
+```
 
-<hr/>
+The frontend must navigate the browser to this URL
+(`window.location.href = ...`), not just display the response. A technical
+`oauth_state_google` cookie (`httpOnly`, 10 min) is set at this stage.
 
-<h4><code>GET /oauth/google/callback</code> — jamais appelée directement par le frontend</h4>
+#### `GET /oauth/google/callback` — never called directly by the frontend
 
-<p>Cette route est le <code>redirect_uri</code> enregistré côté Google — elle n'est atteinte que par la redirection du navigateur suite au consentement Google, jamais par un <code>fetch</code> du frontend.</p>
+This route is the `redirect_uri` registered with Google — it is only ever
+reached by the browser's redirect following Google's consent screen, never
+by a `fetch` from the frontend.
 
-<p><b>Réponse</b> : une redirection (<code>307</code>) vers <code>{FRONTEND_URL}/oauth/callback?pending_token=...</code> ou <code>?exchange_code=...</code>, selon que la 2FA est active ou non sur le compte résolu.</p>
+**Response**: a redirect (`307`) to
+`{FRONTEND_URL}/oauth/callback?pending_token=...` or
+`?exchange_code=...`, depending on whether 2FA is enabled on the resolved
+account.
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie <code>oauth_state_google</code> posé par <code>/oauth/google/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
-  <tr><td><code>400</code></td><td>Google refuse le <code>code</code> (expiré, déjà utilisé, invalide)</td><td><code>{"detail": "Google authentication failed"}</code></td></tr>
-</table>
+| Code  | When                                                                                    | Body |
+| ------ | -------------------------------------------------------------------------------------------- | ---- |
+| `401`   | `state` missing, invalid, or not matching the `oauth_state_google` cookie set by `/oauth/google/login` | `{"detail": "OAuth state error"}` |
+| `400`   | Google rejects the `code` (expired, already used, invalid)                                       | `{"detail": "Google authentication failed"}` |
 
-<hr/>
+### 5.2 42
 
-<h3 id="routes-42">5.2 42</h3>
+#### `GET /oauth/42/login` — start 42 login
 
-<h4><code>GET /oauth/42/login</code> — démarrer la connexion 42</h4>
+No authentication, no body. Same response contract as Google — the frontend
+shouldn't need to distinguish the two before calling
+`window.location.href`.
 
-<p>Pas d'authentification, pas de body. Même contrat de réponse que Google — le frontend ne devrait pas avoir besoin de distinguer les deux avant d'appeler <code>window.location.href</code>.</p>
+**Success response — `200`**:
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+```json
 {
   "authorization_url": "https://api.intra.42.fr/oauth/authorize?client_id=...&redirect_uri=...&scope=public&state=..."
 }
-</pre>
-<p>Le frontend doit faire naviguer le navigateur vers cette URL. Un cookie technique <code>oauth_state_ft</code> (<code>httpOnly</code>, 10 min) est posé à cette étape — distinct du cookie Google, les deux flows peuvent coexister sans se marcher dessus.</p>
+```
 
-<hr/>
+The frontend must navigate the browser to this URL. A technical
+`oauth_state_ft` cookie (`httpOnly`, 10 min) is set at this stage — distinct
+from the Google cookie, so both flows can coexist without interfering.
 
-<h4><code>GET /oauth/42/callback</code> — jamais appelée directement par le frontend</h4>
+#### `GET /oauth/42/callback` — never called directly by the frontend
 
-<p>Cette route est le <code>redirect_uri</code> enregistré côté 42 (intranet, <a href="https://profile.intra.42.fr/oauth/applications">profile.intra.42.fr/oauth/applications</a>) — elle n'est atteinte que par la redirection du navigateur suite au consentement 42, jamais par un <code>fetch</code> du frontend.</p>
+This route is the `redirect_uri` registered on the 42 intranet
+([profile.intra.42.fr/oauth/applications](https://profile.intra.42.fr/oauth/applications))
+— it is only ever reached by the browser's redirect following 42's consent
+screen, never by a `fetch` from the frontend.
 
-<p><b>Réponse</b> : une redirection (<code>307</code>) vers <code>{FRONTEND_URL}/oauth/callback?pending_token=...</code> ou <code>?exchange_code=...</code>, selon que la 2FA est active ou non sur le compte résolu — identique à Google à partir d'ici.</p>
+**Response**: a redirect (`307`) to
+`{FRONTEND_URL}/oauth/callback?pending_token=...` or `?exchange_code=...`,
+depending on whether 2FA is enabled on the resolved account — identical to
+Google from here on.
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie <code>oauth_state_ft</code> posé par <code>/oauth/42/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
-  <tr><td><code>400</code></td><td>42 refuse le <code>code</code> (expiré, déjà utilisé, invalide)</td><td><code>{"detail": "42 authentication failed"}</code></td></tr>
-</table>
+| Code  | When                                                                            | Body |
+| ------ | ------------------------------------------------------------------------------------ | ---- |
+| `401`   | `state` missing, invalid, or not matching the `oauth_state_ft` cookie set by `/oauth/42/login` | `{"detail": "OAuth state error"}` |
+| `400`   | 42 rejects the `code` (expired, already used, invalid)                                   | `{"detail": "42 authentication failed"}` |
 
-<hr/>
+### 5.3 Finalizing the login (shared by Google & 42)
 
-<h3>5.3 Finaliser la connexion (partagé Google &amp; 42)</h3>
+#### `POST /oauth/exchange` — finalize the OAuth login
 
-<h4><code>POST /oauth/exchange</code> — finaliser la connexion OAuth</h4>
+**Body** (JSON):
 
-<p><b>Body</b> (JSON) :</p>
-<pre>{ "exchange_code": "eyJhbGciOi...oauth_exchange..." }</pre>
-<p>Le <code>exchange_code</code> reçu en query param sur <code>{FRONTEND_URL}/oauth/callback</code>, qu'il vienne du callback Google ou du callback 42 — route unique, pas de variante par provider.</p>
+```json
+{ "exchange_code": "eyJhbGciOi...oauth_exchange..." }
+```
 
-<p><b>Réponse succès — <code>200</code></b> : identique à un login classique réussi (<code>tokens</code> + <code>user</code>).</p>
+The `exchange_code` received as a query param on
+`{FRONTEND_URL}/oauth/callback`, whether it came from the Google or the 42
+callback — a single shared route, no per-provider variant.
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td><code>exchange_code</code> invalide, mal formé, ou de mauvais type</td><td><code>{"detail": "Invalid token"}</code></td></tr>
-  <tr><td><code>401</code></td><td><code>exchange_code</code> expiré (~30s)</td><td><code>{"detail": "Token expired"}</code></td></tr>
-  <tr><td><code>401</code></td><td>user introuvable</td><td><code>{"detail": "User not found"}</code></td></tr>
-</table>
+**Success response — `200`**: identical to a successful classic login
+(`tokens` + `user`).
 
-<hr/>
+| Code  | When                                             | Body |
+| ------ | ----------------------------------------------------- | ---- |
+| `401`   | `exchange_code` invalid, malformed, or of the wrong type | `{"detail": "Invalid token"}` |
+| `401`   | `exchange_code` expired (~30s)                             | `{"detail": "Token expired"}` |
+| `401`   | User not found                                                | `{"detail": "User not found"}` |
 
-<h2 id="lookup">6. Route — recherche par email</h2>
+## 6. Route — email lookup
 
-<h3><code>GET /users/by-email</code> — retrouver un utilisateur par email</h3>
+### `GET /users/by-email` — find a user by email
 
-<p>Pensée pour un usage inter-services (org, core) via la dépendance d'auth partagée, plutôt que pour un appel direct depuis l'UI — mais accessible à quiconque possède un <code>access_token</code> valide.</p>
+Designed for inter-service use (org, core) via the shared auth dependency,
+rather than for direct calls from the UI — but reachable by anyone holding a
+valid `access_token`.
 
-<p><b>Headers requis :</b></p>
-<pre>Authorization: Bearer &lt;access_token&gt;</pre>
+**Required headers:**
 
-<p><b>Query param :</b></p>
-<pre>GET /users/by-email?email=ada@example.com</pre>
+```
+Authorization: Bearer <access_token>
+```
 
-<p><b>Réponse succès — <code>200</code></b> :</p>
-<pre>
+**Query param:**
+
+```
+GET /users/by-email?email=ada@example.com
+```
+
+**Success response — `200`**:
+
+```json
 {
   "id": 1,
   "email": "ada@example.com",
   "first_name": "Ada",
   "last_name": "Lovelace"
 }
-</pre>
+```
 
-<table>
-  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>404</code></td><td>aucun utilisateur avec cet email</td><td><code>{"detail": "No user with this email"}</code></td></tr>
-  <tr><td><code>401</code></td><td>pas d'<code>access_token</code> valide</td><td><code>{"detail":"Invalid token"}</code> / <code>{"detail":"Not authenticated"}</code></td></tr>
-</table>
+| Code  | When                              | Body |
+| ------ | ------------------------------------ | ---- |
+| `404`   | No user with this email                | `{"detail": "No user with this email"}` |
+| `401`   | No valid `access_token`                  | `{"detail":"Invalid token"}` / `{"detail":"Not authenticated"}` |
 
-<hr/>
+## 7. Data schemas
 
-<h2 id="schemas">7. Schémas de données</h2>
+| Schema                | Fields                                                                                         | Used in |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | ------- |
+| `UserCreate`               | `first_name`, `last_name`, `email`, `password`                                                       | `/signup` input |
+| `UserLogin`                | `email`, `password`                                                                                     | `/login` input |
+| `UserUpdate`                | `location`, `avatar_id` (both required)                                                                  | `/update` input |
+| `TwoFactorVerify`             | `code`                                                                                                      | `/login/2fa/verify`, `/2fa/enable/verify` input |
+| `OAuthExchange`                | `exchange_code`                                                                                               | `/oauth/exchange` input |
+| `UserRead`                       | `id`, `first_name`, `last_name`, `email`, `location` (or `null`), `avatar_id`, `is_2fa_enabled`                | `/me`, `/update`, `/2fa/disable` output, and the `user` field of `signup`/`login`/`login/2fa/verify`/`oauth/exchange`. Never contains a password, hash, or 2FA secret. |
+| `UserLookup`                       | `id`, `email`, `first_name`, `last_name`                                                                          | `/users/by-email` output |
+| `TokenResponse`                       | `access_token`, `refresh_token`, `token_type` (always `"bearer"`)                                                    | `/refresh` output, and the `tokens` field of `signup`/`login`/`login/2fa/verify`/`oauth/exchange` |
+| `LoginResponse`                          | `tokens: TokenResponse` + `user: UserRead`                                                                             | `/signup`, `/login` (no 2FA), `/login/2fa/verify`, `/oauth/exchange` output |
+| `TwoFactorRequired`                        | `pending_token`                                                                                                            | `/login` and Google/42 callback output, when 2FA is enabled |
+| `TwoFactorCredentials`                        | `secret`, `otpauth_uri`                                                                                                       | `/2fa/enable` output |
+| `OAuthRedirect`                                  | `authorization_url`                                                                                                              | `/oauth/google/login` and `/oauth/42/login` output |
 
-<table>
-  <tr><th>Schéma</th><th>Champs</th><th>Utilisé dans</th></tr>
-  <tr><td><code>UserCreate</code></td><td><code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>password</code></td><td>entrée <code>/signup</code></td></tr>
-  <tr><td><code>UserLogin</code></td><td><code>email</code>, <code>password</code></td><td>entrée <code>/login</code></td></tr>
-  <tr><td><code>UserUpdate</code></td><td><code>location</code>, <code>avatar_id</code> (les deux obligatoires)</td><td>entrée <code>/update</code></td></tr>
-  <tr><td><code>TwoFactorVerify</code></td><td><code>code</code></td><td>entrée <code>/login/2fa/verify</code>, <code>/2fa/enable/verify</code></td></tr>
-  <tr><td><code>OAuthExchange</code></td><td><code>exchange_code</code></td><td>entrée <code>/oauth/exchange</code></td></tr>
-  <tr><td><code>UserRead</code></td><td><code>id</code>, <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>location</code> (ou <code>null</code>), <code>avatar_id</code>, <code>is_2fa_enabled</code></td><td>sortie <code>/me</code>, <code>/update</code>, <code>/2fa/disable</code>, et <code>user</code> de <code>signup</code>/<code>login</code>/<code>login/2fa/verify</code>/<code>oauth/exchange</code>. Ne contient jamais mot de passe, hash, ou secret 2FA.</td></tr>
-  <tr><td><code>UserLookup</code></td><td><code>id</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code></td><td>sortie <code>/users/by-email</code></td></tr>
-  <tr><td><code>TokenResponse</code></td><td><code>access_token</code>, <code>refresh_token</code>, <code>token_type</code> (toujours <code>"bearer"</code>)</td><td>sortie <code>/refresh</code>, et <code>tokens</code> de <code>signup</code>/<code>login</code>/<code>login/2fa/verify</code>/<code>oauth/exchange</code></td></tr>
-  <tr><td><code>LoginResponse</code></td><td><code>tokens: TokenResponse</code> + <code>user: UserRead</code></td><td>sortie <code>/signup</code>, <code>/login</code> (sans 2FA), <code>/login/2fa/verify</code>, <code>/oauth/exchange</code></td></tr>
-  <tr><td><code>TwoFactorRequired</code></td><td><code>pending_token</code></td><td>sortie <code>/login</code> et callback Google/42, quand la 2FA est active</td></tr>
-  <tr><td><code>TwoFactorCredentials</code></td><td><code>secret</code>, <code>otpauth_uri</code></td><td>sortie <code>/2fa/enable</code></td></tr>
-  <tr><td><code>OAuthRedirect</code></td><td><code>authorization_url</code></td><td>sortie <code>/oauth/google/login</code> et <code>/oauth/42/login</code></td></tr>
-</table>
+## 8. Summary table
 
-<hr/>
+| Method | Route                       | Auth required                | Body/Query                    | Success response |
+| ------- | ----------------------------- | -------------------------------- | -------------------------------- | ------------------- |
+| `POST`   | `/signup`                       | no                                  | body (`UserCreate`)                 | `200` `LoginResponse` |
+| `POST`   | `/login`                         | no                                  | body (`UserLogin`)                    | `200` `LoginResponse` or `TwoFactorRequired` |
+| `POST`   | `/login/2fa/verify`               | `Bearer <pending_token>`              | body (`TwoFactorVerify`)                | `200` `LoginResponse` |
+| `GET`    | `/me`                               | `Bearer <access_token>`                 | —                                          | `200` `UserRead` |
+| `POST`   | `/2fa/enable`                         | `Bearer <access_token>`                   | —                                            | `200` `TwoFactorCredentials` |
+| `POST`   | `/2fa/enable/verify`                    | `Bearer <access_token>`                     | body (`TwoFactorVerify`)                        | `200` `null` |
+| `POST`   | `/2fa/disable`                            | `Bearer <access_token>`                       | —                                                  | `200` `UserRead` |
+| `PATCH`  | `/update`                                    | `Bearer <access_token>`                         | body (`UserUpdate`)                                   | `200` `UserRead` |
+| `POST`   | `/refresh`                                      | no (refresh token is the credential)              | query `?refresh_token=...`                              | `200` `TokenResponse` |
+| `POST`   | `/logout`                                          | no (refresh token is the credential)                | query `?refresh_token=...`                                | `200` `null` |
+| `GET`    | `/oauth/google/login`                                 | no                                                     | —                                                            | `200` `OAuthRedirect` |
+| `GET`    | `/oauth/google/callback`                                 | no (called by Google)                                    | query `?code=...&state=...`                                    | redirect to the frontend |
+| `GET`    | `/oauth/42/login`                                           | no                                                          | —                                                                  | `200` `OAuthRedirect` |
+| `GET`    | `/oauth/42/callback`                                           | no (called by 42)                                             | query `?code=...&state=...`                                          | redirect to the frontend |
+| `POST`   | `/oauth/exchange`                                                 | no (exchange_code is the credential)                             | body (`OAuthExchange`)                                                  | `200` `LoginResponse` |
+| `GET`    | `/users/by-email`                                                    | `Bearer <access_token>`                                            | query `?email=...`                                                        | `200` `UserLookup` |
 
-<h2 id="recap">8. Table récapitulative</h2>
+## 9. Points of attention
 
-<table>
-  <tr><th>Méthode</th><th>Route</th><th>Auth requise</th><th>Body/Query</th><th>Réponse succès</th></tr>
-  <tr><td><code>POST</code></td><td><code>/signup</code></td><td>non</td><td>body (<code>UserCreate</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/login</code></td><td>non</td><td>body (<code>UserLogin</code>)</td><td><code>200</code> <code>LoginResponse</code> ou <code>TwoFactorRequired</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/login/2fa/verify</code></td><td><code>Bearer &lt;pending_token&gt;</code></td><td>body (<code>TwoFactorVerify</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
-  <tr><td><code>GET</code></td><td><code>/me</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>UserRead</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/2fa/enable</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>TwoFactorCredentials</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/2fa/enable/verify</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>body (<code>TwoFactorVerify</code>)</td><td><code>200</code> <code>null</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/2fa/disable</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>—</td><td><code>200</code> <code>UserRead</code></td></tr>
-  <tr><td><code>PATCH</code></td><td><code>/update</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>body (<code>UserUpdate</code>)</td><td><code>200</code> <code>UserRead</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/refresh</code></td><td>non (refresh token fait foi)</td><td>query <code>?refresh_token=...</code></td><td><code>200</code> <code>TokenResponse</code></td></tr>
-  <tr><td><code>POST</code></td><td><code>/logout</code></td><td>non (refresh token fait foi)</td><td>query <code>?refresh_token=...</code></td><td><code>200</code> <code>null</code></td></tr>
-  <tr><td><code>GET</code></td><td><code>/oauth/google/login</code></td><td>non</td><td>—</td><td><code>200</code> <code>OAuthRedirect</code></td></tr>
-  <tr><td><code>GET</code></td><td><code>/oauth/google/callback</code></td><td>non (appelée par Google)</td><td>query <code>?code=...&amp;state=...</code></td><td>redirection vers le frontend</td></tr>
-  <tr><td><code>GET</code></td><td><code>/oauth/42/login</code></td><td>non</td><td>—</td><td><code>200</code> <code>OAuthRedirect</code></td></tr>
-  <tr><td><code>GET</code></td><td><code>/oauth/42/callback</code></td><td>non (appelée par 42)</td><td>query <code>?code=...&amp;state=...</code></td><td>redirection vers le frontend</td></tr>
-  <tr><td><code>POST</code></td><td><code>/oauth/exchange</code></td><td>non (exchange_code fait foi)</td><td>body (<code>OAuthExchange</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
-  <tr><td><code>GET</code></td><td><code>/users/by-email</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>query <code>?email=...</code></td><td><code>200</code> <code>UserLookup</code></td></tr>
-</table>
+- The login flow **depends on the account's 2FA state**, whether the login
+  happens by password, Google, or 42: the client must always handle both
+  possible response shapes.
+- The `is_2fa_enabled` field is exposed in `UserRead`.
+- Enabling 2FA happens in **two steps** (`/2fa/enable` then
+  `/2fa/enable/verify`): the secret is generated at the first step, but 2FA
+  only becomes active after a code is confirmed — this avoids locking out a
+  user whose authenticator app was misconfigured.
+- The service **does not generate a QR code image**: it returns the
+  `otpauth_uri`, to be encoded as a QR code on the client.
+- Google and 42 are both implemented with the exact same mechanics
+  (redirect → callback → `pending_token`/`exchange_code` →
+  `/oauth/exchange`). A Google account and a 42 account can both link to the
+  same `User` if they share the same email.
+- The `oauth_state_google` and `oauth_state_ft` technical cookies are
+  independent: starting the Google flow then the 42 flow (or vice versa) in
+  the same tab doesn't break anything — each callback only looks at its own
+  cookie.
+- No rate limiting or lockout on `/login`.
+- No explicit CORS configuration on the service — go through the gateway
+  (`/api/auth/...`) to avoid browser CORS errors.
+- Token lifetimes are controlled by the environment variables
+  `ACCESS_TOKEN_EXPIRE_MINUTES` (default 15 min), `REFRESH_TOKEN_EXPIRE_DAYS`
+  (default 7 days), `TEMPORARY_TOKEN_EXPIRE_MINUTES` (`pending_token`
+  lifetime, default ~5 min) and `OAUTH_EXCHANGE_EXPIRE_SECONDS`
+  (`exchange_code` lifetime, default ~30s).
+- `FRONTEND_URL` determines where the Google and 42 callbacks redirect the
+  browser — keep it in sync with the frontend team if that URL changes.
 
-<hr/>
-
-<h2 id="attention">9. Points d'attention</h2>
-
-<ul>
-  <li>Le flow de login <b>dépend de l'état 2FA</b> du compte, que la connexion se fasse par mot de passe, Google ou 42 : le client doit toujours gérer les deux formes de réponse possibles.</li>
-  <li>Le champ <code>is_2fa_enabled</code> est exposé dans <code>UserRead</code>.</li>
-  <li>L'activation de la 2FA se fait en <b>deux temps</b> (<code>/2fa/enable</code> puis <code>/2fa/enable/verify</code>) : le secret est généré à la première étape mais la 2FA n'est active qu'après confirmation d'un code, pour éviter de verrouiller un utilisateur dont l'application d'authentification serait mal configurée.</li>
-  <li>Le service <b>ne génère pas d'image de QR code</b> : il renvoie l'<code>otpauth_uri</code>, à encoder en QR côté client.</li>
-  <li>Google et 42 sont tous les deux implémentés, avec exactement la même mécanique (redirection → callback → <code>pending_token</code>/<code>exchange_code</code> → <code>/oauth/exchange</code>). Un compte Google et un compte 42 peuvent tous les deux se lier au même <code>User</code> s'ils partagent le même email.</li>
-  <li>Les cookies techniques <code>oauth_state_google</code> et <code>oauth_state_ft</code> sont indépendants : lancer le flow Google puis le flow 42 (ou l'inverse) dans le même onglet ne casse rien, chaque callback ne regarde que son propre cookie.</li>
-  <li>Aucun rate limiting ni lockout sur <code>/login</code>.</li>
-  <li>Aucune configuration CORS explicite sur le service — passer par la gateway (<code>/api/auth/...</code>) pour éviter les erreurs CORS dans le navigateur.</li>
-  <li>Les durées de tokens sont pilotées par les variables d'environnement <code>ACCESS_TOKEN_EXPIRE_MINUTES</code> (défaut 15 min), <code>REFRESH_TOKEN_EXPIRE_DAYS</code> (défaut 7 jours), <code>TEMPORARY_TOKEN_EXPIRE_MINUTES</code> (durée du <code>pending_token</code>, défaut ~5 min) et <code>OAUTH_EXCHANGE_EXPIRE_SECONDS</code> (durée de l'<code>exchange_code</code>, défaut ~30s).</li>
-  <li><code>FRONTEND_URL</code> détermine où les callbacks Google et 42 redirigent le navigateur — à synchroniser avec l'équipe frontend si son URL change.</li>
-</ul>
-
-<p align="center"><a href="#taper">⬆ retour en haut</a></p>
+[Back to top](#auth-service--usage-guide)
