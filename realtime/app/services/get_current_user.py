@@ -1,8 +1,22 @@
+"""HTTP client resolving a bearer token to its user."""
+
 import httpx
 from fastapi import HTTPException
 
 
 async def get_current_user(token: str):
+    """Resolve the user behind a bearer token via the ``auth`` service.
+
+    Args:
+        token: Bearer token to validate.
+
+    Returns:
+        The decoded user JSON (``id``, ``first_name``, ``last_name``, ...).
+
+    Raises:
+        HTTPException: ``503`` if ``auth`` is unreachable, ``401`` if the
+            token is rejected.
+    """
     async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
         try:
             response = await client.get(
