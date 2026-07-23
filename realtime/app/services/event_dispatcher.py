@@ -58,9 +58,7 @@ class Dispatcher:
 
     async def send_file_event_to_concerned(self, event: EventOut):
         if event.org_id is None:
-            raise HTTPException(
-                status_code=422, detail="org_id is required"
-            )
+            raise HTTPException(status_code=422, detail="org_id is required")
         await self.send_event_to_all_org(event.org_id, event)
 
     async def build_event_out(self, event: EventIn):
@@ -98,9 +96,13 @@ class Dispatcher:
         ):
             user = manager.get_name_from_id(event.user_id)
             if not user:
-                raise ValueError("User not found")
+                raise HTTPException(status_code=404, detail="User not found")
             if not event.org_id or not event.file_name:
-                raise ValueError("Organisation id or file name not provided")
+                raise HTTPException(
+                    status_code=422,
+                    detail="Organisation id or file name not provided",
+                )
+
             responses = await self.get_org_name_from_org_id(event.org_id)
             org_name = responses["name"]
             return EventOut(
