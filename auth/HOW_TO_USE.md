@@ -1,3 +1,9 @@
+<h1 align="center">🔐 Service Auth — Keepr</h1>
+
+<p align="center">
+  <em>Guide d'utilisation complet</em>
+</p>
+
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
@@ -9,6 +15,7 @@
   <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
   <img src="https://img.shields.io/badge/TOTP-6E44FF?style=for-the-badge" alt="TOTP" />
   <img src="https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google OAuth" />
+  <img src="https://img.shields.io/badge/42_OAuth-000000?style=for-the-badge&logo=42&logoColor=white" alt="42 OAuth" />
   <img src="https://img.shields.io/badge/httpx-000000?style=for-the-badge" alt="httpx" />
   <img src="https://img.shields.io/badge/Argon2%2FBcrypt-0057B7?style=for-the-badge" alt="Argon2/Bcrypt" />
 </p>
@@ -26,7 +33,7 @@
   <li><a href="#tokens">2. Les tokens</a></li>
   <li><a href="#stockage">3. Stockage des tokens</a></li>
   <li><a href="#routes-classiques">4. Routes — auth classique</a></li>
-  <li><a href="#routes-google">5. Routes — connexion Google</a></li>
+  <li><a href="#routes-oauth">5. Routes — connexion OAuth (Google &amp; 42)</a></li>
   <li><a href="#lookup">6. Route — recherche par email</a></li>
   <li><a href="#schemas">7. Schémas de données</a></li>
   <li><a href="#recap">8. Table récapitulative</a></li>
@@ -61,7 +68,7 @@
 
 <table>
   <tr><th></th><th><code>pending_token</code></th><th><code>exchange_code</code></th></tr>
-  <tr><td>Sert à</td><td>prouver qu'on a passé l'étape 1 du login (mot de passe <b>ou</b> Google) et autoriser l'appel à <code>/login/2fa/verify</code></td><td>prouver que le callback Google a résolu un compte, et autoriser l'appel à <code>/oauth/exchange</code></td></tr>
+  <tr><td>Sert à</td><td>prouver qu'on a passé l'étape 1 du login (mot de passe, Google <b>ou</b> 42) et autoriser l'appel à <code>/login/2fa/verify</code></td><td>prouver que le callback OAuth (Google ou 42) a résolu un compte, et autoriser l'appel à <code>/oauth/exchange</code></td></tr>
   <tr><td>Durée de vie</td><td>~5 min (configurable)</td><td>~30 secondes (configurable)</td></tr>
   <tr><td>Où l'envoyer</td><td>header <code>Authorization: Bearer &lt;pending_token&gt;</code> sur <code>/login/2fa/verify</code></td><td>body JSON <code>{ "exchange_code": ... }</code> sur <code>/oauth/exchange</code></td></tr>
   <tr><td>Type interne</td><td><code>"2fa_pending"</code></td><td><code>"oauth_exchange"</code></td></tr>
@@ -87,10 +94,10 @@
    → effacer tokens + user côté client
 </pre>
 
-<p><b>Flow login avec 2FA</b> (mot de passe ou Google, même mécanique) :</p>
+<p><b>Flow login avec 2FA</b> (mot de passe, Google ou 42, même mécanique) :</p>
 
 <pre>
-1. login (ou callback Google si 2FA active)
+1. login (ou callback Google/42 si 2FA active)
    → { pending_token }        (PAS de tokens ni de user à ce stade)
    → conserver le pending_token en mémoire
 
@@ -110,7 +117,7 @@
 
 <p>Les tokens sont renvoyés dans le corps JSON de la réponse — le serveur ne pose aucun cookie <b>pour les tokens de session</b>. Le stockage (mémoire, <code>localStorage</code>, etc.) et le transport sont entièrement à la charge du client. Le <code>pending_token</code> et l'<code>exchange_code</code> sont éphémères et n'ont pas vocation à être persistés.</p>
 
-<p>Le seul cookie posé par le service est un cookie technique (<code>oauth_state</code>, <code>httpOnly</code>), utilisé en interne pour sécuriser le flow Google — le frontend n'a jamais besoin de le lire ni de le manipuler, le navigateur s'en charge tout seul.</p>
+<p>Les seuls cookies posés par le service sont des cookies techniques (<code>oauth_state_google</code> et <code>oauth_state_ft</code>, <code>httpOnly</code>), un par provider, utilisés en interne pour sécuriser respectivement le flow Google et le flow 42 — le frontend n'a jamais besoin de les lire ni de les manipuler, le navigateur s'en charge tout seul.</p>
 
 <hr/>
 
@@ -186,7 +193,7 @@
 
 <h3><code>POST /login/2fa/verify</code> — valider le second facteur au login</h3>
 
-<p>Deuxième étape du login pour les comptes protégés par 2FA — que la première étape ait été <code>/login</code> (mot de passe) ou le callback Google (§5).</p>
+<p>Deuxième étape du login pour les comptes protégés par 2FA — que la première étape ait été <code>/login</code> (mot de passe) ou le callback Google/42 (§5).</p>
 
 <p><b>Headers requis :</b></p>
 <pre>Authorization: Bearer &lt;pending_token&gt;</pre>
@@ -342,19 +349,19 @@
 
 <hr/>
 
-<h2 id="routes-google">5. Routes — connexion Google</h2>
+<h2 id="routes-oauth">5. Routes — connexion OAuth (Google &amp; 42)</h2>
 
-<p>Contrairement aux routes précédentes, ce flow <b>ne se résume pas à des appels <code>fetch</code> classiques</b> : il passe par de vraies redirections de navigateur, parce que Google lui-même redirige l'utilisateur en dehors de l'application.</p>
+<p>Contrairement aux routes précédentes, ce flow <b>ne se résume pas à des appels <code>fetch</code> classiques</b> : il passe par de vraies redirections de navigateur, parce que le provider (Google ou 42) redirige lui-même l'utilisateur en dehors de l'application. Les deux providers suivent <b>exactement la même mécanique</b>, seuls les URLs et le nom du cookie technique changent.</p>
 
 <pre>
-1. GET /oauth/google/login
-   → { authorization_url: "https://accounts.google.com/..." }
+1. GET /oauth/google/login   (ou GET /oauth/42/login)
+   → { authorization_url: "https://accounts.google.com/..." }   (ou "https://api.intra.42.fr/oauth/authorize?...")
    → le frontend fait lui-même window.location.href = authorization_url
 
-2. l'utilisateur se connecte / consent sur google.com
+2. l'utilisateur se connecte / consent chez le provider
    → le service auth n'est pas impliqué à cette étape
 
-3. Google redirige le navigateur vers GET /oauth/google/callback
+3. le provider redirige le navigateur vers GET /oauth/google/callback (ou /oauth/42/callback)
    → le service auth résout le compte (déjà lié, à lier, ou nouveau)
    → il redirige À SON TOUR le navigateur vers le frontend :
 
@@ -370,31 +377,36 @@
 4. POST /oauth/exchange { exchange_code }
    → { tokens: { access_token, refresh_token }, user }
    → identique à un login classique réussi, à partir d'ici
+   → cette route est UNIQUE et partagée par les deux providers : elle ne fait que
+     décoder le exchange_code (JWT type="oauth_exchange"), elle ne sait pas et n'a
+     pas besoin de savoir d'où vient l'utilisateur
 </pre>
 
-<p><b>Ce que le frontend doit construire</b> : une page/route <code>{FRONTEND_URL}/oauth/callback</code> qui lit les query params de l'URL :</p>
+<p><b>Ce que le frontend doit construire</b> : une page/route <code>{FRONTEND_URL}/oauth/callback</code> qui lit les query params de l'URL, commune aux deux providers :</p>
 <pre>
 const params = new URLSearchParams(window.location.search);
 const pendingToken = params.get("pending_token");
 const exchangeCode = params.get("exchange_code");
 </pre>
-<p>— pas besoin de décoder quoi que ce soit, la présence de l'un ou l'autre paramètre suffit à savoir quoi faire ensuite.</p>
+<p>— pas besoin de décoder quoi que ce soit, ni de savoir si l'utilisateur vient de Google ou de 42 : la présence de l'un ou l'autre paramètre suffit à savoir quoi faire ensuite.</p>
 
-<h3><code>GET /oauth/google/login</code> — démarrer la connexion Google</h3>
+<h3 id="routes-google">5.1 Google</h3>
+
+<h4><code>GET /oauth/google/login</code> — démarrer la connexion Google</h4>
 
 <p>Pas d'authentification, pas de body.</p>
 
 <p><b>Réponse succès — <code>200</code></b> :</p>
 <pre>
 {
-  "authorization_url": "https://accounts.google.com/o/oauth2/auth?client_id=...&redirect_uri=...&state=..."
+  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=openid+email+profile&state=..."
 }
 </pre>
-<p>Le frontend doit faire naviguer le navigateur vers cette URL (<code>window.location.href = ...</code>), pas juste afficher la réponse.</p>
+<p>Le frontend doit faire naviguer le navigateur vers cette URL (<code>window.location.href = ...</code>), pas juste afficher la réponse. Un cookie technique <code>oauth_state_google</code> (<code>httpOnly</code>, 10 min) est posé à cette étape.</p>
 
 <hr/>
 
-<h3><code>GET /oauth/google/callback</code> — jamais appelée directement par le frontend</h3>
+<h4><code>GET /oauth/google/callback</code> — jamais appelée directement par le frontend</h4>
 
 <p>Cette route est le <code>redirect_uri</code> enregistré côté Google — elle n'est atteinte que par la redirection du navigateur suite au consentement Google, jamais par un <code>fetch</code> du frontend.</p>
 
@@ -402,17 +414,49 @@ const exchangeCode = params.get("exchange_code");
 
 <table>
   <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
-  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie posé par <code>/oauth/google/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
+  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie <code>oauth_state_google</code> posé par <code>/oauth/google/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
   <tr><td><code>400</code></td><td>Google refuse le <code>code</code> (expiré, déjà utilisé, invalide)</td><td><code>{"detail": "Google authentication failed"}</code></td></tr>
 </table>
 
 <hr/>
 
-<h3><code>POST /oauth/exchange</code> — finaliser la connexion Google</h3>
+<h3 id="routes-42">5.2 42</h3>
+
+<h4><code>GET /oauth/42/login</code> — démarrer la connexion 42</h4>
+
+<p>Pas d'authentification, pas de body. Même contrat de réponse que Google — le frontend ne devrait pas avoir besoin de distinguer les deux avant d'appeler <code>window.location.href</code>.</p>
+
+<p><b>Réponse succès — <code>200</code></b> :</p>
+<pre>
+{
+  "authorization_url": "https://api.intra.42.fr/oauth/authorize?client_id=...&redirect_uri=...&scope=public&state=..."
+}
+</pre>
+<p>Le frontend doit faire naviguer le navigateur vers cette URL. Un cookie technique <code>oauth_state_ft</code> (<code>httpOnly</code>, 10 min) est posé à cette étape — distinct du cookie Google, les deux flows peuvent coexister sans se marcher dessus.</p>
+
+<hr/>
+
+<h4><code>GET /oauth/42/callback</code> — jamais appelée directement par le frontend</h4>
+
+<p>Cette route est le <code>redirect_uri</code> enregistré côté 42 (intranet, <a href="https://profile.intra.42.fr/oauth/applications">profile.intra.42.fr/oauth/applications</a>) — elle n'est atteinte que par la redirection du navigateur suite au consentement 42, jamais par un <code>fetch</code> du frontend.</p>
+
+<p><b>Réponse</b> : une redirection (<code>307</code>) vers <code>{FRONTEND_URL}/oauth/callback?pending_token=...</code> ou <code>?exchange_code=...</code>, selon que la 2FA est active ou non sur le compte résolu — identique à Google à partir d'ici.</p>
+
+<table>
+  <tr><th>Code</th><th>Quand</th><th>Body</th></tr>
+  <tr><td><code>401</code></td><td><code>state</code> absent, invalide, ou ne correspondant pas au cookie <code>oauth_state_ft</code> posé par <code>/oauth/42/login</code></td><td><code>{"detail": "OAuth state error"}</code></td></tr>
+  <tr><td><code>400</code></td><td>42 refuse le <code>code</code> (expiré, déjà utilisé, invalide)</td><td><code>{"detail": "42 authentication failed"}</code></td></tr>
+</table>
+
+<hr/>
+
+<h3>5.3 Finaliser la connexion (partagé Google &amp; 42)</h3>
+
+<h4><code>POST /oauth/exchange</code> — finaliser la connexion OAuth</h4>
 
 <p><b>Body</b> (JSON) :</p>
 <pre>{ "exchange_code": "eyJhbGciOi...oauth_exchange..." }</pre>
-<p>Le <code>exchange_code</code> reçu en query param sur <code>{FRONTEND_URL}/oauth/callback</code>.</p>
+<p>Le <code>exchange_code</code> reçu en query param sur <code>{FRONTEND_URL}/oauth/callback</code>, qu'il vienne du callback Google ou du callback 42 — route unique, pas de variante par provider.</p>
 
 <p><b>Réponse succès — <code>200</code></b> : identique à un login classique réussi (<code>tokens</code> + <code>user</code>).</p>
 
@@ -468,9 +512,9 @@ const exchangeCode = params.get("exchange_code");
   <tr><td><code>UserLookup</code></td><td><code>id</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code></td><td>sortie <code>/users/by-email</code></td></tr>
   <tr><td><code>TokenResponse</code></td><td><code>access_token</code>, <code>refresh_token</code>, <code>token_type</code> (toujours <code>"bearer"</code>)</td><td>sortie <code>/refresh</code>, et <code>tokens</code> de <code>signup</code>/<code>login</code>/<code>login/2fa/verify</code>/<code>oauth/exchange</code></td></tr>
   <tr><td><code>LoginResponse</code></td><td><code>tokens: TokenResponse</code> + <code>user: UserRead</code></td><td>sortie <code>/signup</code>, <code>/login</code> (sans 2FA), <code>/login/2fa/verify</code>, <code>/oauth/exchange</code></td></tr>
-  <tr><td><code>TwoFactorRequired</code></td><td><code>pending_token</code></td><td>sortie <code>/login</code> et callback Google, quand la 2FA est active</td></tr>
+  <tr><td><code>TwoFactorRequired</code></td><td><code>pending_token</code></td><td>sortie <code>/login</code> et callback Google/42, quand la 2FA est active</td></tr>
   <tr><td><code>TwoFactorCredentials</code></td><td><code>secret</code>, <code>otpauth_uri</code></td><td>sortie <code>/2fa/enable</code></td></tr>
-  <tr><td><code>OAuthRedirect</code></td><td><code>authorization_url</code></td><td>sortie <code>/oauth/google/login</code></td></tr>
+  <tr><td><code>OAuthRedirect</code></td><td><code>authorization_url</code></td><td>sortie <code>/oauth/google/login</code> et <code>/oauth/42/login</code></td></tr>
 </table>
 
 <hr/>
@@ -491,6 +535,8 @@ const exchangeCode = params.get("exchange_code");
   <tr><td><code>POST</code></td><td><code>/logout</code></td><td>non (refresh token fait foi)</td><td>query <code>?refresh_token=...</code></td><td><code>200</code> <code>null</code></td></tr>
   <tr><td><code>GET</code></td><td><code>/oauth/google/login</code></td><td>non</td><td>—</td><td><code>200</code> <code>OAuthRedirect</code></td></tr>
   <tr><td><code>GET</code></td><td><code>/oauth/google/callback</code></td><td>non (appelée par Google)</td><td>query <code>?code=...&amp;state=...</code></td><td>redirection vers le frontend</td></tr>
+  <tr><td><code>GET</code></td><td><code>/oauth/42/login</code></td><td>non</td><td>—</td><td><code>200</code> <code>OAuthRedirect</code></td></tr>
+  <tr><td><code>GET</code></td><td><code>/oauth/42/callback</code></td><td>non (appelée par 42)</td><td>query <code>?code=...&amp;state=...</code></td><td>redirection vers le frontend</td></tr>
   <tr><td><code>POST</code></td><td><code>/oauth/exchange</code></td><td>non (exchange_code fait foi)</td><td>body (<code>OAuthExchange</code>)</td><td><code>200</code> <code>LoginResponse</code></td></tr>
   <tr><td><code>GET</code></td><td><code>/users/by-email</code></td><td><code>Bearer &lt;access_token&gt;</code></td><td>query <code>?email=...</code></td><td><code>200</code> <code>UserLookup</code></td></tr>
 </table>
@@ -500,15 +546,16 @@ const exchangeCode = params.get("exchange_code");
 <h2 id="attention">9. Points d'attention</h2>
 
 <ul>
-  <li>Le flow de login <b>dépend de l'état 2FA</b> du compte, que la connexion se fasse par mot de passe ou par Google : le client doit toujours gérer les deux formes de réponse possibles.</li>
+  <li>Le flow de login <b>dépend de l'état 2FA</b> du compte, que la connexion se fasse par mot de passe, Google ou 42 : le client doit toujours gérer les deux formes de réponse possibles.</li>
   <li>Le champ <code>is_2fa_enabled</code> est exposé dans <code>UserRead</code>.</li>
   <li>L'activation de la 2FA se fait en <b>deux temps</b> (<code>/2fa/enable</code> puis <code>/2fa/enable/verify</code>) : le secret est généré à la première étape mais la 2FA n'est active qu'après confirmation d'un code, pour éviter de verrouiller un utilisateur dont l'application d'authentification serait mal configurée.</li>
   <li>Le service <b>ne génère pas d'image de QR code</b> : il renvoie l'<code>otpauth_uri</code>, à encoder en QR côté client.</li>
-  <li>Seul Google est implémenté ; aucune route OAuth 42 n'existe pour l'instant.</li>
+  <li>Google et 42 sont tous les deux implémentés, avec exactement la même mécanique (redirection → callback → <code>pending_token</code>/<code>exchange_code</code> → <code>/oauth/exchange</code>). Un compte Google et un compte 42 peuvent tous les deux se lier au même <code>User</code> s'ils partagent le même email.</li>
+  <li>Les cookies techniques <code>oauth_state_google</code> et <code>oauth_state_ft</code> sont indépendants : lancer le flow Google puis le flow 42 (ou l'inverse) dans le même onglet ne casse rien, chaque callback ne regarde que son propre cookie.</li>
   <li>Aucun rate limiting ni lockout sur <code>/login</code>.</li>
   <li>Aucune configuration CORS explicite sur le service — passer par la gateway (<code>/api/auth/...</code>) pour éviter les erreurs CORS dans le navigateur.</li>
   <li>Les durées de tokens sont pilotées par les variables d'environnement <code>ACCESS_TOKEN_EXPIRE_MINUTES</code> (défaut 15 min), <code>REFRESH_TOKEN_EXPIRE_DAYS</code> (défaut 7 jours), <code>TEMPORARY_TOKEN_EXPIRE_MINUTES</code> (durée du <code>pending_token</code>, défaut ~5 min) et <code>OAUTH_EXCHANGE_EXPIRE_SECONDS</code> (durée de l'<code>exchange_code</code>, défaut ~30s).</li>
-  <li><code>FRONTEND_URL</code> détermine où le callback Google redirige le navigateur — à synchroniser avec l'équipe frontend si son URL change.</li>
+  <li><code>FRONTEND_URL</code> détermine où les callbacks Google et 42 redirigent le navigateur — à synchroniser avec l'équipe frontend si son URL change.</li>
 </ul>
 
 <p align="center"><a href="#taper">⬆ retour en haut</a></p>

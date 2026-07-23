@@ -9,6 +9,8 @@ from app.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     GOOGLE_CLIENT_ID,
     GOOGLE_REDIRECT_URI,
+    FT_CLIENT_ID,
+    FT_REDIRECT_URI,
 )
 from app.models.auth import User, OAuthAccount
 from app.repositories import UserRepository, TokenRepository, OAuthRepository
@@ -45,6 +47,7 @@ from app.core import (
     get_google_profile,
     create_oauth_exchange_token,
     decode_token,
+    get_ft_profile,
 )
 
 
@@ -88,7 +91,7 @@ class AuthService:
         state = generate_token()
 
         response.set_cookie(
-            key="oauth_state",
+            key="oauth_state_google",
             value=state,
             max_age=600,
             httponly=True,
@@ -105,7 +108,32 @@ class AuthService:
         }
 
         authorization_url = (
-            "https://accounts.google.com/o/oauth2/auth?" + urlencode(params)
+            "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+        )
+        return OAuthRedirect(authorization_url=authorization_url)
+
+    def oauth_ft_redirect(self, response: Response) -> OAuthRedirect:
+        state = generate_token()
+
+        response.set_cookie(
+            key="oauth_state_ft",
+            value=state,
+            max_age=600,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+
+        params = {
+            "client_id": FT_CLIENT_ID,
+            "redirect_uri": FT_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "public",
+            "state": state,
+        }
+
+        authorization_url = (
+            "https://api.intra.42.fr/oauth/authorize?" + urlencode(params)
         )
         return OAuthRedirect(authorization_url=authorization_url)
 
@@ -233,6 +261,85 @@ class AuthService:
                 user=user,
                 provider="google",
                 provider_user_id=profile_response["sub"],
+            )
+        except Exception:
+            await self._session.rollback()
+            raise
+
+        await self._session.commit()
+        return OAuthExchange(
+            exchange_code=create_oauth_exchange_token(user_id=user.id)
+        )
+
+    async def oauth_ft_login(
+        self, code: str
+    ) -> OAuthExchange | TwoFactorRequired:
+        profile_response = await get_ft_profile(code=code)
+
+        oauth_account = await self._oauth_repository.get_by_provider(
+            provider="42", provider_user_id=str(profile_response["id"])
+        )
+
+        if oauth_account:
+            if oauth_account.user.is_2fa_enabled:
+                return TwoFactorRequired(
+                    pending_token=create_temporary_token(
+                        user_id=oauth_account.user.id
+                    )
+                )
+
+            await self._session.commit()
+            return OAuthExchange(
+                exchange_code=create_oauth_exchange_token(
+                    user_id=oauth_account.user.id
+                )
+            )
+
+        user = await self._user_repository.get_by_email(
+            profile_response["email"]
+        )
+
+        if user is not None:
+            try:
+                oauth_account: OAuthAccount = (
+                    await self._oauth_repository.create(
+                        user=user,
+                        provider="42",
+                        provider_user_id=str(profile_response["id"]),
+                    )
+                )
+            except Exception:
+                await self._session.rollback()
+                raise
+
+            if user.is_2fa_enabled:
+                await self._session.commit()
+                return TwoFactorRequired(
+                    pending_token=create_temporary_token(user_id=user.id)
+                )
+
+            await self._session.commit()
+            return OAuthExchange(
+                exchange_code=create_oauth_exchange_token(user_id=user.id)
+            )
+
+        try:
+            user = await self._user_repository.create_user(
+                first_name=profile_response["first_name"],
+                last_name=profile_response["last_name"],
+                email=profile_response["email"],
+                hashed_password="IMPOSSIBLE",
+            )
+
+        except Exception:
+            await self._session.rollback()
+            raise
+
+        try:
+            oauth_account: OAuthAccount = await self._oauth_repository.create(
+                user=user,
+                provider="42",
+                provider_user_id=str(profile_response["id"]),
             )
         except Exception:
             await self._session.rollback()
