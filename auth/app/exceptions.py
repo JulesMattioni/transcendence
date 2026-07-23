@@ -42,5 +42,9 @@ class GoogleAuthError(AuthError):
     pass
 
 
+class FtAuthError(AuthError):
+    pass
+
+
 class UserByEmailNotFoundError(AuthError):
     pass

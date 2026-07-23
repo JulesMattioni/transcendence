@@ -14,6 +14,7 @@ from app.exceptions import (
     InvalidOAuthStateError,
     GoogleAuthError,
     UserByEmailNotFoundError,
+    FtAuthError,
 )
 
 app = FastAPI(title="auth")
@@ -119,6 +120,16 @@ async def google_auth_failed_handler(
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": "Google authentication failed"},
+    )
+
+
+@app.exception_handler(FtAuthError)
+async def ft_auth_failed_handler(
+    request: Request, exc: FtAuthError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": "42 authentication failed"},
     )
 
 
