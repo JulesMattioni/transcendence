@@ -7,6 +7,19 @@ from app.config import FT_CLIENT_ID, FT_CLIENT_SECRET, FT_REDIRECT_URI
 
 
 async def get_ft_profile(code: str) -> dict[str, Any]:
+    """
+    Retrieve 42 intranet user profile using OAuth authorization code.
+
+    Args:
+        code : OAuth authorization code from 42 intranet callback.
+
+    Returns:
+        User profile data as a dictionary.
+
+    Raises:
+        FtAuthError: If token or profile retrieval fails.
+    """
+
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://api.intra.42.fr/oauth/token",

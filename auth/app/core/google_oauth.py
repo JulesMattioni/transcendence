@@ -11,6 +11,19 @@ from app.config import (
 
 
 async def get_google_profile(code: str) -> dict[str, Any]:
+    """
+    Retrieve google user profile using OAuth authorization code.
+
+    Args:
+        code : OAuth authorization code from google callback.
+
+    Returns:
+        User profile data as a dictionary.
+
+    Raises:
+        GoogleAuthError: If token or profile retrieval fails.
+    """
+
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://oauth2.googleapis.com/token",
