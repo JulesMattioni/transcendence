@@ -9,7 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class RealtimeClient:
+    """
+    Outbound HTTP client pushing file events to the realtime service.
+    """
+
     def __init__(self, base_url: str = REALTIME_BASE_URL) -> None:
+        """
+        Initialize the client with the realtime service base URL.
+
+        Args:
+            base_url: Base URL of the realtime service.
+        """
+
         self._base_url = base_url
 
     def notify_file_event(
@@ -18,6 +29,16 @@ class RealtimeClient:
         org_id: int,
         file_name: str,
     ) -> None:
+        """
+        Schedule the event broadcast without awaiting its result.
+
+        Args:
+            event_type: Event name (file.created, file.updated,
+            file.deleted).
+            org_id: Organisation whose clients receive the event.
+            file_name: Original filename shown in the event.
+        """
+
         asyncio.create_task(self._post_event(event_type, org_id, file_name))
 
     async def _post_event(
@@ -26,6 +47,16 @@ class RealtimeClient:
         org_id: int,
         file_name: str,
     ) -> None:
+        """
+        POST the event to realtime; failures are only logged.
+
+        Args:
+            event_type: Event name (file.created, file.updated,
+            file.deleted).
+            org_id: Organisation whose clients receive the event.
+            file_name: Original filename shown in the event.
+        """
+
         payload = {
             "event_type": event_type,
             "org_id": org_id,
