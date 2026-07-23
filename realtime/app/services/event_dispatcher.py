@@ -116,6 +116,7 @@ class Dispatcher:
                 last_name=user["last_name"],
                 user_id=event.user_id,
             )
+        raise HTTPException(status_code=422, detail="Unprocessable event")
 
     async def publish_event(self, event_in: EventIn):
 

@@ -41,7 +41,7 @@ class ConnectionManager(BaseService):
         orgs = await get_orgs_from_user_id(user_id)
         friends = {}
         for org in orgs["organisation"]:
-            org_members = await get_members_from_organisation_id(org["id"])
+            org_members = await get_members_from_organisation_id(org["org_id"])
             for member in org_members:
                 if member["user_id"] in self._users:
                     friends[member["user_id"]] = member

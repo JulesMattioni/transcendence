@@ -10,6 +10,8 @@ async def get_connected_member(user_id: int) -> list[dict]:
     try:
         friends = await manager.get_connected_friends(user_id)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=422,

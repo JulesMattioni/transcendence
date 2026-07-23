@@ -11,6 +11,8 @@ async def ingest(event: EventIn) -> str:
     try:
         await dispatcher.publish_event(event)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=422,
