@@ -1,15 +1,14 @@
 from fastapi import APIRouter
-from app.schemas.event_in import EventIn
-from app.services.event_dispatcher import dispatcher
+from app.services.connection_manager import manager
 from fastapi import HTTPException
 
 router = APIRouter()
 
 
-@router.post("/internal/events", status_code=202)
-async def ingest(event: EventIn) -> str:
+@router.get("/connected_friends", status_code=200)
+async def get_connected_member(user_id: int) -> list[dict]:
     try:
-        await dispatcher.publish_event(event)
+        friends = await manager.get_connected_friends(user_id)
 
     except HTTPException:
         raise
@@ -18,4 +17,4 @@ async def ingest(event: EventIn) -> str:
             status_code=422,
             detail=f"An error occured {e}",
         )
-    return "OK"
+    return friends
