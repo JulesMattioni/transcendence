@@ -13,18 +13,48 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def get_user_repository(
     session: AsyncSession = Depends(get_session),
 ) -> UserRepository:
+    """
+    Build a UserRepository bound to the request's database session.
+
+    Args:
+        session: Async SQLAlchemy session injected for the current request.
+
+    Returns:
+        A UserRepository instance.
+    """
+
     return UserRepository(session)
 
 
 def get_token_repository(
     session: AsyncSession = Depends(get_session),
 ) -> TokenRepository:
+    """
+    Build a TokenRepository bound to the request's database session.
+
+    Args:
+        session: Async SQLAlchemy session injected for the current request.
+
+    Returns:
+        A TokenRepository instance.
+    """
+
     return TokenRepository(session)
 
 
 def get_oauth_repository(
     session: AsyncSession = Depends(get_session),
 ) -> OAuthRepository:
+    """
+    Build an OAuthRepository bound to the request's database session.
+
+    Args:
+        session: Async SQLAlchemy session injected for the current request.
+
+    Returns:
+        An OAuthRepository instance.
+    """
+
     return OAuthRepository(session)
 
 
@@ -34,6 +64,19 @@ def get_auth_service(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     session: AsyncSession = Depends(get_session),
 ) -> AuthService:
+    """
+    Build an AuthService with its required repositories and session.
+
+    Args:
+        user_repo: Injected UserRepository.
+        token_repo: Injected TokenRepository.
+        oauth_repo: Injected OAuthRepository.
+        session: Async SQLAlchemy session injected for the current request.
+
+    Returns:
+        An AuthService instance.
+    """
+
     return AuthService(
         user_repository=user_repo,
         token_repository=token_repo,
@@ -46,6 +89,21 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> User:
+    """
+    Resolve the currently authenticated user from a bearer access token.
+
+    Args:
+        token: JWT access token extracted from the Authorization header.
+        user_repo: Injected UserRepository.
+
+    Returns:
+        The authenticated User.
+
+    Raises:
+        HTTPException: 401 if the token is not an access token or the user
+        doesn't exist.
+    """
+
     payload = decode_token(token)
 
     if payload.get("type") != "access":
@@ -64,6 +122,20 @@ async def get_current_user(
 async def get_pending_user_id(
     pending_token: str = Depends(oauth2_scheme),
 ) -> int:
+    """
+    Resolve the ID of the user pending 2FA verification from a bearer token.
+
+    Args:
+        pending_token: JWT 2fa_pending token extracted from the Authorization
+        header.
+
+    Returns:
+        The pending user's ID.
+
+    Raises:
+        HTTPException: 401 if the token is not a 2fa_pending token.
+    """
+
     payload = decode_token(pending_token)
 
     if payload.get("type") != "2fa_pending":

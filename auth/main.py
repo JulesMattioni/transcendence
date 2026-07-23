@@ -27,6 +27,11 @@ app.include_router(oauth.router)
 async def email_exists_handler(
     request: Request, exc: EmailAlreadyExistsError
 ) -> JSONResponse:
+    """
+    Return a 409 response when registration is attempted with an existing
+    email.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "Email already registered"},
@@ -37,6 +42,10 @@ async def email_exists_handler(
 async def invalid_credentials_handler(
     request: Request, exc: InvalidCredentialsError
 ) -> JSONResponse:
+    """
+    Return a 401 response when login credentials are invalid.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Invalid credentials"},
@@ -47,6 +56,10 @@ async def invalid_credentials_handler(
 async def invalid_token_handler(
     request: Request, exc: InvalidTokenError
 ) -> JSONResponse:
+    """
+    Return a 401 response when a token is malformed or of the wrong type.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Invalid token"},
@@ -57,6 +70,10 @@ async def invalid_token_handler(
 async def token_expired_handler(
     request: Request, exc: TokenExpiredError
 ) -> JSONResponse:
+    """
+    Return a 401 response when a token has expired.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Token expired"},
@@ -67,6 +84,10 @@ async def token_expired_handler(
 async def auth_2fa_failed_handler(
     request: Request, exc: Auth2faError
 ) -> JSONResponse:
+    """
+    Return a 401 response when a 2FA TOTP code is invalid.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "Invalid code"},
@@ -77,6 +98,10 @@ async def auth_2fa_failed_handler(
 async def user_not_found_handler(
     request: Request, exc: UserNotFoundError
 ) -> JSONResponse:
+    """
+    Return a 401 response when the referenced user does not exist.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "User not found"},
@@ -87,6 +112,11 @@ async def user_not_found_handler(
 async def two_factor_already_enabled_handler(
     request: Request, exc: TwoFactorAlreadyEnabledError
 ) -> JSONResponse:
+    """
+    Return a 409 response when enabling 2FA for a user that already has it
+    enabled.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "2FA already enabled"},
@@ -97,6 +127,11 @@ async def two_factor_already_enabled_handler(
 async def two_factor_not_configured_handler(
     request: Request, exc: TwoFactorNotConfiguredError
 ) -> JSONResponse:
+    """
+    Return a 401 response when a 2FA operation is attempted with no secret
+    configured.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "2FA not configured"},
@@ -107,6 +142,11 @@ async def two_factor_not_configured_handler(
 async def invalid_oauth_state_handler(
     request: Request, exc: InvalidOAuthStateError
 ) -> JSONResponse:
+    """
+    Return a 401 response when an OAuth callback's state doesn't match the
+    cookie.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"detail": "OAuth state error"},
@@ -117,6 +157,10 @@ async def invalid_oauth_state_handler(
 async def google_auth_failed_handler(
     request: Request, exc: GoogleAuthError
 ) -> JSONResponse:
+    """
+    Return a 400 response when Google OAuth token or profile retrieval fails.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": "Google authentication failed"},
@@ -127,6 +171,10 @@ async def google_auth_failed_handler(
 async def ft_auth_failed_handler(
     request: Request, exc: FtAuthError
 ) -> JSONResponse:
+    """
+    Return a 400 response when 42 OAuth token or profile retrieval fails.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": "42 authentication failed"},
@@ -137,6 +185,10 @@ async def ft_auth_failed_handler(
 async def user_by_email_not_found_handler(
     request: Request, exc: UserByEmailNotFoundError
 ) -> JSONResponse:
+    """
+    Return a 404 response when no user matches the given email.
+    """
+
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "No user with this email"},
