@@ -116,3 +116,66 @@ export function roleName(roleId: number): string {
   if (roleId === OrgRole.Reader) return "Reader";
   return "Unknown";
 }
+
+export async function listMyInvitations(): Promise<Invitation[]> {
+  return apiFetch<Invitation[]>(`/org/invitations/me`);
+}
+
+export async function acceptInvitation(
+  invitationId: number,
+): Promise<Invitation> {
+  return apiFetch<Invitation>(`/org/invitations/${invitationId}/accept`, {
+    method: "POST",
+  });
+}
+
+export async function declineInvitation(
+  invitationId: number,
+): Promise<Invitation> {
+  return apiFetch<Invitation>(`/org/invitations/${invitationId}/decline`, {
+    method: "POST",
+  });
+}
+
+export interface Connection {
+  user_id: number;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  org_ids: number[];
+}
+
+export async function listMyConnections(
+  myUserId: number,
+): Promise<Connection[]> {
+  const orgs = await listMyOrgs(myUserId);
+
+  const memberLists = await Promise.all(
+    orgs.map((o) =>
+      listMembers(o.org_id)
+        .then((members) => ({ orgId: o.org_id, members }))
+        .catch(() => ({ orgId: o.org_id, members: [] })),
+    ),
+  );
+
+  const byUser = new Map<number, Connection>();
+  for (const { orgId, members } of memberLists) {
+    for (const m of members) {
+      if (m.user_id === myUserId) continue;
+      const existing = byUser.get(m.user_id);
+      if (existing) {
+        if (!existing.org_ids.includes(orgId)) existing.org_ids.push(orgId);
+      } else {
+        byUser.set(m.user_id, {
+          user_id: m.user_id,
+          email: m.email,
+          first_name: m.first_name,
+          last_name: m.last_name,
+          org_ids: [orgId],
+        });
+      }
+    }
+  }
+
+  return Array.from(byUser.values());
+}
