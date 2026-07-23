@@ -16,6 +16,17 @@ router = APIRouter(prefix="/files", tags=["files"])
 def get_file_service(
     session: AsyncSession = Depends(get_session),
 ) -> FileService:
+    """
+    Build a FileService with all its dependencies for one request.
+
+    Args:
+        session: Async SQLAlchemy session provided by the shared
+        get_session dependency.
+
+    Returns:
+        A FileService wired with repository, storage and clients.
+    """
+
     repository = FileRepository(session)
     storage = FileStorage()
     rag_client = RagClient()
@@ -34,6 +45,21 @@ async def upload_file(
     service: FileService = Depends(get_file_service),
     owner_id: int = Depends(get_current_user_id),
 ) -> FileRead:
+    """
+    Upload a file with its metadata and create its database record.
+
+    Args:
+        upload: Uploaded binary content (multipart).
+        title: User-facing title of the file.
+        organisation_id: Organisation the file belongs to.
+        description: Optional description of the file.
+        service: Injected FileService instance.
+        owner_id: Id of the authenticated user, resolved via auth.
+
+    Returns:
+        FileRead with the created file's metadata.
+    """
+
     data = FileCreate(
         title=title,
         organisation_id=organisation_id,
@@ -49,6 +75,19 @@ async def list_files(
     page_size: int = Query(default=9, ge=1, le=100),
     service: FileService = Depends(get_file_service),
 ) -> FilePage:
+    """
+    List one page of an organisation's files, newest first.
+
+    Args:
+        organisation_id: Organisation whose files are listed.
+        page: 1-based page number.
+        page_size: Number of items per page (1-100).
+        service: Injected FileService instance.
+
+    Returns:
+        FilePage with the requested items and the total count.
+    """
+
     return await service.list_by_organisation(organisation_id, page, page_size)
 
 
@@ -58,6 +97,22 @@ async def get_file(
     organisation_id: int,
     service: FileService = Depends(get_file_service),
 ) -> FileRead:
+    """
+    Return the metadata of a single file.
+
+    Args:
+        file_id: Id of the requested file.
+        organisation_id: Organisation the file must belong to.
+        service: Injected FileService instance.
+
+    Returns:
+        FileRead with the file's metadata.
+
+    Raises:
+        FileNotFoundError: If the file does not exist in this
+        organisation.
+    """
+
     return await service.get(file_id, organisation_id)
 
 
@@ -67,6 +122,23 @@ async def get_file_content(
     organisation_id: int,
     service: FileService = Depends(get_file_service),
 ) -> FileResponse:
+    """
+    Download the binary content with its original filename.
+
+    Args:
+        file_id: Id of the requested file.
+        organisation_id: Organisation the file must belong to.
+        service: Injected FileService instance.
+
+    Returns:
+        FileResponse streaming the stored binary with its content type
+        and original filename.
+
+    Raises:
+        FileNotFoundError: If the file does not exist in this
+        organisation.
+    """
+
     file = await service.get_content(file_id, organisation_id)
     return FileResponse(
         path=file.filepath,
@@ -82,6 +154,23 @@ async def update_file(
     data: FileUpdate,
     service: FileService = Depends(get_file_service),
 ) -> FileRead:
+    """
+    Partially update a file's metadata (title, description).
+
+    Args:
+        file_id: Id of the file to update.
+        organisation_id: Organisation the file must belong to.
+        data: Fields to change; unset fields are left untouched.
+        service: Injected FileService instance.
+
+    Returns:
+        FileRead with the updated metadata.
+
+    Raises:
+        FileNotFoundError: If the file does not exist in this
+        organisation.
+    """
+
     return await service.update(file_id, organisation_id, data)
 
 
@@ -91,4 +180,17 @@ async def delete_file(
     organisation_id: int,
     service: FileService = Depends(get_file_service),
 ) -> None:
+    """
+    Delete a file record and its binary content.
+
+    Args:
+        file_id: Id of the file to delete.
+        organisation_id: Organisation the file must belong to.
+        service: Injected FileService instance.
+
+    Raises:
+        FileNotFoundError: If the file does not exist in this
+        organisation.
+    """
+
     await service.delete(file_id, organisation_id)

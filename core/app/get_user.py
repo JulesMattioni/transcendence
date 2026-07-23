@@ -6,6 +6,20 @@ from app.config import AUTH_BASE_URL
 async def get_current_user_id(
     authorization: str | None = Header(default=None),
 ) -> int:
+    """
+    Resolve the current user id by forwarding the token to auth.
+
+    Args:
+        authorization: Raw Authorization header from the request.
+
+    Returns:
+        The id of the authenticated user.
+
+    Raises:
+        HTTPException: 401 if the header is missing or the token is
+        rejected, 503 if the auth service cannot be reached.
+    """
+
     if not authorization:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
