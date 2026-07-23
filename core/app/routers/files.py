@@ -7,6 +7,7 @@ from app.services.file_service import FileService
 from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from fastapi.responses import FileResponse
 from app.clients.rag_client import RagClient
+from app.clients.realtime_client import RealtimeClient
 from app.get_user import get_current_user_id
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -18,7 +19,10 @@ def get_file_service(
     repository = FileRepository(session)
     storage = FileStorage()
     rag_client = RagClient()
-    return FileService(session, repository, storage, rag_client)
+    realtime_client = RealtimeClient()
+    return FileService(
+        session, repository, storage, rag_client, realtime_client
+    )
 
 
 @router.post("", response_model=FileRead, status_code=status.HTTP_201_CREATED)

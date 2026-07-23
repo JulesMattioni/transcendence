@@ -7,6 +7,7 @@ from app.models.file import File
 from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
 from app.exceptions import FileNotFoundError
 from app.clients.rag_client import RagClient
+from app.clients.realtime_client import RealtimeClient
 
 
 class FileService(BaseService):
@@ -16,12 +17,14 @@ class FileService(BaseService):
         repository: FileRepository,
         storage: FileStorage,
         rag_client: RagClient,
+        realtime_client: RealtimeClient,
     ) -> None:
         super().__init__()
         self._session = session
         self._repository = repository
         self._storage = storage
         self._rag_client = rag_client
+        self._realtime_client = realtime_client
 
     async def _get_owned(self, file_id: int, organisation_id: int) -> File:
         file = await self._repository.get(file_id)
@@ -63,6 +66,10 @@ class FileService(BaseService):
             content_type=file.content_type,
         )
 
+        self._realtime_client.notify_file_event(
+            "file.created", file.organisation_id, file.filename
+        )
+
         return FileRead.model_validate(file)
 
     async def list_by_organisation(
@@ -100,11 +107,16 @@ class FileService(BaseService):
             await self._session.rollback()
             raise
 
+        self._realtime_client.notify_file_event(
+            "file.updated", file.organisation_id, file.filename
+        )
         return FileRead.model_validate(file)
 
     async def delete(self, file_id: int, organisation_id: int) -> None:
         file = await self._get_owned(file_id, organisation_id)
         path = file.filepath
+        org_id = file.organisation_id
+        filename = file.filename
 
         try:
             await self._repository.delete(file)
@@ -113,6 +125,9 @@ class FileService(BaseService):
             await self._session.rollback()
             raise
 
+        self._realtime_client.notify_file_event(
+            "file.deleted", org_id, filename
+        )
         self._storage.delete(path)
 
     async def get_content(self, file_id: int, organisation_id: int) -> File:
