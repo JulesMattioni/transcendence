@@ -57,7 +57,12 @@ class Dispatcher:
             )
         return response.json()
 
-    async def send_event_to_admins_of_org(self, org_id: int, event: EventOut):
+    async def send_event_to_admins_of_org(
+        self,
+        org_id: int,
+        event: EventOut,
+        excluded: list[int],
+    ) -> list:
         """Broadcast an event to the admins of one organisation.
 
         Args:
@@ -68,9 +73,11 @@ class Dispatcher:
             member["user_id"]
             for member in await get_members_from_organisation_id(org_id)
             if member["role_id"] == Role.ADMIN
+            and member["user_id"] not in excluded
         ]
         for member in members:
             await manager.broadcast_id(event.model_dump(mode="json"), member)
+        return members
 
     async def send_event_to_all_org(self, org_id: int, event: EventOut):
         """Broadcast an event to every member of one organisation.
@@ -93,10 +100,12 @@ class Dispatcher:
             event: The resolved auth event to deliver.
         """
         organisations = await get_orgs_from_user_id(event.user_id)
+        excluded = []
         for organisation in organisations["organisation"]:
-            await self.send_event_to_admins_of_org(
-                organisation["org_id"], event
+            who_received = await self.send_event_to_admins_of_org(
+                organisation["org_id"], event, excluded
             )
+            excluded += who_received
 
     async def send_file_event_to_concerned(self, event: EventOut):
         """Route a file event to all members of its organisation.
@@ -164,7 +173,7 @@ class Dispatcher:
             user = manager.get_name_from_id(event.user_id)
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
-            if not event.org_id or not event.file_name:
+            if event.org_id is None or not event.file_name:
                 raise HTTPException(
                     status_code=422,
                     detail="Organisation id or file name not provided",

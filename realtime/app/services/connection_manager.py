@@ -51,8 +51,8 @@ class ConnectionManager(BaseService):
         self,
         websocket: WebSocket,
         user_id: int,
-        first_name,
-        last_name,
+        first_name: str,
+        last_name: str,
     ):
         """Accept a WebSocket and register it under ``user_id``.
 
@@ -142,7 +142,7 @@ class ConnectionManager(BaseService):
         """
         dead: list[tuple[WebSocket, int]] = []
         if user_id in self._users:
-            for websocket in self._users[user_id].websockets:
+            for websocket in list(self._users[user_id].websockets):
                 try:
                     await websocket.send_json(message)
                 except Exception:
