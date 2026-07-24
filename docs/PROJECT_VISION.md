@@ -73,8 +73,8 @@ Un point d'entrée HTTPS unique (**API Gateway** : Nginx + ModSecurity/WAF) rout
 | OAuth 2.0 | User Management | Mineur (1) |
 | RAG complet | Artificial Intelligence | Majeur (2) |
 | LLM System interface | Artificial Intelligence | Majeur (2) |
-| WAF/ModSecurity + Vault | Cybersecurity | Majeur (2) |
 | Backend en microservices | DevOps | Majeur (2) |
+| analytics dashboard | Data and Analytics | Majeur (2)
 
 ## 6. Standards de code Python
 
