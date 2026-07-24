@@ -19,7 +19,7 @@ function BottomNav() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around py-4 lg:hidden">
-      <nav className="flex items-center justify-around border border-gray-200 bg-white lg:hidden">
+      <nav className="flex items-center justify-around overflow-hidden rounded bg-white shadow-md ring-1 ring-black/5 lg:hidden">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (

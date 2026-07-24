@@ -95,7 +95,7 @@ function TwoFactorSetupContent({
           <img
             src={qrDataUrl}
             alt="2FA QR code"
-            className="border border-gray-200"
+            className="rounded border border-gray-200"
           />
         </div>
       )}
@@ -104,13 +104,13 @@ function TwoFactorSetupContent({
       <div>
         <p className="text-xs font-medium text-subtle">Or enter this key manually</p>
         <div className="mt-1 flex items-center gap-2">
-          <code className="flex-1 truncate bg-gray-100 px-3 py-2 font-mono text-sm text-black">
+          <code className="flex-1 truncate rounded bg-gray-100 px-3 py-2 font-mono text-sm text-black">
             {secret}
           </code>
           <button
             type="button"
             onClick={handleCopy}
-            className="flex h-9 w-9 items-center justify-center border border-gray-200 text-muted transition-colors hover:text-black"
+            className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 text-muted transition-colors hover:bg-gray-50 hover:text-black"
           >
             {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
           </button>
@@ -131,7 +131,7 @@ function TwoFactorSetupContent({
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           placeholder="123456"
-          className="mt-2 w-full border border-gray-200 px-4 py-2.5 text-center text-lg tracking-[0.3em] text-black outline-none focus:border-keepr"
+          className="mt-2 w-full rounded border border-gray-200 px-4 py-2.5 text-center text-lg tracking-[0.3em] text-black outline-none transition-colors focus:border-keepr"
         />
         {verifyError && (
           <p className="mt-2 text-sm text-red-600">{verifyError}</p>
@@ -142,7 +142,7 @@ function TwoFactorSetupContent({
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-black"
+          className="rounded px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-gray-100 hover:text-black"
         >
           Cancel
         </button>
@@ -150,7 +150,7 @@ function TwoFactorSetupContent({
           type="button"
           onClick={handleVerify}
           disabled={!codeValid || verifying}
-          className="inline-flex items-center gap-2 bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors enabled:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors enabled:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {verifying && <Loader2 className="animate-spin" size={16} />}
           {verifying ? "Verifying…" : "Enable"}

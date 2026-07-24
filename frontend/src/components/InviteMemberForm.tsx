@@ -43,7 +43,7 @@ function InviteMemberForm({ orgId, onSuccess }: InviteMemberFormProps) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border border-gray-300 px-3 py-2"
+          className="w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-keepr focus:outline-none"
           placeholder="person@example.com"
         />
       </div>
@@ -55,7 +55,7 @@ function InviteMemberForm({ orgId, onSuccess }: InviteMemberFormProps) {
         <select
           value={roleId}
           onChange={(e) => setRoleId(Number(e.target.value))}
-          className="w-full border border-gray-300 px-3 py-2"
+          className="w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-keepr focus:outline-none"
         >
           <option value={OrgRole.Admin}>Admin</option>
           <option value={OrgRole.Editor}>Editor</option>
@@ -68,7 +68,7 @@ function InviteMemberForm({ orgId, onSuccess }: InviteMemberFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-keepr px-4 py-2 font-medium text-white disabled:opacity-50"
+        className="w-full rounded bg-keepr px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
       >
         {submitting ? "Sending…" : "Send invitation"}
       </button>

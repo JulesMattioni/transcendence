@@ -27,6 +27,35 @@ export interface FilePage {
   page_size: number
 }
 
+export interface FileTypeStat {
+  category: string
+  file_count: number
+  total_bytes: number
+}
+
+export interface FileBucketStat {
+  bucket_start: string
+  file_count: number
+}
+
+export interface FileStats {
+  total_files: number
+  total_bytes: number
+  by_type: FileTypeStat[]
+  by_bucket: FileBucketStat[]
+}
+
+export function getFileStats(
+  orgId: number = requireCurrentOrgId(),
+  start?: string,
+  end?: string,
+): Promise<FileStats> {
+  const params = new URLSearchParams({ organisation_id: String(orgId) })
+  if (start) params.set('start', start)
+  if (end) params.set('end', end)
+  return apiFetch<FileStats>(`/core/files/stats?${params.toString()}`)
+}
+
 export function listFiles(
   page = 1,
   pageSize = 9,

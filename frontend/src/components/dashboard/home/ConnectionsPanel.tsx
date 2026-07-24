@@ -39,7 +39,7 @@ function ConnectionsPanel({ myUserId }: { myUserId: number }) {
   }, [myUserId]);
 
   return (
-    <div className="flex h-96 flex-col border border-gray-200 bg-white">
+    <div className="flex h-96 flex-col rounded bg-white shadow-sm">
       <div className="shrink-0 border-b border-gray-200 px-4 py-3">
         <h2 className="font-sans text-lg font-semibold text-black">
           My connections

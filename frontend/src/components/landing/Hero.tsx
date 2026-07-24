@@ -7,7 +7,7 @@ function Hero() {
     <section className="relative grid min-h-screen grid-cols-1 content-center items-center gap-8 overflow-hidden px-6 pt-16 pb-16 sm:px-10 lg:min-h-0 lg:grid-cols-2">
       <div className="z-10 overflow-x-hidden pt-8">
         {/* Badge */}
-        <span className="inline-flex items-center gap-2 rounded-full border border-gray-600 bg-white px-4 py-1.5 font-mono text-xs text-black-600">
+        <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-black-600 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-keepr" />
           AI Powered Security Vault
         </span>
@@ -30,13 +30,13 @@ function Hero() {
         <div className="mt-8 flex items-center gap-4">
           <Link
             to="/register"
-            className="bg-keepr px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            className="rounded bg-keepr px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Get started now
           </Link>
           <Link
             to="/login"
-            className="border border-gray-600 bg-white px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-gray-50"
+            className="rounded border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-gray-50"
           >
             Sign In
           </Link>
@@ -54,7 +54,7 @@ function Hero() {
           "
         />
         {/* chat */}
-        <div className="absolute top-2/5 left-3/5 hidden w-100 -translate-x-1/2 -translate-y-1/2 border border-keepr bg-white p-4 lg:block">
+        <div className="absolute top-2/5 left-3/5 hidden w-100 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-keepr bg-white p-4 shadow-lg lg:block">
           <p className="font-mono text-sm text-subtle">
             <span className="animate-blink text-keepr">|</span> Ask anything...
           </p>

@@ -36,13 +36,13 @@ function FilePreview({ file }: { file: FileRead }) {
       <img
         src={url}
         alt={file.title}
-        className="mx-auto max-h-[70vh] max-w-full object-contain"
+        className="mx-auto max-h-[70vh] max-w-full rounded object-contain"
       />
     )
   }
 
   if (type === 'application/pdf') {
-    return <iframe src={url} title={file.title} className="h-[70vh] w-full" />
+    return <iframe src={url} title={file.title} className="h-[70vh] w-full rounded" />
   }
 
   if (type.startsWith('text/')) {
@@ -53,7 +53,7 @@ function FilePreview({ file }: { file: FileRead }) {
     <a
       href={url}
       download={file.filename}
-      className="inline-block bg-keepr px-4 py-2 font-medium text-white hover:bg-blue-700"
+      className="inline-block rounded bg-keepr px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
     >
       Download {file.filename}
     </a>
@@ -68,7 +68,7 @@ function TextPreview({ url }: { url: string }) {
       .then(setText)
   }, [url])
   return (
-    <pre className="max-h-[70vh] overflow-auto bg-gray-50 p-3 text-sm">
+    <pre className="max-h-[70vh] overflow-auto rounded bg-gray-50 p-3 text-sm">
       {text}
     </pre>
   )
