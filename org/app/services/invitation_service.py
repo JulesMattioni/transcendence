@@ -37,7 +37,6 @@ class InvitationService(BaseService):
         invited_by: int,
         authorization: str,
     ) -> InvitationRead:
-        # 1. l'org existe ?
         org = await self.org_repo.get_by_id(org_id)
         if not org:
             raise OrganisationNotFoundError()

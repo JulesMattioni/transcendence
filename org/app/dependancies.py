@@ -26,7 +26,6 @@ def get_org_member_repository(
     return OrganisationMemberRepository(session)
 
 
-# apply sur repo
 def get_organisation_service(
     session: AsyncSession = Depends(get_session),
     repo: OrganisationRepository = Depends(get_organisation_repository),

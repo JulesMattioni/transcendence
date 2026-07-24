@@ -37,7 +37,7 @@ class OrganisationService(BaseService):
         await self.member_repo.create_user_from_org(
             org_id=new_org.id,
             user_id=user_id,
-            role_id=1,  # admin !
+            role_id=1,
             email=email,
             first_name=first_name,
             last_name=last_name,
