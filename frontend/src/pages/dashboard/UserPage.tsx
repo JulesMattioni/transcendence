@@ -136,8 +136,6 @@ function UserPage() {
               <button
                 type="button"
                 role="switch"
-                aria-checked={user.is_2fa_enabled}
-                aria-label="Toggle two-factor authentication"
                 disabled={twoFaBusy}
                 onClick={handleToggle2fa}
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -168,8 +166,6 @@ function UserPage() {
                   key={id}
                   type="button"
                   onClick={() => setAvatarId(id)}
-                  aria-label={`Choose avatar ${id}`}
-                  aria-pressed={selected}
                   className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition ${
                     selected
                       ? "border-keepr ring-2 ring-keepr/30"

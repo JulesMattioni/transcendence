@@ -233,7 +233,6 @@ function AdminPage() {
                   <button
                     onClick={() => handleRemove(m.user_id)}
                     disabled={isSelf}
-                    aria-label={`Remove ${memberName(m)}`}
                     className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-red-600 disabled:opacity-30 disabled:hover:text-muted"
                   >
                     <Trash2 size={18} />
