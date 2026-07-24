@@ -23,7 +23,7 @@ const cards = [
 function FeatureCards() {
   return (
     <section className="px-6 py-20 sm:px-10">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {cards.map((card) => (
           <div
             key={card.title}

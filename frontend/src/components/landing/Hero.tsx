@@ -12,12 +12,12 @@ function Hero() {
           AI Powered Security Vault
         </span>
         {/* Title */}
-        <h1 className="mt-6 font-serif text-5xl leading-tight font-bold text-black sm:text-8xl">
+        <h1 className="mt-6 font-serif text-5xl leading-tight font-bold text-black sm:text-8xl md:text-6xl lg:text-7xl">
           We keep your documents safe. Access it {""}
           <span className="text-keepr">smartly.</span>
         </h1>
         {/* Description */}
-        <p className="mt-4 font-sans text-lg font-normal text-muted sm:text-xl">
+        <p className="mt-4 font-sans text-lg font-normal text-muted sm:text-xl md:text-lg">
           Role-based {""}
           <span className="font-semibold">permissions govern every file</span>,
           every action is audit-logged in real time, and an {""}
@@ -26,7 +26,7 @@ function Hero() {
           <span className="font-semibold">never revealing </span>
           what a user isn't cleared to see.
         </p>
-        {/* Boutons */}
+        {/* Buttons */}
         <div className="mt-8 flex items-center gap-4">
           <Link
             to="/register"
@@ -50,9 +50,11 @@ function Hero() {
           alt=""
           className="
             absolute top-1/2 left-1/2 w-[150%] max-w-none -translate-x-1/2 -translate-y-5/5 opacity-70 pointer-events-none select-none
-            lg:static lg:translate-x-0 lg:translate-y-0 lg:opacity-100 lg:w-full lg:mt-4 lg:scale-125 lg:origin-left
+            sm:w-full sm:max-w-[550px]
+            lg:static lg:translate-x-0 lg:translate-y-0 lg:max-w-none lg:opacity-100 lg:w-full lg:mt-4 lg:scale-125 lg:origin-left
           "
         />
+
         {/* chat */}
         <div className="absolute top-2/5 left-3/5 hidden w-100 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-keepr bg-white p-4 shadow-lg lg:block">
           <p className="font-mono text-sm text-subtle">

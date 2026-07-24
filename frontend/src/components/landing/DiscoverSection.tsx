@@ -9,13 +9,13 @@ function DiscoverSection() {
           <h2 className="font-serif text-4xl leading-tight font-bold text-black sm:text-5xl">
             Discover a new way to access your data.
           </h2>
-          <p className="mt-6 font-sans text-lg text-muted sm:text-xl">
-            <span className="font-semibold text-black">Upload files</span> to
+          <p className="mt-6 font-sans text-lg text-muted sm:text-xl md:text-lg">
+            <span className="font-semibold">Upload files</span> to
             your organisation and access them by chatting with our chatbot. You
             will never have to read endless documents by yourself, our{" "}
-            <span className="font-semibold text-black">RAG</span> system will
+            <span className="font-semibold">RAG</span> system will
             display the{" "}
-            <span className="font-semibold text-black">right informations</span>{" "}
+            <span className="font-semibold">right informations</span>{" "}
             for you.
           </p>
         </div>
