@@ -1,10 +1,15 @@
+"""Data access for organisation invitations."""
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.organisation import Invitation
 
 
 class InvitationRepository:
+    """Persist and query :class:`Invitation` rows."""
+
     def __init__(self, session: AsyncSession) -> None:
+        """Bind the repository to a database session."""
         self._session = session
 
     async def create(
@@ -17,6 +22,7 @@ class InvitationRepository:
         role_id: int,
         invited_by: int,
     ) -> Invitation:
+        """Create a pending invitation and return it."""
         invitation = Invitation(
             org_id=org_id,
             invited_user_id=invited_user_id,
@@ -32,14 +38,17 @@ class InvitationRepository:
         return invitation
 
     async def get_by_id(self, invitation_id: int) -> Invitation | None:
+        """Return the invitation with ``invitation_id``, or ``None``."""
         return await self._session.get(Invitation, invitation_id)
 
     async def list_by_org(self, org_id: int) -> list[Invitation]:
+        """Return every invitation of an organisation."""
         stmt = select(Invitation).where(Invitation.org_id == org_id)
         res = await self._session.execute(stmt)
         return list(res.scalars().all())
 
     async def list_pending_for_user(self, user_id: int) -> list[Invitation]:
+        """Return the pending invitations addressed to a user."""
         stmt = select(Invitation).where(
             Invitation.invited_user_id == user_id,
             Invitation.status == "pending",
@@ -50,11 +59,13 @@ class InvitationRepository:
     async def set_status(
         self, invitation: Invitation, status: str
     ) -> Invitation:
+        """Update the invitation status and return it."""
         invitation.status = status
         await self._session.flush()
         return invitation
 
     async def pending_exists(self, org_id: int, invited_user_id: int) -> bool:
+        """Return whether a pending invitation already exists for the user."""
         stmt = select(Invitation.id).where(
             Invitation.org_id == org_id,
             Invitation.invited_user_id == invited_user_id,

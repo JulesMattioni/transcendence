@@ -1,34 +1,37 @@
+"""Domain exceptions raised by the org service."""
+
+
 class OrgError(Exception):
-    pass
+    """Base class for all org domain errors."""
 
 
 class OrgnisationCreationError(OrgError):
-    pass
+    """Raised when an organisation could not be created."""
 
 
 class UserNotInOrganisationError(OrgError):
-    pass
+    """Raised when the target member does not exist in the organisation."""
 
 
 class OrganisationNotFoundError(OrgError):
-    pass
+    """Raised when the organisation does not exist."""
 
 
 class InvitedUserNotFoundError(OrgError):
-    pass
+    """Raised when no user matches the invited email."""
 
 
 class AlreadyMemberError(OrgError):
-    pass
+    """Raised when the invited user is already a member."""
 
 
 class InvitationAlreadyExistsError(OrgError):
-    pass
+    """Raised when a pending invitation already exists."""
 
 
 class InvitationNotFoundError(OrgError):
-    pass
+    """Raised when the invitation does not exist or is not pending."""
 
 
 class AuthServiceUnavailableError(OrgError):
-    pass
+    """Raised when the auth service cannot be reached."""

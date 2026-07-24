@@ -1,3 +1,5 @@
+"""Business logic for organisation invitations."""
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.base_service import BaseService
 from app.repositories import (
@@ -16,6 +18,8 @@ from app.exceptions import (
 
 
 class InvitationService(BaseService):
+    """Orchestrate the invitation lifecycle for organisations."""
+
     def __init__(
         self,
         session: AsyncSession,
@@ -23,6 +27,7 @@ class InvitationService(BaseService):
         member_repo: OrganisationMemberRepository,
         org_repo: OrganisationRepository,
     ) -> None:
+        """Store the session and the invitation/member/org repositories."""
         super().__init__()
         self.session = session
         self.invitation_repo = invitation_repo
@@ -37,6 +42,23 @@ class InvitationService(BaseService):
         invited_by: int,
         authorization: str,
     ) -> InvitationRead:
+        """Create a pending invitation for a user identified by email.
+
+        Args:
+            org_id: Organisation issuing the invitation.
+            email: Email of the user to invite; resolved via ``auth``.
+            role_id: Role offered to the invited user.
+            invited_by: User issuing the invitation.
+            authorization: Bearer token forwarded to ``auth``.
+
+        Returns:
+            The created invitation.
+
+        Raises:
+            OrganisationNotFoundError: If the organisation does not exist.
+            AlreadyMemberError: If the user is already a member.
+            InvitationAlreadyExistsError: If a pending invitation exists.
+        """
         org = await self.org_repo.get_by_id(org_id)
         if not org:
             raise OrganisationNotFoundError()
@@ -72,14 +94,29 @@ class InvitationService(BaseService):
         return InvitationRead.model_validate(invitation)
 
     async def list_for_org(self, org_id: int) -> list[InvitationRead]:
+        """Return every invitation of an organisation."""
         invitations = await self.invitation_repo.list_by_org(org_id)
         return [InvitationRead.model_validate(i) for i in invitations]
 
     async def list_my_pending(self, user_id: int) -> list[InvitationRead]:
+        """Return the pending invitations addressed to a user."""
         invitations = await self.invitation_repo.list_pending_for_user(user_id)
         return [InvitationRead.model_validate(i) for i in invitations]
 
     async def accept(self, invitation_id: int, user_id: int) -> InvitationRead:
+        """Accept an invitation and add the user as a member.
+
+        Args:
+            invitation_id: Invitation being accepted.
+            user_id: Caller, who must be the invited user.
+
+        Returns:
+            The accepted invitation.
+
+        Raises:
+            InvitationNotFoundError: If the invitation is missing, not owned
+                by the caller, or no longer pending.
+        """
         invitation = await self.invitation_repo.get_by_id(invitation_id)
         if not invitation or invitation.invited_user_id != user_id:
             raise InvitationNotFoundError()
@@ -106,6 +143,19 @@ class InvitationService(BaseService):
     async def decline(
         self, invitation_id: int, user_id: int
     ) -> InvitationRead:
+        """Decline an invitation.
+
+        Args:
+            invitation_id: Invitation being declined.
+            user_id: Caller, who must be the invited user.
+
+        Returns:
+            The declined invitation.
+
+        Raises:
+            InvitationNotFoundError: If the invitation is missing, not owned
+                by the caller, or no longer pending.
+        """
         invitation = await self.invitation_repo.get_by_id(invitation_id)
         if not invitation or invitation.invited_user_id != user_id:
             raise InvitationNotFoundError()

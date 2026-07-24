@@ -1,3 +1,5 @@
+"""Internal, service-to-service router (not exposed through the gateway)."""
+
 from fastapi import APIRouter, Depends
 from app.models.organisation import OrganisationMember
 from app.schemas.organisation import OrganisationMemberRead
@@ -18,4 +20,5 @@ async def get_organisation_members_internal(
     org_id: int,
     service: OrganisationService = Depends(get_organisation_service),
 ) -> list[OrganisationMember]:
+    """Return the members of an organisation for internal callers."""
     return await service.get_org_members(org_id)
