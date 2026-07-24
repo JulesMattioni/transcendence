@@ -31,7 +31,7 @@ class OrganisationMemberRepository:
         await self._session.flush()
         return new_member
 
-    async def delete_user_from_org(self, org_id, user_id: int) -> bool:
+    async def delete_user_from_org(self, org_id: int, user_id: int) -> bool:
         stmt = select(OrganisationMember).where(
             OrganisationMember.user_id == user_id,
             OrganisationMember.org_id == org_id,

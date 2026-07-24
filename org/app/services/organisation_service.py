@@ -1,5 +1,7 @@
+from typing import Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.base_service import BaseService
+from app.models.organisation import Organisation, OrganisationMember
 from app.repositories.organisation_repository import OrganisationRepository
 from app.schemas.organisation import OrganisationRead, OrganisationUpdate
 from app.repositories import OrganisationMemberRepository
@@ -37,7 +39,7 @@ class OrganisationService(BaseService):
         await self.member_repo.create_user_from_org(
             org_id=new_org.id,
             user_id=user_id,
-            role_id=1,  # admin !
+            role_id=1,
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -47,7 +49,7 @@ class OrganisationService(BaseService):
 
     async def create_user_from_org(
         self, org_id: int, user_id: int, role_id: int
-    ):
+    ) -> OrganisationMember:
         add_member = await self.member_repo.create_user_from_org(
             org_id=org_id, user_id=user_id, role_id=role_id
         )
@@ -57,7 +59,7 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return add_member
 
-    async def delete_user_from_org(self, org_id: int, user_id: int):
+    async def delete_user_from_org(self, org_id: int, user_id: int) -> bool:
         delete_user = await self.member_repo.delete_user_from_org(
             org_id, user_id
         )
@@ -67,7 +69,7 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return delete_user
 
-    async def get_org_by_id(self, org_id: int) -> OrganisationRead:
+    async def get_org_by_id(self, org_id: int) -> Organisation:
         organisation = await self.repository.get_by_id(org_id)
         if not organisation:
             raise OrganisationNotFoundError()
@@ -84,7 +86,7 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return OrganisationRead.model_validate(update)
 
-    async def delete_organisation(self, org_id: int):
+    async def delete_organisation(self, org_id: int) -> bool:
         organisation = await self.repository.delete_org(org_id)
         if not organisation:
             raise OrganisationNotFoundError()
@@ -94,7 +96,7 @@ class OrganisationService(BaseService):
 
     async def update_perm_from_organisation(
         self, org_id: int, user_id: int, new_role_id: int
-    ):
+    ) -> bool:
         new_role = await self.member_repo.update_role(
             org_id, user_id, new_role_id
         )
@@ -104,10 +106,14 @@ class OrganisationService(BaseService):
         await self.session.commit()
         return new_role
 
-    async def get_user_organisation_endpoint(self, user_id: int):
+    async def get_user_organisation_endpoint(
+        self, user_id: int
+    ) -> Dict[str, Any]:
         return await self.member_repo.get_user_organisation_format(user_id)
 
-    async def get_org_members(self, org_id: int):
+    async def get_org_members(
+        self, org_id: int
+    ) -> list[OrganisationMember]:
         organisation = await self.repository.get_by_id(org_id)
         if not organisation:
             raise OrganisationNotFoundError()

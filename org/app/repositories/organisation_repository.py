@@ -7,17 +7,18 @@ class OrganisationRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def create_organisation(self, name_org: str):
+    async def create_organisation(self, name_org: str) -> Organisation:
         new_org = Organisation(name=name_org)
         self.session.add(new_org)
         await self.session.flush()
         return new_org
 
-    async def get_by_id(self, org_id: int):
+    async def get_by_id(self, org_id: int) -> Organisation | None:
         return await self.session.get(Organisation, org_id)
 
-    async def update(self, org_id: int,
-                     table_data: OrganisationUpdate) -> Organisation:
+    async def update(
+        self, org_id: int, table_data: OrganisationUpdate
+    ) -> Organisation | None:
         organisation = await self.get_by_id(org_id)
         if organisation:
             update_dict = table_data.model_dump(exclude_unset=True)
@@ -26,6 +27,7 @@ class OrganisationRepository:
                     setattr(organisation, key, value)
             await self.session.flush()
             return organisation
+        return None
 
     async def delete_org(self, org_id: int) -> bool:
         organisation = await self.get_by_id(org_id)

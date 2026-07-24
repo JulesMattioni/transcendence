@@ -26,7 +26,6 @@ def get_org_member_repository(
     return OrganisationMemberRepository(session)
 
 
-# apply sur repo
 def get_organisation_service(
     session: AsyncSession = Depends(get_session),
     repo: OrganisationRepository = Depends(get_organisation_repository),
@@ -51,7 +50,7 @@ class RoleChecker:
         user_repo: OrganisationMemberRepository = Depends(
             get_org_member_repository
         ),
-    ):
+    ) -> Role:
         user_id = get_user.id
         user_roles = await user_repo.get_user_perm(user_id, org_id)
         if not user_roles or user_roles not in self.allowed_roles:
