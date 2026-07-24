@@ -12,6 +12,17 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
 def get_ingest_service(
     session: AsyncSession = Depends(get_session),
 ) -> IngestService:
+    """
+    Build an IngestService with its dependencies for one request.
+
+    Args:
+        session: Async SQLAlchemy session provided by the shared
+        get_session dependency.
+
+    Returns:
+        An IngestService wired with its repository and storage.
+    """
+
     repository = ChunkRepository(session)
     storage = ReaderStorage()
     return IngestService(session, repository, storage)
@@ -22,6 +33,25 @@ async def ingest_file(
     data: IngestRequest,
     service: IngestService = Depends(get_ingest_service),
 ) -> IngestResponse:
+    """
+    Ingest an uploaded file into embedded chunks.
+
+    Called by the core service after an upload; re-ingesting the same
+    file replaces its previous chunks.
+
+    Args:
+        data: Ingestion request with the file id, organisation, storage
+        path and content type.
+        service: Injected IngestService instance.
+
+    Returns:
+        IngestResponse with the file id and the number of chunks created.
+
+    Raises:
+        HTTPException: 415 when the content type is unsupported, 404 when
+        the binary is missing from storage.
+    """
+
     try:
         return await service.ingest(data)
     except UnsupportedFileType as exc:

@@ -193,7 +193,7 @@ class FileService(BaseService):
         )
 
         self._realtime_client.notify_file_event(
-            "file.created", file.organisation_id, file.filename
+            "file.created", file.organisation_id, file.filename, owner_id
         )
 
         return FileRead.model_validate(file)
@@ -365,7 +365,11 @@ class FileService(BaseService):
         return FileRead.model_validate(file)
 
     async def update(
-        self, file_id: int, organisation_id: int, data: FileUpdate
+        self,
+        file_id: int,
+        organisation_id: int,
+        data: FileUpdate,
+        owner_id: int,
     ) -> FileRead:
         """
         Apply a partial metadata update and broadcast the event.
@@ -374,6 +378,7 @@ class FileService(BaseService):
             file_id: Id of the file to update.
             organisation_id: Organisation the file must belong to.
             data: Fields to change; unset fields are left untouched.
+            owner_id: Id of the authenticated user uploading the file.
 
         Returns:
             FileRead with the updated metadata.
@@ -397,11 +402,13 @@ class FileService(BaseService):
             raise
 
         self._realtime_client.notify_file_event(
-            "file.updated", file.organisation_id, file.filename
+            "file.updated", file.organisation_id, file.filename, owner_id
         )
         return FileRead.model_validate(file)
 
-    async def delete(self, file_id: int, organisation_id: int) -> None:
+    async def delete(
+        self, file_id: int, organisation_id: int, owner_id: int
+    ) -> None:
         """
         Delete the record, then the binary, then broadcast the event.
 
@@ -430,7 +437,7 @@ class FileService(BaseService):
             raise
 
         self._realtime_client.notify_file_event(
-            "file.deleted", org_id, filename
+            "file.deleted", org_id, filename, owner_id
         )
         self._storage.delete(path)
 

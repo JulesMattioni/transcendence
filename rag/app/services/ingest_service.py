@@ -13,18 +13,57 @@ from app.config import CHUNK_OVERLAP, CHUNK_SIZE
 
 
 class IngestService(BaseService):
+    """
+    Service turning an uploaded file into embedded, searchable chunks.
+
+    Reads the binary from the shared uploads volume, extracts its text,
+    splits it into overlapping chunks, embeds them and persists them.
+    Coordinates the repository and storage and owns the transaction
+    boundary: it is the only layer that commits or rolls back.
+    """
+
     def __init__(
         self,
         session: AsyncSession,
         repository: ChunkRepository,
         storage: ReaderStorage,
     ) -> None:
+        """
+        Initialize the service with its collaborators.
+
+        Args:
+            session: Async SQLAlchemy session used for transactions.
+            repository: Repository for Chunk persistence.
+            storage: Read-only access to the uploads volume.
+        """
+
         super().__init__()
         self._session = session
         self._repository = repository
         self._storage = storage
 
     async def ingest(self, data: IngestRequest) -> IngestResponse:
+        """
+        Ingest a file: extract, chunk, embed and persist its chunks.
+
+        Re-ingestion is idempotent: the file's existing chunks are
+        deleted first, so a re-uploaded file never leaves stale chunks.
+        The delete and insert share one transaction.
+
+        Args:
+            data: Ingestion request with the file id, organisation,
+            storage path and content type.
+
+        Returns:
+            IngestResponse with the file id and the number of chunks
+            created.
+
+        Raises:
+            UnsupportedFileType: If the content type cannot be decoded to
+            text.
+            FileNotFoundError: If the binary is missing from storage.
+        """
+
         raw = self._storage.read_bytes(data.filepath)
         text = self._extract_text(raw, data.content_type)
         pieces = self._chunk(text)
@@ -54,6 +93,24 @@ class IngestService(BaseService):
         return IngestResponse(file_id=data.file_id, chunks_created=len(chunks))
 
     def _extract_text(self, raw: bytes, content_type: str) -> str:
+        """
+        Decode a binary into plain text according to its content type.
+
+        PDFs are read page by page; text/* is decoded as UTF-8 ignoring
+        errors; anything else is attempted as strict UTF-8 and rejected if
+        it is not decodable.
+
+        Args:
+            raw: Raw file bytes.
+            content_type: MIME type driving the extraction strategy.
+
+        Returns:
+            The extracted text.
+
+        Raises:
+            UnsupportedFileType: If the bytes cannot be decoded to text.
+        """
+
         if content_type == "application/pdf":
             reader = PdfReader(io.BytesIO(raw))
             parts = [page.extract_text() or "" for page in reader.pages]
@@ -66,6 +123,20 @@ class IngestService(BaseService):
             raise UnsupportedFileType(content_type)
 
     def _chunk(self, text: str) -> list[str]:
+        """
+        Split text into overlapping chunks for embedding.
+
+        Uses a recursive splitter that prefers natural boundaries
+        (paragraphs, then lines, then sentences) so chunks stay coherent;
+        the overlap preserves context across chunk edges.
+
+        Args:
+            text: Full document text to split.
+
+        Returns:
+            The list of chunk strings, empty when the text is blank.
+        """
+
         text = text.strip()
         if not text:
             return []

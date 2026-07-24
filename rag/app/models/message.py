@@ -6,6 +6,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Message(Base):
+    """
+    ORM model of a single message in a conversation (table "messages").
+
+    role is "user" or "assistant"; sources holds the JSON list of
+    document sources cited by an assistant answer, or NULL for a user
+    message. Deleting a conversation cascades to its messages.
+    """
+
     __tablename__ = "messages"
     id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(

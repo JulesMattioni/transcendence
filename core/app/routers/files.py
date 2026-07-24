@@ -188,6 +188,7 @@ async def update_file(
     organisation_id: int,
     data: FileUpdate,
     service: FileService = Depends(get_file_service),
+    owner_id: int = Depends(get_current_user_id),
 ) -> FileRead:
     """
     Partially update a file's metadata (title, description).
@@ -206,7 +207,7 @@ async def update_file(
         organisation.
     """
 
-    return await service.update(file_id, organisation_id, data)
+    return await service.update(file_id, organisation_id, data, owner_id)
 
 
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -214,6 +215,7 @@ async def delete_file(
     file_id: int,
     organisation_id: int,
     service: FileService = Depends(get_file_service),
+    owner_id: int = Depends(get_current_user_id),
 ) -> None:
     """
     Delete a file record and its binary content.
@@ -228,4 +230,4 @@ async def delete_file(
         organisation.
     """
 
-    await service.delete(file_id, organisation_id)
+    await service.delete(file_id, organisation_id, owner_id)
