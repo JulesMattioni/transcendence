@@ -1,3 +1,5 @@
+"""SQLAlchemy models for organisations, their members and invitations."""
+
 from shared.database import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime, String, Integer, ForeignKey, func
@@ -5,6 +7,8 @@ from datetime import datetime
 
 
 class OrganisationMember(Base):
+    """Membership row linking a user to an organisation with a role."""
+
     __tablename__ = "organisation_member"
     id: Mapped[int] = mapped_column(primary_key=True)
 
@@ -19,6 +23,8 @@ class OrganisationMember(Base):
 
 
 class Organisation(Base):
+    """An organisation owning members and invitations."""
+
     __tablename__ = "organisation"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
@@ -28,6 +34,8 @@ class Organisation(Base):
 
 
 class Invitation(Base):
+    """Invitation of a user to an organisation and its lifecycle status."""
+
     __tablename__ = "invitation"
     id: Mapped[int] = mapped_column(primary_key=True)
 

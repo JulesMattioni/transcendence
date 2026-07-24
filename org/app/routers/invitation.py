@@ -1,3 +1,5 @@
+"""Invitation endpoints: issue, list, accept and decline invitations."""
+
 from fastapi import APIRouter, status, Depends, Header
 from typing import Annotated
 from app.schemas.organisation import InvitationCreate, InvitationRead
@@ -26,6 +28,7 @@ async def create_invitation(
     service: InvitationService = Depends(get_invitation_service),
     _: Role = Depends(required_admin_role),
 ) -> InvitationRead:
+    """Invite a user to an organisation (admin only)."""
     return await service.invite(
         org_id=org_id,
         email=data.email,
@@ -44,6 +47,7 @@ async def list_org_invitations(
     service: InvitationService = Depends(get_invitation_service),
     _: Role = Depends(required_admin_role),
 ) -> list[InvitationRead]:
+    """List every invitation of an organisation (admin only)."""
     return await service.list_for_org(org_id)
 
 
@@ -52,6 +56,7 @@ async def list_my_invitations(
     user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
 ) -> list[InvitationRead]:
+    """List the caller's pending invitations."""
     return await service.list_my_pending(user.id)
 
 
@@ -63,6 +68,7 @@ async def accept_invitation(
     user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
 ) -> InvitationRead:
+    """Accept one of the caller's pending invitations."""
     return await service.accept(invitation_id, user.id)
 
 
@@ -74,4 +80,5 @@ async def decline_invitation(
     user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
 ) -> InvitationRead:
+    """Decline one of the caller's pending invitations."""
     return await service.decline(invitation_id, user.id)

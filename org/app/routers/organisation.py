@@ -1,3 +1,5 @@
+"""Organisation endpoints: CRUD and membership management."""
+
 from typing import Any
 from fastapi import APIRouter, status, Depends
 from app.models.organisation import Organisation, OrganisationMember
@@ -31,6 +33,7 @@ async def create_organisation(
     user_id: User = Depends(get_current_user),
     service: OrganisationService = Depends(get_organisation_service),
 ) -> OrganisationRead:
+    """Create an organisation; the caller becomes its first admin."""
     new_org = await service.create_organisation(
         data.name,
         user_id=user_id.id,
@@ -54,6 +57,7 @@ async def create_user_from_organisation(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_admin_role),
 ) -> OrganisationMember:
+    """Add a user to an organisation with a role (admin only)."""
     create_user = await service.create_user_from_org(org_id, user_id, role_id)
     return create_user
 
@@ -63,6 +67,7 @@ async def get_organisation_by_id(
     org_id: int,
     service: OrganisationService = Depends(get_organisation_service),
 ) -> Organisation:
+    """Return an organisation by id."""
     organisation = await service.get_org_by_id(org_id)
     return organisation
 
@@ -73,6 +78,7 @@ async def get_organisation_members(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_reader_role),
 ) -> list[OrganisationMember]:
+    """List the members of an organisation (reader and above)."""
     return await service.get_org_members(org_id)
 
 
@@ -81,6 +87,7 @@ async def get_user_organisation_endpoint(
     user_id: int,
     service: OrganisationService = Depends(get_organisation_service),
 ) -> dict[str, Any]:
+    """Return the organisations a user belongs to and their roles."""
     return await service.get_user_organisation_endpoint(user_id)
 
 
@@ -91,6 +98,7 @@ async def edit_organisation(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_admin_role),
 ) -> OrganisationRead | None:
+    """Update an organisation (admin only)."""
     return await service.update_organisation(org_id, data_updated)
 
 
@@ -102,6 +110,7 @@ async def update_permission_member(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_admin_role),
 ) -> bool:
+    """Change a member's role within an organisation (admin only)."""
     update_role = await service.update_perm_from_organisation(
         org_id, user_id, new_role
     )
@@ -117,6 +126,7 @@ async def del_user_from_organisation(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_admin_role),
 ) -> None:
+    """Remove a member from an organisation (admin only)."""
     await service.delete_user_from_org(org_id, user_id)
     return None
 
@@ -127,5 +137,6 @@ async def delete_organisation(
     service: OrganisationService = Depends(get_organisation_service),
     _: Role = Depends(required_admin_role),
 ) -> None:
+    """Delete an organisation (admin only)."""
     await service.delete_organisation(org_id)
     return None

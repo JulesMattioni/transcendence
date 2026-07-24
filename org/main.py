@@ -1,3 +1,5 @@
+"""ASGI application of the org service and its exception handlers."""
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from app.routers import health, organisation, internal, invitation
@@ -23,6 +25,7 @@ app.include_router(invitation.router)
 async def organisation_not_found_error(
     request: Request, exc: OrganisationNotFoundError
 ) -> JSONResponse:
+    """Map a missing organisation to ``404``."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
     )
@@ -32,6 +35,7 @@ async def organisation_not_found_error(
 async def organisation_creation_error(
     request: Request, exc: OrgnisationCreationError
 ) -> JSONResponse:
+    """Map an organisation creation failure to ``400``."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)}
     )
@@ -41,6 +45,7 @@ async def organisation_creation_error(
 async def user_not_found_error(
     request: Request, exc: UserNotInOrganisationError
 ) -> JSONResponse:
+    """Map a missing organisation member to ``404``."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
     )
@@ -50,6 +55,7 @@ async def user_not_found_error(
 async def invited_user_not_found_error(
     request: Request, exc: InvitedUserNotFoundError
 ) -> JSONResponse:
+    """Map an unknown invited email to ``404``."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "No user with this email"},
@@ -60,6 +66,7 @@ async def invited_user_not_found_error(
 async def already_member_error(
     request: Request, exc: AlreadyMemberError
 ) -> JSONResponse:
+    """Map an already-member conflict to ``409``."""
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "User is already a member of this organisation"},
@@ -70,6 +77,7 @@ async def already_member_error(
 async def invitation_already_exists_error(
     request: Request, exc: InvitationAlreadyExistsError
 ) -> JSONResponse:
+    """Map a duplicate pending invitation to ``409``."""
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "A pending invitation already exists"},
@@ -80,6 +88,7 @@ async def invitation_already_exists_error(
 async def invitation_not_found_error(
     request: Request, exc: InvitationNotFoundError
 ) -> JSONResponse:
+    """Map a missing invitation to ``404``."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": "Invitation not found"},
@@ -90,6 +99,7 @@ async def invitation_not_found_error(
 async def auth_service_unavailable_error(
     request: Request, exc: AuthServiceUnavailableError
 ) -> JSONResponse:
+    """Map an unreachable auth service to ``503``."""
     return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"detail": "Auth service unavailable"},

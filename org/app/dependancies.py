@@ -1,3 +1,5 @@
+"""FastAPI dependencies: repositories, services and role guards."""
+
 from app.repositories import (
     OrganisationRepository,
     OrganisationMemberRepository,
@@ -17,12 +19,14 @@ from app.services.invitation_service import InvitationService
 def get_organisation_repository(
     session: AsyncSession = Depends(get_session),
 ) -> OrganisationRepository:
+    """Provide an ``OrganisationRepository`` bound to the request session."""
     return OrganisationRepository(session)
 
 
 def get_org_member_repository(
     session: AsyncSession = Depends(get_session),
 ) -> OrganisationMemberRepository:
+    """Provide an ``OrganisationMemberRepository`` for the request."""
     return OrganisationMemberRepository(session)
 
 
@@ -33,14 +37,17 @@ def get_organisation_service(
         get_org_member_repository
     ),
 ) -> OrganisationService:
-
+    """Assemble the ``OrganisationService`` with its repositories."""
     return OrganisationService(
         session=session, repository=repo, member_repo=member_repo
     )
 
 
 class RoleChecker:
+    """Route dependency authorising a caller against allowed roles."""
+
     def __init__(self, allowed_roles: List[Role]) -> None:
+        """Store the roles allowed to pass this check."""
         self.allowed_roles = allowed_roles
 
     async def __call__(
@@ -51,6 +58,19 @@ class RoleChecker:
             get_org_member_repository
         ),
     ) -> Role:
+        """Authorise the caller for ``org_id``.
+
+        Args:
+            org_id: Organisation the caller is acting on.
+            get_user: The authenticated user.
+            user_repo: Repository used to read the caller's role.
+
+        Returns:
+            The caller's role within the organisation.
+
+        Raises:
+            HTTPException: ``403`` if the caller lacks an allowed role.
+        """
         user_id = get_user.id
         user_roles = await user_repo.get_user_perm(user_id, org_id)
         if not user_roles or user_roles not in self.allowed_roles:
@@ -69,6 +89,7 @@ required_reader_role = RoleChecker([Role.ADMIN, Role.EDITOR, Role.READER])
 def get_invitation_repository(
     session: AsyncSession = Depends(get_session),
 ) -> InvitationRepository:
+    """Provide an ``InvitationRepository`` bound to the request session."""
     return InvitationRepository(session)
 
 
@@ -80,6 +101,7 @@ def get_invitation_service(
     ),
     org_repo: OrganisationRepository = Depends(get_organisation_repository),
 ) -> InvitationService:
+    """Assemble the ``InvitationService`` with its repositories."""
     return InvitationService(
         session=session,
         invitation_repo=invitation_repo,
