@@ -31,7 +31,7 @@ function ConnectionsPanel({ myUserId }: { myUserId: number }) {
         .catch(() => active && setOnlineIds(new Set()));
     };
     load();
-    const interval = setInterval(load, 15000);
+    const interval = setInterval(load, 10000);
     return () => {
       active = false;
       clearInterval(interval);
