@@ -32,7 +32,7 @@ function AuthInput({
         value={value}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-200 bg-gray-50 px-4 py-3 pr-11 text-sm text-black placeholder:text-gray-400 focus:border-keepr focus:bg-white focus:outline-none focus:ring-1 focus:ring-keepr"
+        className="w-full rounded border border-gray-200 bg-gray-50 px-4 py-3 pr-11 text-sm text-black placeholder:text-gray-400 focus:border-keepr focus:bg-white focus:outline-none focus:ring-1 focus:ring-keepr"
       />
 
       {/* Eye toggle */}

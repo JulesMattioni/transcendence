@@ -27,7 +27,7 @@ function SourceMarker({ index, source, onOpen }: SourceMarkerProps) {
       </button>
 
       {hovered && (
-        <span className="absolute top-full left-1/2 z-50 mt-1 w-64 -translate-x-1/2 border border-gray-200 bg-white p-2 text-xs text-muted shadow-lg">
+        <span className="absolute top-full left-1/2 z-50 mt-1 w-64 -translate-x-1/2 rounded bg-white p-2 text-xs text-muted shadow-lg ring-1 ring-black/5">
           {source.excerpt}
         </span>
       )}

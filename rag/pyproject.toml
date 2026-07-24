@@ -15,3 +15,14 @@ dependencies = [
     "torch>=2.13.0",
     "uvicorn[standard]>=0.49.0",
 ]
+
+# Inference runs on CPU on the 42 workstation, so pull torch from the
+# CPU-only PyTorch index. This avoids the multi-gigabyte NVIDIA/CUDA
+# wheels and keeps the rag image small enough to build on /goinfre.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -76,7 +76,7 @@ function ChatMenu({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-72 border border-gray-200 bg-white shadow-lg">
+        <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded bg-white shadow-lg ring-1 ring-black/5">
           {/* New chat */}
           <button
             type="button"

@@ -47,7 +47,7 @@ function EditForm({ file, onSuccess }: EditFormProps) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border border-gray-300 px-3 py-2"
+          className="w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-keepr focus:outline-none"
           placeholder="My document"
         />
       </div>
@@ -59,7 +59,7 @@ function EditForm({ file, onSuccess }: EditFormProps) {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full border border-gray-300 px-3 py-2"
+          className="w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-keepr focus:outline-none"
           rows={3}
         />
       </div>
@@ -69,7 +69,7 @@ function EditForm({ file, onSuccess }: EditFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-keepr px-4 py-2 font-medium text-white disabled:opacity-50"
+        className="w-full rounded bg-keepr px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
       >
         {submitting ? 'Saving…' : 'Save'}
       </button>

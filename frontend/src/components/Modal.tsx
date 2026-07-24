@@ -27,7 +27,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
     >
       {/* White box */}
       <div
-        className={`w-full ${sizeClasses[size]} bg-white p-6 shadow-xl`}
+        className={`w-full ${sizeClasses[size]} rounded bg-white p-6 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
 

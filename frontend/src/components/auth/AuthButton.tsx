@@ -28,7 +28,7 @@ function AuthButton({
       type={type}
       onClick={onClick}
       disabled={loading}
-      className={`flex w-full items-center justify-center gap-2 px-6 py-3 text-sm font-regular transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${variantClasses[variant]}`}
+      className={`flex w-full items-center justify-center gap-2 rounded px-6 py-3 text-sm font-regular transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${variantClasses[variant]}`}
     >
       {children}
       {loading ? <Loader2 size={18} className="animate-spin" /> : icon}

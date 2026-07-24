@@ -179,14 +179,6 @@ function LoginPage() {
           onChange={setPassword}
           autoComplete="new-password"
         />
-        <div className="-mt-2 flex justify-end">
-          <Link
-            to={"/"}
-            className="text-sm text-keepr opacity-60 hover:opacity-100"
-          >
-            Forgot password ?
-          </Link>
-        </div>
         <AuthButton
           children="Sign In"
           loading={loading}

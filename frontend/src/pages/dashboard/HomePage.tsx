@@ -6,11 +6,12 @@ import CreateOrgForm from "../../components/CreateOrgForm";
 import ConnectionsPanel from "../../components/dashboard/home/ConnectionsPanel";
 import AuditPanel from "../../components/dashboard/home/AuditPanel";
 import InvitationsPanel from "../../components/dashboard/home/InvitationsPanel";
+import AnalyticsPanel from "../../components/dashboard/home/AnalyticsPanel";
 import { useOrg } from "../../context/orgContextValue";
 import { me } from "../../api/auth";
 
 function HomePage() {
-  const { reloadOrgs, setCurrentOrg } = useOrg();
+  const { reloadOrgs, setCurrentOrg, currentOrg } = useOrg();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -31,7 +32,7 @@ function HomePage() {
         <h1 className="font-serif text-2xl font-bold text-black">Home</h1>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
         >
           Create organisation <Plus size={15} strokeWidth={2} />
         </button>
@@ -57,6 +58,11 @@ function HomePage() {
           />
         </div>
       </div>
+
+      {/* Analytics dashboard for the selected organisation */}
+      {currentOrg && (
+        <AnalyticsPanel key={currentOrg.org_id} orgId={currentOrg.org_id} />
+      )}
 
       <Modal
         isOpen={isCreateOpen}

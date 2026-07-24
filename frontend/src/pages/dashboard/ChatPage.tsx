@@ -182,10 +182,10 @@ function ChatPage() {
                       className={m.role === "user" ? "text-right" : "text-left"}
                     >
                       <div
-                        className={`inline-block max-w-6xl whitespace-pre-wrap px-4 py-2 text-sm ${
+                        className={`inline-block max-w-6xl whitespace-pre-wrap text-sm ${
                           m.role === "user"
-                            ? "bg-keepr text-white"
-                            : "text-black"
+                            ? "rounded-lg bg-keepr px-4 py-2 text-white"
+                            : "px-4 py-2 text-black"
                         }`}
                       >
                         <MessageContent
@@ -208,7 +208,7 @@ function ChatPage() {
               )}
 
               <div className="p-6 pb-24 lg:pb-6">
-                <div className="mx-auto flex max-w-8xl items-center gap-3 border border-keepr bg-white p-4">
+                <div className="mx-auto flex max-w-8xl items-center gap-3 rounded-lg border border-keepr bg-white p-4 shadow-sm">
                   <input
                     className="flex-1 bg-transparent font-mono text-sm text-black placeholder:text-subtle focus:outline-none"
                     value={input}
