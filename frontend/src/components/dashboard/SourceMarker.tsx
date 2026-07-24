@@ -7,6 +7,11 @@ interface SourceMarkerProps {
   onOpen: (fileId: number) => void
 }
 
+/**
+ * Inline citation marker in an assistant answer. Renders a clickable
+ * badge that opens the cited file and reveals its excerpt on hover;
+ * falls back to plain "[n]" text when the source is unknown.
+ */
 function SourceMarker({ index, source, onOpen }: SourceMarkerProps) {
   const [hovered, setHovered] = useState(false)
 

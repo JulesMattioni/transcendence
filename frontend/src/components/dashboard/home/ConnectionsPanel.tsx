@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { listMyConnections, type Connection } from "../../../api/org";
 import { fetchConnectedFriends } from "../../../api/realtime";
 
+/** Best available display name for a connection: full name, email, or id. */
 function displayName(c: Connection): string {
   const full = [c.first_name, c.last_name].filter(Boolean).join(" ");
   return full || c.email || `User #${c.user_id}`;
 }
 
+/**
+ * Panel listing the user's connections (people sharing an organisation)
+ * with a live online/offline indicator polled from the realtime service.
+ */
 function ConnectionsPanel({ myUserId }: { myUserId: number }) {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [onlineIds, setOnlineIds] = useState<Set<number>>(new Set());

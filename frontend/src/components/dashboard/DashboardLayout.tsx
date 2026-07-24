@@ -3,6 +3,10 @@ import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 
+/**
+ * Chrome for dashboard pages: fixed topbar, sidebar (desktop) and bottom
+ * nav (mobile) around a scrollable content area.
+ */
 function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-bg">

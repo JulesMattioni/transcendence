@@ -9,6 +9,10 @@ export interface NavItem {
 }
 
 
+/**
+ * Dashboard navigation entries shared by the sidebar and bottom nav.
+ * Items flagged adminOnly are shown only to organisation admins.
+ */
 export const navItems: NavItem[] = [
   { to: '/dashboard', label: 'Home', icon: Home },
   { to: '/dashboard/files', label: 'Files', icon: FileText },

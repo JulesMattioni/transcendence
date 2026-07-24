@@ -10,6 +10,10 @@ interface AuthInputProps {
   autoComplete?: string;
 }
 
+/**
+ * Styled text input for auth forms. For password inputs it adds an
+ * eye toggle that shows or hides the value.
+ */
 function AuthInput({
   type = "text",
   placeholder,

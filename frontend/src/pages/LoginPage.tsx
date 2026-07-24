@@ -15,6 +15,11 @@ import AuthButton from "../components/auth/AuthButton";
 import GoogleIcon from "../components/icons/GoogleIcon";
 import FortyTwoIcon from "../components/icons/FortyTwoIcon";
 
+/**
+ * Login page. Handles email/password sign-in, the 2FA code step when the
+ * backend requires it, and Google / 42 OAuth entry points. Also surfaces
+ * an error passed back from the OAuth callback via navigation state.
+ */
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,6 +36,10 @@ function LoginPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState(navState.oauthError ?? "");
 
+  /**
+   * Validate the credentials and sign in, switching to the 2FA step when
+   * the backend requires it or navigating to the dashboard on success.
+   */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -60,6 +69,7 @@ function LoginPage() {
     }
   }
 
+  /** Verify the 2FA code against the pending token and finish sign-in. */
   async function handleVerify2fa(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -83,12 +93,14 @@ function LoginPage() {
     }
   }
 
+  /** Leave the 2FA step and return to the credentials form. */
   function backToCredentials() {
     setPendingToken(null);
     setCode("");
     setError("");
   }
 
+  /** Start the Google OAuth sign-in flow. */
   async function handleGoogleLogin() {
     setError("");
     setLoading(true);
@@ -100,6 +112,7 @@ function LoginPage() {
     }
   }
 
+  /** Start the 42 OAuth sign-in flow. */
   async function handleFtLogin() {
     setError("");
     setLoading(true);

@@ -2,6 +2,10 @@ import angel0 from "../../assets/angel_0.png";
 import { Link } from "react-router-dom";
 import { ArrowUp } from "lucide-react";
 
+/**
+ * Landing hero: headline, value proposition, primary calls to action, and
+ * a decorative illustration with a mock chat card.
+ */
 function Hero() {
   return (
     <section className="relative grid min-h-screen grid-cols-1 content-center items-center gap-8 overflow-hidden px-6 pt-16 pb-16 sm:px-10 lg:min-h-0 lg:grid-cols-2">

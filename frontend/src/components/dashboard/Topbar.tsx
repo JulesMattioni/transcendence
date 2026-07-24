@@ -5,6 +5,10 @@ import { me } from "../../api/auth";
 import { getAvatarUrl } from "../../utils/avatars";
 import { useOrg } from "../../context/orgContextValue";
 
+/**
+ * Dashboard top bar: brand, an organisation selector bound to the org
+ * context, and a profile link showing the user's avatar.
+ */
 function Topbar() {
   const [avatarId, setAvatarId] = useState<number | null>(null);
   const { orgs, currentOrg, loading, setCurrentOrg } = useOrg();

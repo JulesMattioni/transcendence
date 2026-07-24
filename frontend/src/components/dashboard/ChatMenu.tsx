@@ -15,6 +15,11 @@ interface ChatMenuProps {
   refreshKey: number;
 }
 
+/**
+ * Dropdown listing the organisation's conversations, with actions to
+ * start a new chat, select one, or delete one. Reloads when refreshKey
+ * changes and closes on outside click.
+ */
 function ChatMenu({
   orgId,
   activeId,
@@ -47,17 +52,20 @@ function ChatMenu({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
+  /** Delete a conversation and drop it from the list. */
   async function handleDelete(id: number) {
     await deleteConversation(id, orgId);
     setConversations((prev) => prev.filter((c) => c.id !== id));
     onDeleted(id);
   }
 
+  /** Select a conversation and close the dropdown. */
   function handleSelect(id: number) {
     onSelect(id);
     setOpen(false);
   }
 
+  /** Start a new chat and close the dropdown. */
   function handleNewChat() {
     onNewChat();
     setOpen(false);

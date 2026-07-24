@@ -20,6 +20,7 @@ const cards = [
   },
 ];
 
+/** Landing feature grid highlighting the product's three main selling points. */
 function FeatureCards() {
   return (
     <section className="px-6 py-20 sm:px-10">

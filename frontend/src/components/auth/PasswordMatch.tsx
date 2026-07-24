@@ -5,6 +5,10 @@ interface PasswordMatchProps {
   confirm: string
 }
 
+/**
+ * Inline indicator of whether the password and its confirmation match.
+ * Renders nothing until the confirmation has more than one character.
+ */
 function PasswordMatch({ password, confirm }: PasswordMatchProps) {
   if (confirm.length <= 1) return null
 

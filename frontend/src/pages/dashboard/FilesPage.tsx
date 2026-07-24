@@ -30,6 +30,7 @@ import { downloadFile } from "../../api/files";
 import EditForm from "../../components/EditForm";
 
 
+/** Pick the icon that best represents a file's content type. */
 function iconForType(contentType: string) {
   if (contentType.startsWith("image/")) return FileImage;
   if (contentType.startsWith("video/")) return FileVideo;
@@ -50,6 +51,11 @@ function iconForType(contentType: string) {
   return FileIcon;
 }
 
+/**
+ * Files page for the selected organisation: a paginated grid of files
+ * with preview, download, and (for writers) upload, edit and delete.
+ * Prompts to pick an organisation when none is selected.
+ */
 function FilesPage() {
   const [files, setFiles] = useState<FileRead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +74,7 @@ function FilesPage() {
 
   const showFiles = currentOrg ? files : [];
 
+  /** Load the current page of files for the selected organisation. */
   const loadFiles = useCallback(() => {
     if (!currentOrg) return Promise.resolve();
     return listFiles(page, pageSize, currentOrg.org_id)
@@ -90,6 +97,7 @@ function FilesPage() {
     }
   }, [loadFiles, currentOrg]);
 
+  /** Download a file, surfacing any failure as an error message. */
   const handleDownload = useCallback((file: FileRead) => {
     downloadFile(file).catch((err) => {
       const message =
@@ -98,6 +106,10 @@ function FilesPage() {
     })
   }, [])
 
+  /**
+   * Delete the file pending confirmation, then reload; steps back a page
+   * when the last item on a non-first page was removed.
+   */
   const confirmDelete = useCallback(() => {
     if (!fileToDelete) return;
     deleteFile(fileToDelete.id)

@@ -10,6 +10,11 @@ interface TwoFactorSetupModalProps {
   onEnabled: () => void;
 }
 
+/**
+ * Body of the 2FA setup flow: starts enrolment, renders the QR code and
+ * manual key, and verifies the user's 6-digit code before enabling.
+ * Split out so it mounts fresh each time the modal opens.
+ */
 function TwoFactorSetupContent({
   onClose,
   onEnabled,
@@ -44,6 +49,7 @@ function TwoFactorSetupContent({
     };
   }, []);
 
+  /** Copy the manual setup key to the clipboard with brief feedback. */
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(secret);
@@ -54,6 +60,7 @@ function TwoFactorSetupContent({
     }
   }
 
+  /** Verify the entered code and, on success, finish enabling 2FA. */
   async function handleVerify() {
     setVerifying(true);
     setVerifyError(null);
@@ -160,6 +167,10 @@ function TwoFactorSetupContent({
   );
 }
 
+/**
+ * Modal wrapper for the 2FA setup flow. Mounts the content only while
+ * open so enrolment restarts on each open.
+ */
 function TwoFactorSetupModal({
   isOpen,
   onClose,

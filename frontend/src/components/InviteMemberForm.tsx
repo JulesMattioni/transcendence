@@ -7,12 +7,17 @@ interface InviteMemberFormProps {
   onSuccess: () => void;
 }
 
+/**
+ * Form to invite a user to an organisation by email with a chosen role.
+ * Calls onSuccess once the invitation is sent, or shows an error.
+ */
 function InviteMemberForm({ orgId, onSuccess }: InviteMemberFormProps) {
   const [email, setEmail] = useState("");
   const [roleId, setRoleId] = useState<number>(OrgRole.Reader);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Validate and send the invitation. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) {

@@ -11,6 +11,12 @@ import { OrgContext, type OrgContextValue } from './orgContextValue'
 
 const STORAGE_KEY = 'current_org_id'
 
+/**
+ * Provides the current organisation state to the app: loads the user's
+ * organisations, restores the last selected one from local storage,
+ * derives the current role and permissions, and mirrors the selection
+ * into the API layer so org-scoped calls default to it.
+ */
 export function OrgProvider({ children }: { children: ReactNode }) {
   const [orgs, setOrgs] = useState<OrgMembership[]>([])
   const [currentOrgId, setCurrentOrgIdState] = useState<number | null>(null)

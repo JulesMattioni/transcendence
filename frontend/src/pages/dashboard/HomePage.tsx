@@ -10,6 +10,12 @@ import AnalyticsPanel from "../../components/dashboard/home/AnalyticsPanel";
 import { useOrg } from "../../context/orgContextValue";
 import { me } from "../../api/auth";
 
+/**
+ * Dashboard home: create-organisation action plus the connections, audit,
+ * invitations and analytics panels for the selected organisation.
+ * Accepting an invitation or creating an org reloads the orgs and bumps a
+ * refresh key to remount the data panels.
+ */
 function HomePage() {
   const { reloadOrgs, setCurrentOrg, currentOrg } = useOrg();
   const [isCreateOpen, setIsCreateOpen] = useState(false);

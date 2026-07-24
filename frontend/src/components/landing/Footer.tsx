@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
 
+/** Landing page footer with brand, legal links and copyright. */
 function Footer() {
   return (
     <footer className="bg-keepr px-6 py-12 text-white sm:px-10">

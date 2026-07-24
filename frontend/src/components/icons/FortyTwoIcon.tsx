@@ -1,3 +1,4 @@
+/** The 42 logo as an inline SVG icon that inherits the current color. */
 function FortyTwoIcon({ size = 18 }: { size?: number }) {
   return (
     <svg

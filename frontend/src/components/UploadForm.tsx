@@ -6,6 +6,11 @@ interface UploadFormProps {
   onSuccess: () => void;
 }
 
+/**
+ * Form to upload a file with a title and optional description, supporting
+ * drag-and-drop or click-to-browse. Calls onSuccess after a successful
+ * upload, or shows an error.
+ */
 function UploadForm({ onSuccess }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -14,6 +19,7 @@ function UploadForm({ onSuccess }: UploadFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Accept the first dropped file into the form. */
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
@@ -23,6 +29,7 @@ function UploadForm({ onSuccess }: UploadFormProps) {
     }
   }
 
+  /** Validate the file and title, then upload. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 

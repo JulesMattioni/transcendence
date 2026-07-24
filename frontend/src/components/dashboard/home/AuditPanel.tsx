@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { subscribeRealtime } from "../../../api/realtime";
 import type { RealtimeEvent } from "../../../api/realtime";
 
+/** Turn a realtime audit event into a human-readable sentence. */
 function formatEvent(event: RealtimeEvent): string {
   const name =
     [event.first_name, event.last_name].filter(Boolean).join(" ") || "Someone";
@@ -21,6 +22,7 @@ function formatEvent(event: RealtimeEvent): string {
   }
 }
 
+/** Format an event timestamp as a short local time. */
 function formatTime(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], {
     hour: "2-digit",
@@ -28,6 +30,10 @@ function formatTime(timestamp: string): string {
   });
 }
 
+/**
+ * Live audit feed listing recent realtime events (logins, file changes),
+ * subscribed to the realtime event stream.
+ */
 function AuditPanel() {
   const [events, setEvents] = useState<RealtimeEvent[]>([]);
 

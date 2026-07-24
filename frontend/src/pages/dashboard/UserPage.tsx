@@ -5,6 +5,10 @@ import { getAvatarUrl, availableAvatarIds } from "../../utils/avatars";
 import { me, updateProfile, disable2fa, type UserRead } from "../../api/auth";
 import TwoFactorSetupModal from "../../components/dashboard/TwoFactorSetupModal";
 
+/**
+ * Profile page: view the user's account, pick an avatar and edit
+ * location, save changes, and enable or disable two-factor authentication.
+ */
 function UserPage() {
   const [user, setUser] = useState<UserRead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,7 @@ function UserPage() {
     user != null &&
     (location.trim() !== (user.location ?? "") || avatarId !== user.avatar_id);
 
+  /** Save the edited avatar and location, with transient saved feedback. */
   async function handleSave() {
     setSaving(true);
     setSaved(false);
@@ -59,6 +64,7 @@ function UserPage() {
     }
   }
 
+  /** Disable 2FA immediately, or open the setup modal to enable it. */
   function handleToggle2fa() {
     if (!user) return;
     setTwoFaError(null);
@@ -73,6 +79,7 @@ function UserPage() {
     }
   }
 
+  /** Reflect newly enabled 2FA in the local user state. */
   function handle2faEnabled() {
     setUser((prev) => (prev ? { ...prev, is_2fa_enabled: true } : prev));
   }

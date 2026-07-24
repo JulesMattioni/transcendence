@@ -9,6 +9,11 @@ import {
 } from "../../../api/org";
 import { ApiError } from "../../../api/client";
 
+/**
+ * Panel listing the user's pending organisation invitations, with accept
+ * and decline actions. Resolves org names for display and notifies the
+ * parent via onAccepted so it can refresh the org list.
+ */
 function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +21,7 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [orgNames, setOrgNames] = useState<Record<number, string>>({});
 
+  /** Resolve and cache the organisation names for a set of invitations. */
   const loadOrgNames = useCallback((invs: Invitation[]) => {
     const ids = [...new Set(invs.map((i) => i.org_id))];
     Promise.all(
@@ -31,6 +37,7 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
     });
   }, []);
 
+  /** Reload the pending invitations and their org names. */
   const load = useCallback(() => {
     return listMyInvitations()
       .then((data) => {
@@ -60,6 +67,7 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
     };
   }, [loadOrgNames]);
 
+  /** Accept an invitation, then refresh the list and notify the parent. */
   async function handleAccept(id: number) {
     setBusyId(id);
     try {
@@ -73,6 +81,7 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
     }
   }
 
+  /** Decline an invitation, then refresh the list. */
   async function handleDecline(id: number) {
     setBusyId(id);
     try {

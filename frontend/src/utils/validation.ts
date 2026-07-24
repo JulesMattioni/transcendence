@@ -1,16 +1,22 @@
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Validate an email, returning an error message or null when valid. */
 export function validateEmail(email: string): string | null {
   if (!email.trim()) return 'Email is required.'
   if (!EMAIL_RE.test(email)) return 'Please enter a valid email address.'
   return null
 }
 
+/**
+ * Ensure a field is non-empty, returning a "<label> is required" error or
+ * null when valid.
+ */
 export function validateRequired(value: string, label: string): string | null {
   if (!value.trim()) return `${label} is required.`
   return null
 }
 
+/** Check that two password entries match, returning an error or null. */
 export function validatePasswordMatch(
   password: string,
   confirm: string,
@@ -24,6 +30,10 @@ export interface PasswordRule {
   met: boolean
 }
 
+/**
+ * Evaluate a password against each strength rule, returning the rules
+ * with their met/unmet state for a live checklist.
+ */
 export function checkPasswordRules(password: string): PasswordRule[] {
   return [
     { label: 'At least 8 characters', met: password.length >= 8 },
@@ -34,6 +44,7 @@ export function checkPasswordRules(password: string): PasswordRule[] {
   ]
 }
 
+/** Whether a password satisfies every strength rule. */
 export function isPasswordValid(password: string): boolean {
   return checkPasswordRules(password).every((rule) => rule.met)
 }

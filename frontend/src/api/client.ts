@@ -1,5 +1,9 @@
 const API_BASE = '/api'
 
+/**
+ * Error thrown by the API layer, carrying the HTTP status code alongside
+ * a human-readable message extracted from the response.
+ */
 export class ApiError extends Error {
   status: number
 
@@ -14,6 +18,12 @@ interface ApiFetchConfig {
   skipAuthRefresh?: boolean
 }
 
+/**
+ * Central fetch wrapper for the API: attaches the bearer token, parses
+ * the JSON body, and throws an ApiError on failure. On a 401 it
+ * transparently refreshes the token once and retries, or clears the
+ * session and redirects to login if the refresh fails.
+ */
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
@@ -47,6 +57,10 @@ export async function apiFetch<T>(
   return JSON.parse(text) as T
 }
 
+/**
+ * Perform a single fetch against the API base, injecting the current
+ * access token as a bearer header when one is stored.
+ */
 async function doFetch(path: string, options: RequestInit): Promise<Response> {
   const headers = new Headers(options.headers)
   const token = localStorage.getItem('access_token')
@@ -58,6 +72,10 @@ async function doFetch(path: string, options: RequestInit): Promise<Response> {
 
 let refreshInFlight: Promise<boolean> | null = null
 
+/**
+ * Refresh the access token, deduplicating concurrent callers so several
+ * 401s triggered at once share a single refresh request.
+ */
 function tryRefresh(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = doRefresh().finally(() => {
@@ -67,6 +85,10 @@ function tryRefresh(): Promise<boolean> {
   return refreshInFlight
 }
 
+/**
+ * Exchange the stored refresh token for a new token pair, persisting it
+ * on success. Returns whether the refresh succeeded.
+ */
 async function doRefresh(): Promise<boolean> {
   const refreshToken = localStorage.getItem('refresh_token')
   if (!refreshToken) return false
@@ -90,17 +112,24 @@ async function doRefresh(): Promise<boolean> {
   return false
 }
 
+/** Drop the stored token pair, ending the local session. */
 function clearLocalSession(): void {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
 }
 
+/** Navigate to the login page unless already there. */
 function redirectToLogin(): void {
   if (window.location.pathname !== '/login') {
     window.location.assign('/login')
   }
 }
 
+/**
+ * Pull a readable error message out of a failed response, handling both
+ * the string and the FastAPI validation-array shapes of `detail`, with a
+ * status-based fallback.
+ */
 async function extractError(response: Response): Promise<string> {
   try {
     const body = await response.json()

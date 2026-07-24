@@ -19,11 +19,17 @@ import {
   type Invitation,
 } from "../../api/org";
 
+/** Best available display name for a member: full name, email, or id. */
 function memberName(m: OrgMember): string {
   const full = [m.first_name, m.last_name].filter(Boolean).join(" ");
   return full || m.email || `User #${m.user_id}`;
 }
 
+/**
+ * Organisation admin page: manage members (change role, remove), review
+ * pending invitations, invite new members, and delete the organisation.
+ * Redirects non-admins away.
+ */
 function AdminPage() {
   const { isAdmin, loading: orgLoading, currentOrg, reloadOrgs } = useOrg();
   const navigate = useNavigate();
@@ -38,6 +44,7 @@ function AdminPage() {
 
   const orgId = currentOrg?.org_id ?? null;
 
+  /** Reload the org's members and its pending invitations. */
   const load = useCallback(async () => {
     if (orgId === null) return;
     setLoading(true);
@@ -94,6 +101,7 @@ function AdminPage() {
     };
   }, [orgId]);
 
+  /** Change a member's role, then refresh the list. */
   async function handleRoleChange(userId: number, newRole: number) {
     if (orgId === null) return;
     try {
@@ -106,6 +114,7 @@ function AdminPage() {
     }
   }
 
+  /** Remove a member from the organisation, then refresh the list. */
   async function handleRemove(userId: number) {
     if (orgId === null) return;
     try {
@@ -118,6 +127,7 @@ function AdminPage() {
     }
   }
 
+  /** Delete the organisation, refresh the org list, and leave the page. */
   async function handleDeleteOrg() {
     if (orgId === null) return;
     try {

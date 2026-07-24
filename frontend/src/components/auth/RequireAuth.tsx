@@ -6,6 +6,11 @@ import { connectRealtime } from '../../api/realtime'
 
 type AuthState = 'checking' | 'authenticated' | 'unauthenticated'
 
+/**
+ * Guard that verifies the session via /me before rendering its children:
+ * shows a spinner while checking, opens the realtime connection once
+ * authenticated, and redirects to /login otherwise.
+ */
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthState>('checking')
 

@@ -17,6 +17,11 @@ import FortyTwoIcon from "../components/icons/FortyTwoIcon";
 import PasswordChecklist from "../components/auth/PasswordChecklist";
 import PasswordMatch from "../components/auth/PasswordMatch";
 
+/**
+ * Registration page: collects name, email and password (with live
+ * strength and match feedback), signs up, and offers Google / 42 OAuth
+ * as alternatives.
+ */
 function RegisterPage() {
   const [first_name, setFirstName] = useState("");
   const [last_name, setLastName] = useState("");
@@ -27,6 +32,7 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  /** Validate all fields, create the account, and go to the dashboard. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -62,6 +68,7 @@ function RegisterPage() {
     }
   }
 
+  /** Start the Google OAuth sign-in flow. */
   async function handleGoogleLogin() {
     setError("");
     setLoading(true);
@@ -73,6 +80,7 @@ function RegisterPage() {
     }
   }
 
+  /** Start the 42 OAuth sign-in flow. */
   async function handleFtLogin() {
     setError("");
     setLoading(true);

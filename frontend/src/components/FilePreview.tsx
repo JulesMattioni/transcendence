@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { type FileRead, fetchFileContent } from '../api/files'
 
+/**
+ * Preview a file inline by fetching its content as a blob URL and
+ * rendering it by type: image, PDF iframe, text, or a download link as a
+ * fallback. Revokes the blob URL on unmount.
+ */
 function FilePreview({ file }: { file: FileRead }) {
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -60,6 +65,7 @@ function FilePreview({ file }: { file: FileRead }) {
   )
 }
 
+/** Fetch a text blob URL and render its contents in a scrollable block. */
 function TextPreview({ url }: { url: string }) {
   const [text, setText] = useState('')
   useEffect(() => {

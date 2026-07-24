@@ -42,24 +42,32 @@ export interface LoginResponse {
   user: UserRead;
 }
 
+/** Return the stored access token, or null when signed out. */
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_KEY);
 }
 
+/** Return the stored refresh token, or null when signed out. */
 export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_KEY);
 }
 
+/** Persist a new access/refresh token pair to local storage. */
 export function saveTokens(access: string, refresh: string): void {
   localStorage.setItem(ACCESS_KEY, access);
   localStorage.setItem(REFRESH_KEY, refresh);
 }
 
+/** Remove the stored tokens, ending the local session. */
 export function clearSession(): void {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
 }
 
+/**
+ * Register a new account and immediately sign in, persisting the returned
+ * tokens.
+ */
 export async function signup(payload: UserCreate): Promise<LoginResponse> {
   const data = await apiFetch<LoginResponse>("/auth/signup", {
     method: "POST",
@@ -70,6 +78,11 @@ export async function signup(payload: UserCreate): Promise<LoginResponse> {
   return data;
 }
 
+/**
+ * Sign in with email and password. Either completes the login and stores
+ * the tokens, or reports that a second factor is required so the caller
+ * can prompt for the 2FA code.
+ */
 export async function login(payload: UserLogin): Promise<LoginResult> {
   const data = await apiFetch<LoginResponse | TwoFactorRequired>(
     "/auth/login",
@@ -88,6 +101,11 @@ export async function login(payload: UserLogin): Promise<LoginResult> {
   return { kind: "success", data };
 }
 
+/**
+ * Complete a 2FA-gated login by verifying the code against the pending
+ * token, storing the tokens on success. Bypasses apiFetch because the
+ * pending token, not the access token, must be sent as the bearer.
+ */
 export async function loginVerify2fa(
   pendingToken: string,
   code: string,
@@ -117,10 +135,12 @@ export async function loginVerify2fa(
   return data;
 }
 
+/** Fetch the currently authenticated user's profile. */
 export function me(): Promise<UserRead> {
   return apiFetch<UserRead>("/auth/me");
 }
 
+/** Refresh the token pair from the stored refresh token and persist it. */
 export async function refresh(): Promise<TokenResponse> {
   const token = getRefreshToken();
   const data = await apiFetch<TokenResponse>(
@@ -131,6 +151,10 @@ export async function refresh(): Promise<TokenResponse> {
   return data;
 }
 
+/**
+ * Sign out: revoke the refresh token server-side, then always clear the
+ * local session and drop the realtime connection.
+ */
 export async function logout(): Promise<void> {
   const token = getRefreshToken();
   try {
@@ -144,6 +168,7 @@ export async function logout(): Promise<void> {
   }
 }
 
+/** Update the current user's editable profile fields. */
 export function updateProfile(payload: UserUpdate): Promise<UserRead> {
   return apiFetch<UserRead>("/auth/update", {
     method: "PATCH",
@@ -157,12 +182,18 @@ export interface TwoFactorCredentials {
   otpauth_uri: string;
 }
 
+/**
+ * Begin 2FA enrolment, returning the shared secret and otpauth URI to
+ * render as a QR code. The user must confirm with verify2fa before it
+ * takes effect.
+ */
 export function enable2fa(): Promise<TwoFactorCredentials> {
   return apiFetch<TwoFactorCredentials>("/auth/2fa/enable", {
     method: "POST",
   });
 }
 
+/** Confirm 2FA enrolment by proving the user can generate a valid code. */
 export function verify2fa(code: string): Promise<void> {
   return apiFetch<void>("/auth/2fa/enable/verify", {
     method: "POST",
@@ -171,6 +202,7 @@ export function verify2fa(code: string): Promise<void> {
   });
 }
 
+/** Turn off 2FA for the current user and return the updated profile. */
 export function disable2fa(): Promise<UserRead> {
   return apiFetch<UserRead>("/auth/2fa/disable", {
     method: "POST",
@@ -189,11 +221,16 @@ interface OAuthRedirect {
   authorization_url: string;
 }
 
+/** Kick off Google OAuth by redirecting to the provider's consent page. */
 export async function startGoogleLogin(): Promise<void> {
   const data = await apiFetch<OAuthRedirect>("/auth/oauth/google/login");
   window.location.assign(data.authorization_url);
 }
 
+/**
+ * Exchange the one-time OAuth code from the provider callback for a
+ * session, persisting the returned tokens.
+ */
 export async function exchangeOAuthCode(
   exchangeCode: string,
 ): Promise<LoginResponse> {
@@ -206,6 +243,7 @@ export async function exchangeOAuthCode(
   return data;
 }
 
+/** Kick off 42 OAuth by redirecting to the provider's consent page. */
 export async function startFtLogin(): Promise<void> {
   const data = await apiFetch<OAuthRedirect>("/auth/oauth/42/login");
   window.location.assign(data.authorization_url);

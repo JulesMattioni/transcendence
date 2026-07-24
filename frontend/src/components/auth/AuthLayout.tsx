@@ -2,6 +2,10 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import angel4 from '../../assets/angel_4.png'
 
+/**
+ * Two-column shell for auth pages: a branded promo panel on the left
+ * (desktop only) and the form content on the right.
+ */
 function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">

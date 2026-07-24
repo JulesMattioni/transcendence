@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+/** Landing "discover" section pitching the RAG chat with a call to action. */
 function DiscoverSection() {
   return (
     <section className="px-6 py-20 sm:px-10">
