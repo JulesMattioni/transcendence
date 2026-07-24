@@ -7,11 +7,15 @@
 PROFILE ?= dev
 COMPOSE := docker compose --profile $(PROFILE)
 
+ifeq ($(PROFILE),prod)
+export GATEWAY_BACKEND := http://frontend-prod:80
+endif
+
 CERT_DIR := gateway/certs
 CRS_DIR := gateway/crs
 CRS_REPO := https://github.com/coreruleset/coreruleset.git
 
-.PHONY: run prod up down stop build logs ps re certs crs clean fclean help migration migrate migrate-down
+.PHONY: run prod up down stop build logs ps re certs crs clean fclean help migration migrate migrate-down downall
 
 ## certs : generate self-signed TLS cert for the gateway (skips if present)
 certs:
@@ -52,6 +56,11 @@ up: certs crs
 down:
 	$(COMPOSE) down
 
+## downall : stop and remove ALL profiles (dev + prod) + orphans (e.g. vault)
+downall:
+	docker compose --profile dev --profile prod down --remove-orphans
+
+
 ## stop  : stop containers without removing them
 stop:
 	$(COMPOSE) stop
@@ -69,7 +78,7 @@ ps:
 	$(COMPOSE) ps
 
 ## re    : restart cleanly (down then run)
-re: down run
+re: downall run
 
 ## clean : project containers + images + orphans (KEEPS volumes)
 clean:

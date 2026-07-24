@@ -105,8 +105,6 @@ services:
     build:
       context: ./frontend
       target: prod
-    ports:
-      - "8080:80"
 
   gateway:
     build: ./gateway
@@ -120,7 +118,7 @@ services:
       PORT: "80"
       SSL_PORT: "443"
       SERVER_NAME: "localhost"
-      BACKEND: "http://frontend-dev:5173"
+      BACKEND: "${GATEWAY_BACKEND:-http://frontend-dev:5173}"
       PROXY_SSL_CERT: /etc/nginx/conf/server.crt
       PROXY_SSL_CERT_KEY: /etc/nginx/conf/server.key
       MODSEC_RULE_ENGINE: "On"
