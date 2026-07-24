@@ -36,16 +36,15 @@ function openSocket(): void {
   };
 
   ws.onmessage = (msg) => {
-    let event: RealtimeEvent
+    let event: RealtimeEvent;
     try {
-      event = JSON.parse(msg.data)
+      event = JSON.parse(msg.data);
     } catch {
-      return
+      return;
     }
-    events = [event, ...events].slice(0, MAX_EVENTS)
-    notifyListeners()
-  }
-
+    events = [event, ...events].slice(0, MAX_EVENTS);
+    notifyListeners();
+  };
 
   ws.onerror = () => {
     ws.close();
@@ -70,8 +69,8 @@ export function disconnectRealtime(): void {
     socket.close();
     socket = null;
   }
-  events = []
-  notifyListeners()
+  events = [];
+  notifyListeners();
   reconnectAttempts = 0;
 }
 
@@ -109,4 +108,20 @@ export function subscribeRealtime(listener: Listener): () => void {
   return () => {
     listeners.delete(listener);
   };
+}
+
+export type ConnectedMember = {
+  user_id: number;
+  first_name: string | null;
+  last_name: string | null;
+};
+
+export async function fetchConnectedFriends(userId: number): Promise<number[]> {
+  const token = getAccessToken();
+  const response = await fetch(`/ws/connected_friends?user_id=${userId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) return [];
+  const members: ConnectedMember[] = await response.json();
+  return members.map((m) => m.user_id);
 }

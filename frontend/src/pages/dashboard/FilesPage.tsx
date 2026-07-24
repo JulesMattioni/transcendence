@@ -137,7 +137,7 @@ function FilesPage() {
             {canWrite && (
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
               >
                 Add file <Plus size={15} strokeWidth={2} />
               </button>
@@ -159,7 +159,7 @@ function FilesPage() {
                 return (
                   <li
                     key={file.id}
-                    className="flex aspect-[4/3] flex-col overflow-hidden border border-gray-200 transition-colors duration-200 hover:border-keepr"
+                    className="flex aspect-[4/3] flex-col overflow-hidden rounded shadow-sm ring-1 ring-transparent transition-shadow duration-200 hover:shadow-md hover:ring-keepr"
                   >
                     {/* Icon */}
                     <div
@@ -187,7 +187,6 @@ function FilesPage() {
                       {canWrite && (
                         <button
                           onClick={() => setFileToEdit(file)}
-                          aria-label={`Edit ${file.title}`}
                           className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
                         >
                           <Pencil size={18} />
@@ -195,7 +194,6 @@ function FilesPage() {
                       )}
                       <button
                         onClick={() => handleDownload(file)}
-                        aria-label={`Download ${file.title}`}
                         className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
                       >
                         <Download size={18} />
@@ -203,7 +201,6 @@ function FilesPage() {
                       {canWrite && (
                         <button
                           onClick={() => setFileToDelete(file)}
-                          aria-label={`Delete ${file.title}`}
                           className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-red-600"
                         >
                           <Trash2 size={18} />
@@ -221,7 +218,7 @@ function FilesPage() {
               <button
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page <= 1}
-                className="px-3 py-1 transition-colors duration-200 disabled:opacity-40 enabled:hover:text-keepr"
+                className="rounded px-3 py-1 transition-colors duration-200 disabled:opacity-40 enabled:hover:bg-gray-100 enabled:hover:text-keepr"
               >
                 <ArrowLeft size={14} />
               </button>
@@ -231,7 +228,7 @@ function FilesPage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages}
-                className="px-3 py-1 transition-colors duration-200 disabled:opacity-40 enabled:hover:text-keepr"
+                className="rounded px-3 py-1 transition-colors duration-200 disabled:opacity-40 enabled:hover:bg-gray-100 enabled:hover:text-keepr"
               >
                 <ArrowRight size={14} />
               </button>
@@ -269,13 +266,13 @@ function FilesPage() {
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setFileToDelete(null)}
-            className="px-4 py-2 text-muted transition-colors duration-200 hover:text-black"
+            className="rounded px-4 py-2 text-muted transition-colors duration-200 hover:bg-gray-100 hover:text-black"
           >
             Cancel
           </button>
           <button
             onClick={confirmDelete}
-            className="bg-red-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-red-700"
+            className="rounded bg-red-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-red-700"
           >
             Delete
           </button>

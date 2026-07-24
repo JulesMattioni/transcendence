@@ -63,3 +63,46 @@ class FilePage(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class FileTypeStat(BaseModel):
+    """
+    File count and storage for one human-readable file category.
+
+    category is a coarse group (image, pdf, document, video, audio,
+    archive, other) derived from raw MIME types by the service, so the
+    client can render a legible chart instead of dozens of MIME strings.
+    """
+
+    category: str
+    file_count: int
+    total_bytes: int
+
+
+class FileBucketStat(BaseModel):
+    """
+    Number of files uploaded during one fixed-width time bucket.
+
+    bucket_start is the ISO timestamp of the bucket's first instant
+    (15-minute bins), letting the client plot an uploads-over-time
+    series without re-bucketing timestamps itself. Buckets form a
+    continuous series: empty intervals are present with a count of 0.
+    """
+
+    bucket_start: str
+    file_count: int
+
+
+class FileStats(BaseModel):
+    """
+    Aggregated analytics for one organisation over an optional range.
+
+    Combines the headline totals with the per-category and per-bucket
+    breakdowns needed by the analytics dashboard. The counts respect the
+    requested date range; when no range is given they cover all files.
+    """
+
+    total_files: int
+    total_bytes: int
+    by_type: list[FileTypeStat]
+    by_bucket: list[FileBucketStat]

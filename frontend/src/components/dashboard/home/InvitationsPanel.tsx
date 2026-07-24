@@ -86,7 +86,7 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col border border-gray-200 bg-white">
+    <div className="flex min-h-0 flex-1 flex-col rounded bg-white shadow-sm">
       <div className="shrink-0 border-b border-gray-200 px-4 py-3">
         <h2 className="font-sans text-lg font-semibold text-black">
           Invitations
@@ -117,14 +117,14 @@ function InvitationsPanel({ onAccepted }: { onAccepted: () => void }) {
                   <button
                     onClick={() => handleAccept(inv.id)}
                     disabled={busyId === inv.id}
-                    className="bg-keepr px-3 py-1 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded bg-keepr px-3 py-1 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 disabled:opacity-50"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => handleDecline(inv.id)}
                     disabled={busyId === inv.id}
-                    className="px-3 py-1 text-sm text-muted transition-colors duration-200 hover:text-red-600 disabled:opacity-50"
+                    className="rounded px-3 py-1 text-sm text-muted transition-colors duration-200 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50"
                   >
                     Decline
                   </button>

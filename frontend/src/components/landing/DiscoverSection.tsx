@@ -24,7 +24,7 @@ function DiscoverSection() {
         <div className="flex shrink-0 justify-center lg:w-1/3">
           <Link
             to="/register"
-            className="inline-block bg-keepr px-8 py-3 text-sm font-sans font-semibold text-white transition-colors hover:bg-blue-700"
+            className="inline-block rounded bg-keepr px-8 py-3 text-sm font-sans font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Try Now
           </Link>

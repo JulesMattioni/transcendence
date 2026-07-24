@@ -1,10 +1,17 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.repositories.file_repository import FileRepository
 from app.storage.file_storage import FileStorage
 from app.services.file_service import FileService
-from app.schemas.file import FileCreate, FileRead, FileUpdate, FilePage
+from app.schemas.file import (
+    FileCreate,
+    FileRead,
+    FileUpdate,
+    FilePage,
+    FileStats,
+)
 from fastapi.responses import FileResponse
 from app.clients.rag_client import RagClient
 from app.clients.realtime_client import RealtimeClient
@@ -89,6 +96,34 @@ async def list_files(
     """
 
     return await service.list_by_organisation(organisation_id, page, page_size)
+
+
+@router.get("/stats", response_model=FileStats)
+async def get_file_stats(
+    organisation_id: int,
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
+    service: FileService = Depends(get_file_service),
+) -> FileStats:
+    """
+    Return aggregated analytics for an organisation's files.
+
+    Declared before the "/{file_id}" route so "stats" is matched here
+    instead of being parsed as a file id. The optional start/end bounds
+    let the client drive a customizable date range; omitting them covers
+    every file.
+
+    Args:
+        organisation_id: Organisation whose analytics are computed.
+        start: Inclusive lower bound on created_at (ISO datetime), or None.
+        end: Exclusive upper bound on created_at (ISO datetime), or None.
+        service: Injected FileService instance.
+
+    Returns:
+        FileStats with headline totals and per-type/per-month breakdowns.
+    """
+
+    return await service.stats_by_organisation(organisation_id, start, end)
 
 
 @router.get("/{file_id}", response_model=FileRead)

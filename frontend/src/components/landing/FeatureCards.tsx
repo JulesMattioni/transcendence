@@ -6,17 +6,17 @@ const cards = [
   {
     image: angel1,
     title: "Data Safety",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
+    text: "Your documents are encrypted and stored in isolated organisation vaults, kept fully separate from every other team. Every action — uploads, edits, downloads and deletions — is captured in a real-time audit log, so you always know exactly who touched what, and when. Nothing happens to your files without leaving a trace.",
   },
   {
     image: angel2,
     title: "Role-based Permissions",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
+    text: "Grant each member the right level of access — admin, editor or reader — and control exactly who can view, upload or manage files. Invite teammates to your organisation, adjust their roles as your team evolves, and revoke access in a single click. Sensitive documents stay in the hands of the people who should see them.",
   },
   {
     image: angel3,
     title: "Smart Access",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea  commodo consequat. Duis aute irure dolor in reprehenderit in voluptate  velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint  occaecat cupidatat non proident, sunt in culpa qui officia deserunt  mollit anim id est laborum.",
+    text: "Ask questions in plain language and let our AI assistant answer straight from your documents, with citations pointing back to the exact sources. It respects every permission boundary, so it never surfaces information a user isn't cleared to see — turning hours of manual searching into a simple conversation.",
   },
 ];
 
@@ -27,10 +27,10 @@ function FeatureCards() {
         {cards.map((card) => (
           <div
             key={card.title}
-            className="group border border-gray-200 p-4 bg-white transition-colors duration-300 hover:border-keepr"
+            className="group rounded p-4 bg-white shadow-sm ring-1 ring-transparent transition-shadow duration-300 hover:shadow-md hover:ring-keepr"
           >
             {/* Box */}
-            <div className="relative aspect-[3/2] w-full overflow-hidden bg-white transition-colors duration-300 group-hover:bg-keepr">
+            <div className="relative aspect-[3/2] w-full overflow-hidden rounded bg-white transition-colors duration-300 group-hover:bg-keepr">
               {/* White angel */}
               <img
                 src={card.image}

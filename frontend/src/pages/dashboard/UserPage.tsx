@@ -105,7 +105,7 @@ function UserPage() {
         Manage your personal information and profile picture.
       </p>
 
-      <section className="mt-8 border border-gray-200 bg-white p-6 sm:p-8">
+      <section className="mt-8 rounded bg-white p-6 shadow-sm sm:p-8">
         <div className="flex items-center gap-5 border-b border-gray-100 pb-6">
           <img
             src={getAvatarUrl(avatarId)}
@@ -136,8 +136,6 @@ function UserPage() {
               <button
                 type="button"
                 role="switch"
-                aria-checked={user.is_2fa_enabled}
-                aria-label="Toggle two-factor authentication"
                 disabled={twoFaBusy}
                 onClick={handleToggle2fa}
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -168,8 +166,6 @@ function UserPage() {
                   key={id}
                   type="button"
                   onClick={() => setAvatarId(id)}
-                  aria-label={`Choose avatar ${id}`}
-                  aria-pressed={selected}
                   className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition ${
                     selected
                       ? "border-keepr ring-2 ring-keepr/30"
@@ -209,7 +205,7 @@ function UserPage() {
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Paris, France"
               maxLength={100}
-              className="w-full border border-gray-200 py-2.5 pr-4 pl-9 text-sm text-black outline-none focus:border-keepr"
+              className="w-full rounded border border-gray-200 py-2.5 pr-4 pl-9 text-sm text-black outline-none transition-colors focus:border-keepr"
             />
           </div>
         </div>
@@ -220,7 +216,7 @@ function UserPage() {
             type="button"
             onClick={handleSave}
             disabled={!dirty || saving}
-            className="inline-flex items-center gap-2 bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving && <Loader2 className="animate-spin" size={16} />}
             {saving ? "Saving…" : "Save changes"}

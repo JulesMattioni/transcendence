@@ -156,13 +156,13 @@ function AdminPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsInviteOpen(true)}
-            className="inline-flex items-center gap-2 bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
           >
             Invite member <UserPlus size={15} strokeWidth={2} />
           </button>
           <button
             onClick={() => setIsDeleteOrgOpen(true)}
-            className="inline-flex items-center gap-2 bg-red-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-red-700"
+            className="inline-flex items-center gap-2 rounded border border-red-200 px-4 py-2 font-medium text-red-600 transition-colors duration-200 hover:border-red-300 hover:bg-red-50"
           >
             Delete organisation <Trash2 size={15} strokeWidth={2} />
           </button>
@@ -178,7 +178,7 @@ function AdminPage() {
           <h2 className="font-sans text-lg font-semibold text-black">
             Pending invitations
           </h2>
-          <ul className="mt-2 border border-gray-200">
+          <ul className="mt-2 divide-y divide-gray-200 overflow-hidden rounded bg-white shadow-sm">
             {invitations.map((inv) => (
               <li
                 key={inv.id}
@@ -200,7 +200,7 @@ function AdminPage() {
           <h2 className="font-sans text-lg font-semibold text-black">
             Members
           </h2>
-          <ul className="mt-2 bg-white divide-y divide-gray-200 border border-gray-200">
+          <ul className="mt-2 divide-y divide-gray-200 overflow-hidden rounded bg-white shadow-sm">
             {members.map((m) => {
               const isSelf = m.user_id === currentUser?.id;
               return (
@@ -223,7 +223,7 @@ function AdminPage() {
                     onChange={(e) =>
                       handleRoleChange(m.user_id, Number(e.target.value))
                     }
-                    className="border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
+                    className="rounded border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
                   >
                     <option value={OrgRole.Admin}>Admin</option>
                     <option value={OrgRole.Editor}>Editor</option>
@@ -233,7 +233,6 @@ function AdminPage() {
                   <button
                     onClick={() => handleRemove(m.user_id)}
                     disabled={isSelf}
-                    aria-label={`Remove ${memberName(m)}`}
                     className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-red-600 disabled:opacity-30 disabled:hover:text-muted"
                   >
                     <Trash2 size={18} />
@@ -273,13 +272,13 @@ function AdminPage() {
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setIsDeleteOrgOpen(false)}
-            className="px-4 py-2 text-muted transition-colors duration-200 hover:text-black"
+            className="rounded px-4 py-2 text-muted transition-colors duration-200 hover:bg-gray-100 hover:text-black"
           >
             Cancel
           </button>
           <button
             onClick={handleDeleteOrg}
-            className="bg-red-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-red-700"
+            className="rounded bg-red-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-red-700"
           >
             Delete
           </button>

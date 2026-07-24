@@ -22,7 +22,7 @@ function Navbar() {
         </Link>
         <Link
           to="/register"
-          className="bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+          className="rounded bg-keepr px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
         >
           Get Started
         </Link>
