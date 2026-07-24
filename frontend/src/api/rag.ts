@@ -27,6 +27,7 @@ export interface ConversationDetail extends Conversation {
   messages: Message[];
 }
 
+/** List the current user's conversations in an organisation. */
 export function listConversations(
   orgId: number = requireCurrentOrgId(),
 ): Promise<Conversation[]> {
@@ -35,6 +36,7 @@ export function listConversations(
   );
 }
 
+/** Fetch a single conversation with its full message history. */
 export function getConversation(
   id: number,
   orgId: number = requireCurrentOrgId(),
@@ -44,6 +46,7 @@ export function getConversation(
   );
 }
 
+/** Delete a conversation and its messages. */
 export function deleteConversation(
   id: number,
   orgId: number = requireCurrentOrgId(),
@@ -61,6 +64,12 @@ export interface QueryStreamHandlers {
   onError?: (error: unknown) => void;
 }
 
+/**
+ * Ask a question and stream the answer over SSE, invoking the matching
+ * handler for each event (conversation id, sources, tokens, done). Never
+ * rejects: network and parsing failures are reported through onError.
+ * Bypasses apiFetch to read the streaming response body directly.
+ */
 export async function queryStream(
   question: string,
   conversationId: number | null,
@@ -110,6 +119,10 @@ export async function queryStream(
   }
 }
 
+/**
+ * Parse one raw SSE frame ("event:"/"data:" lines) and route its decoded
+ * payload to the corresponding handler.
+ */
 function dispatchEvent(raw: string, handlers: QueryStreamHandlers): void {
   let event = "";
   let data = "";

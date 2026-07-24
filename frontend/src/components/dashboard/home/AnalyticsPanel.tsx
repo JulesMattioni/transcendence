@@ -46,6 +46,7 @@ const PRESETS = [
 
 const POLL_INTERVAL_MS = 10000;
 
+/** Format a byte count as a human-readable size (B, KB, MB, …). */
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -57,19 +58,26 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(value >= 10 || exp === 0 ? 0 : 1)} ${units[exp]}`;
 }
 
+/** Format a bucket's ISO timestamp as a short local time for the axis. */
 function formatBucket(iso: string): string {
   const date = new Date(iso);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Human-readable label for a file category, falling back to its key. */
 function categoryLabel(category: string): string {
   return CATEGORY_LABELS[category] ?? category;
 }
 
+/** Chart color for a file category, falling back to the "other" color. */
 function categoryColor(category: string): string {
   return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.other;
 }
 
+/**
+ * Compute the ISO start time for a date-range preset, or undefined for
+ * "All time" (no lower bound).
+ */
 function startForPreset(preset: (typeof PRESETS)[number]): string | undefined {
   if (preset.sinceMidnight) {
     const d = new Date();
@@ -82,6 +90,11 @@ function startForPreset(preset: (typeof PRESETS)[number]): string | undefined {
   return d.toISOString();
 }
 
+/**
+ * File analytics dashboard for an organisation: KPI tiles plus a
+ * files-by-type pie and an uploads-over-time line, with date-range
+ * presets, periodic polling, and CSV export.
+ */
 function AnalyticsPanel({ orgId }: { orgId: number }) {
   const [stats, setStats] = useState<FileStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,6 +140,7 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
 
   const isEmpty = !loading && (stats?.total_files ?? 0) === 0;
 
+  /** Export the current stats as a CSV file downloaded to the device. */
   function handleExportCsv() {
     if (!stats) return;
     const rows: string[] = ["metric,category,file_count,total_bytes"];
@@ -328,6 +342,7 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
   );
 }
 
+/** Single headline metric tile: an icon, a label and a value. */
 function KpiTile({
   icon,
   label,

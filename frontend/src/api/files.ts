@@ -45,6 +45,10 @@ export interface FileStats {
   by_bucket: FileBucketStat[]
 }
 
+/**
+ * Fetch aggregated file analytics for an organisation, optionally
+ * bounded to a date range.
+ */
 export function getFileStats(
   orgId: number = requireCurrentOrgId(),
   start?: string,
@@ -56,6 +60,7 @@ export function getFileStats(
   return apiFetch<FileStats>(`/core/files/stats?${params.toString()}`)
 }
 
+/** Fetch one page of an organisation's files, newest first. */
 export function listFiles(
   page = 1,
   pageSize = 9,
@@ -67,6 +72,10 @@ export function listFiles(
 }
 
 
+/**
+ * Upload a file with its metadata to the current organisation as
+ * multipart form data.
+ */
 export function uploadFile(
     file: File,
     title: string,
@@ -88,6 +97,7 @@ export function uploadFile(
     })
 }
 
+/** Fetch a single file's metadata within the current organisation. */
 export function getFile(id: number): Promise<FileRead> {
   const orgId = requireCurrentOrgId()
   return apiFetch<FileRead>(
@@ -95,6 +105,7 @@ export function getFile(id: number): Promise<FileRead> {
   )
 }
 
+/** Delete a file from the current organisation. */
 export function deleteFile(id: number): Promise<void> {
   const orgId = requireCurrentOrgId()
   return apiFetch<void>(
@@ -103,6 +114,7 @@ export function deleteFile(id: number): Promise<void> {
   )
 }
 
+/** Update a file's editable metadata (title, description). */
 export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
   const orgId = requireCurrentOrgId()
   return apiFetch<FileRead>(
@@ -115,6 +127,10 @@ export function updateFile(id: number, data: FileUpdate): Promise<FileRead> {
   )
 }
 
+/**
+ * Fetch a file's raw binary content as a Blob. Bypasses apiFetch to read
+ * the response as binary rather than JSON.
+ */
 export async function fetchFileContent(id: number): Promise<Blob> {
   const token = localStorage.getItem('access_token')
   const headers = new Headers()
@@ -133,6 +149,10 @@ export async function fetchFileContent(id: number): Promise<Blob> {
   return response.blob()
 }
 
+/**
+ * Download a file to the user's device under its original filename by
+ * fetching its content and triggering a temporary anchor click.
+ */
 export async function downloadFile(file: FileRead): Promise<void> {
   const blob = await fetchFileContent(file.id)
   const url = URL.createObjectURL(blob)

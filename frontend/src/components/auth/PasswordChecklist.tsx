@@ -1,6 +1,10 @@
 import { Check, X } from 'lucide-react'
 import { checkPasswordRules } from '../../utils/validation'
 
+/**
+ * Live checklist showing which password strength rules are met. Renders
+ * nothing while the password is empty.
+ */
 function PasswordChecklist({ password }: { password: string }) {
   if (password.length === 0) return null
 

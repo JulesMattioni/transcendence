@@ -19,6 +19,12 @@ interface ChatMessage {
   sources: Source[] | null;
 }
 
+/**
+ * RAG chat page for the selected organisation. Streams answers token by
+ * token, renders citations that open the cited file, and manages
+ * conversations (new, load, delete) via the ChatMenu. Resets when the
+ * organisation changes and prompts to pick one when none is selected.
+ */
 function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -48,6 +54,7 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /** Open a cited source file in the preview modal, or show an error. */
   async function openSource(fileId: number) {
     setSourceError(null);
     try {
@@ -61,6 +68,11 @@ function ChatPage() {
     }
   }
 
+  /**
+   * Send the current question, append the user and a placeholder
+   * assistant message, then stream the answer, sources and any error into
+   * that placeholder.
+   */
   async function handleSend() {
     const question = input.trim();
     if (!question || streaming) return;
@@ -98,6 +110,7 @@ function ChatPage() {
     setStreaming(false);
   }
 
+  /** Apply a transform to the last (assistant) message in the list. */
   function updateLastAssistant(transform: (m: ChatMessage) => ChatMessage) {
     setMessages((prev) => {
       const next = [...prev];
@@ -106,6 +119,7 @@ function ChatPage() {
     });
   }
 
+  /** Load an existing conversation's messages into the view. */
   async function loadConversation(id: number) {
     const detail = await getConversation(id, currentOrg!.org_id);
     setMessages(
@@ -118,11 +132,13 @@ function ChatPage() {
     setConversationId(id);
   }
 
+  /** Start a fresh conversation, clearing the current thread. */
   function newChat() {
     setMessages([]);
     setConversationId(null);
   }
 
+  /** If the deleted conversation was open, reset to a new chat. */
   function handleDeleted(id: number) {
     if (id === conversationId) {
       newChat();

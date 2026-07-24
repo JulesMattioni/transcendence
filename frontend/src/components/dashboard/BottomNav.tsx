@@ -4,11 +4,16 @@ import { navItems } from "./NavItems";
 import { useOrg } from "../../context/orgContextValue";
 import { logout } from "../../api/auth";
 
+/**
+ * Mobile bottom navigation bar. Shows the nav items allowed for the
+ * current role plus a logout action; hidden on large screens.
+ */
 function BottomNav() {
   const { isAdmin } = useOrg();
   const navigate = useNavigate();
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
+  /** Log out and return to the landing page. */
   async function handleLogout() {
     try {
       await logout();

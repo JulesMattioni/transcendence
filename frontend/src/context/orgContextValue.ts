@@ -13,8 +13,13 @@ export interface OrgContextValue {
   reloadOrgs: () => Promise<void>
 }
 
+/** React context holding the current organisation state and actions. */
 export const OrgContext = createContext<OrgContextValue | undefined>(undefined)
 
+/**
+ * Access the organisation context, throwing if used outside an
+ * OrgProvider.
+ */
 export function useOrg(): OrgContextValue {
   const ctx = useContext(OrgContext)
   if (!ctx) {

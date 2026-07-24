@@ -5,12 +5,17 @@ import { PanelLeft, LogOut } from 'lucide-react'
 import { navItems } from './NavItems'
 import { useOrg } from '../../context/orgContextValue'
 
+/**
+ * Desktop sidebar navigation. Collapsible, shows the nav items allowed
+ * for the current role plus a logout action; hidden on small screens.
+ */
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   const { isAdmin } = useOrg()
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 
+  /** Log out and return to the landing page. */
   async function handleLogout() {
     try {
       await logout()

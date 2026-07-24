@@ -10,6 +10,10 @@ interface MessageContentProps {
   onOpenSource: (fileId: number) => void
 }
 
+/**
+ * Split a text run on "[n]" citation markers, replacing each with an
+ * interactive SourceMarker and leaving the surrounding text intact.
+ */
 function markersInString(
   text: string,
   sources: Source[] | null,
@@ -33,6 +37,10 @@ function markersInString(
   })
 }
 
+/**
+ * Walk a Markdown node's children and expand citation markers inside its
+ * string parts, so markers rendered anywhere in the text become clickable.
+ */
 function processChildren(
   children: ReactNode,
   sources: Source[] | null,
@@ -50,6 +58,10 @@ function processChildren(
   })
 }
 
+/**
+ * Render an assistant message as Markdown while turning its "[n]"
+ * citation markers into interactive source badges.
+ */
 function MessageContent({ content, sources, onOpenSource }: MessageContentProps) {
   return (
     <div className="prose-chat">

@@ -7,12 +7,17 @@ interface EditFormProps {
   onSuccess: () => void
 }
 
+/**
+ * Form to edit a file's title and description, pre-filled from the file.
+ * Calls onSuccess after a successful update or shows an error.
+ */
 function EditForm({ file, onSuccess }: EditFormProps) {
   const [title, setTitle] = useState(file.title)
   const [description, setDescription] = useState(file.description ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /** Validate and submit the updated file metadata. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 

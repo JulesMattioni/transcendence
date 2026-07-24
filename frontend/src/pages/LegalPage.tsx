@@ -8,6 +8,10 @@ interface LegalPageProps {
   children: React.ReactNode;
 }
 
+/**
+ * Shared layout for legal pages (privacy, terms): navbar, a titled header
+ * with a last-updated line, the page content, and the footer.
+ */
 function LegalPage({ title, lastUpdated, children }: LegalPageProps) {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-bg text-gray-900">

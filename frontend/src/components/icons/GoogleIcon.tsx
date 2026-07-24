@@ -1,3 +1,4 @@
+/** The Google "G" logo as an inline, multi-color SVG icon. */
 function GoogleIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>

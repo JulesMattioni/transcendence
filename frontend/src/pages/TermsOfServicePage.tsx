@@ -1,5 +1,6 @@
 import LegalPage from "./LegalPage";
 
+/** Titled section wrapper for a block of legal content. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -9,6 +10,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Terms of service page rendered inside the shared legal layout. */
 function TermsOfServicePage() {
   return (
     <LegalPage title="Terms of Service" lastUpdated="July 21, 2026">

@@ -3,6 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { exchangeOAuthCode } from '../api/auth'
 import { ApiError } from '../api/client'
 
+/**
+ * Handles the OAuth provider redirect: exchanges the code for a session
+ * and goes to the dashboard, routes 2FA-pending logins back to /login,
+ * or surfaces an error on /login. Runs the exchange exactly once.
+ */
 function OAuthCallbackPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()

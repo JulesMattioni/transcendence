@@ -12,6 +12,10 @@ import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import OAuthCallbackPage from "../pages/OAuthCallbackPage";
 
+/**
+ * Declares the app's route table: public pages (landing, auth, legal) and
+ * the authenticated /dashboard tree guarded by ProtectedLayout.
+ */
 function AppRoutes() {
   return (
     <Routes>

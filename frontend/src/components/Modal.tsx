@@ -15,6 +15,11 @@ const sizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
   xl: 'max-w-5xl',
 }
 
+/**
+ * Centered modal dialog with a titled header and a close button. Renders
+ * nothing when closed, and closes on backdrop click (clicks inside the
+ * box are ignored). Width follows the `size` prop.
+ */
 function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   if (!isOpen) {
     return null;

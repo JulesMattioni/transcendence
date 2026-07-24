@@ -15,6 +15,11 @@ const variantClasses = {
   outline: "border border-gray-200 bg-white text-black hover:bg-gray-50",
 };
 
+/**
+ * Full-width form button used across auth screens, with primary/outline
+ * variants and a spinner that replaces the icon while loading (disabling
+ * the button).
+ */
 function AuthButton({
   children,
   type = "submit",

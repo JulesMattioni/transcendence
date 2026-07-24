@@ -4,6 +4,7 @@ import DiscoverSection from "../components/landing/DiscoverSection";
 import FeatureCards from "../components/landing/FeatureCards";
 import Footer from "../components/landing/Footer";
 
+/** Public landing page composing the marketing sections. */
 function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-bg text-gray-900">

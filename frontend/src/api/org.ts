@@ -1,5 +1,6 @@
 import { apiFetch } from "./client";
 
+/** Organisation role ids, mirrored from the backend's role table. */
 export const OrgRole = {
   Admin: 1,
   Editor: 2,
@@ -24,6 +25,7 @@ export interface OrganisationRead {
   name: string;
 }
 
+/** List the organisations a user belongs to, with their role in each. */
 export async function listMyOrgs(userId: number): Promise<OrgMembership[]> {
   const data = await apiFetch<UserOrganisationsResponse>(
     `/org/organisations/users/${userId}/organisations`,
@@ -31,6 +33,7 @@ export async function listMyOrgs(userId: number): Promise<OrgMembership[]> {
   return data.organisation ?? [];
 }
 
+/** Create a new organisation; the creator becomes its admin. */
 export async function createOrg(name: string): Promise<OrganisationRead> {
   return apiFetch<OrganisationRead>("/org/organisations/", {
     method: "POST",
@@ -39,18 +42,22 @@ export async function createOrg(name: string): Promise<OrganisationRead> {
   });
 }
 
+/** Fetch a single organisation's details. */
 export async function getOrganisation(orgId: number): Promise<OrganisationRead> {
   return apiFetch<OrganisationRead>(`/org/organisations/${orgId}`);
 }
 
+/** Whether the role is admin. */
 export function isAdminRole(role: number | null | undefined): boolean {
   return role === OrgRole.Admin;
 }
 
+/** Whether the role may manage members (invite, change roles, remove). */
 export function canManageMembers(role: number | null | undefined): boolean {
   return role === OrgRole.Admin;
 }
 
+/** Whether the role may create, edit or delete files. */
 export function canWriteFiles(role: number | null | undefined): boolean {
   return role === OrgRole.Admin || role === OrgRole.Editor;
 }
@@ -63,10 +70,12 @@ export interface OrgMember {
   last_name: string | null;
 }
 
+/** List an organisation's members with their roles and profile info. */
 export async function listMembers(orgId: number): Promise<OrgMember[]> {
   return apiFetch<OrgMember[]>(`/org/organisations/${orgId}/users`);
 }
 
+/** Change a member's role within an organisation. */
 export async function updateMemberRole(
   orgId: number,
   userId: number,
@@ -78,6 +87,7 @@ export async function updateMemberRole(
   );
 }
 
+/** Remove a member from an organisation. */
 export async function removeMember(
   orgId: number,
   userId: number,
@@ -98,6 +108,7 @@ export interface Invitation {
   status: string;
 }
 
+/** Invite an existing user to an organisation by email, with a role. */
 export async function inviteMember(
   orgId: number,
   email: string,
@@ -110,10 +121,12 @@ export async function inviteMember(
   });
 }
 
+/** List the invitations sent for an organisation. */
 export async function listOrgInvitations(orgId: number): Promise<Invitation[]> {
   return apiFetch<Invitation[]>(`/org/organisations/${orgId}/invitations`);
 }
 
+/** Map a role id to its display name, or "Unknown". */
 export function roleName(roleId: number): string {
   if (roleId === OrgRole.Admin) return "Admin";
   if (roleId === OrgRole.Editor) return "Editor";
@@ -121,10 +134,12 @@ export function roleName(roleId: number): string {
   return "Unknown";
 }
 
+/** List invitations addressed to the current user. */
 export async function listMyInvitations(): Promise<Invitation[]> {
   return apiFetch<Invitation[]>(`/org/invitations/me`);
 }
 
+/** Accept an invitation, joining the organisation. */
 export async function acceptInvitation(
   invitationId: number,
 ): Promise<Invitation> {
@@ -133,6 +148,7 @@ export async function acceptInvitation(
   });
 }
 
+/** Decline an invitation. */
 export async function declineInvitation(
   invitationId: number,
 ): Promise<Invitation> {
@@ -149,6 +165,11 @@ export interface Connection {
   org_ids: number[];
 }
 
+/**
+ * Build the current user's connections: everyone who shares at least one
+ * organisation with them, deduplicated across orgs and annotated with the
+ * shared org ids. Member lookups that fail are skipped, not fatal.
+ */
 export async function listMyConnections(
   myUserId: number,
 ): Promise<Connection[]> {
@@ -184,6 +205,7 @@ export async function listMyConnections(
   return Array.from(byUser.values());
 }
 
+/** Delete an organisation. */
 export async function deleteOrganisation(orgId: number): Promise<void> {
   await apiFetch<void>(`/org/organisations/${orgId}`, {
     method: "DELETE",

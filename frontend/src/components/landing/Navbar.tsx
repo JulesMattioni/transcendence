@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 
+/** Landing page top navigation with brand and sign-in / sign-up actions. */
 function Navbar() {
   return (
     <nav className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5 sm:px-10">

@@ -8,11 +8,16 @@ interface CreateOrgFormProps {
 }
 
 
+/**
+ * Form to create an organisation. Validates the name, submits it, and
+ * reports the created organisation through onSuccess or shows an error.
+ */
 function CreateOrgForm({ onSuccess }: CreateOrgFormProps) {
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Validate and submit the new organisation name. */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
