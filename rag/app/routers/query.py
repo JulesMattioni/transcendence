@@ -18,6 +18,17 @@ router = APIRouter(prefix="/query", tags=["query"])
 def get_conversation_service(
     session: AsyncSession = Depends(get_session),
 ) -> ConversationService:
+    """
+    Build a ConversationService with its dependencies for one request.
+
+    Args:
+        session: Async SQLAlchemy session provided by the shared
+        get_session dependency.
+
+    Returns:
+        A ConversationService wired with its repository.
+    """
+
     repository = ConversationRepository(session)
     return ConversationService(session, repository)
 
@@ -25,6 +36,17 @@ def get_conversation_service(
 def get_query_service(
     session: AsyncSession = Depends(get_session),
 ) -> QueryService:
+    """
+    Build a QueryService with its dependencies for one request.
+
+    Args:
+        session: Async SQLAlchemy session provided by the shared
+        get_session dependency.
+
+    Returns:
+        A QueryService wired with its repository and LLM client.
+    """
+
     repository = ChunkRepository(session)
     llm = OpenAICompatibleService(
         model_name=GROQ_MODEL, base_url=GROQ_BASE_URL
@@ -33,6 +55,17 @@ def get_query_service(
 
 
 def _sse_format(event: str, data: dict) -> str:
+    """
+    Format a payload as one Server-Sent Events frame.
+
+    Args:
+        event: SSE event name.
+        data: JSON-serialisable payload for the frame.
+
+    Returns:
+        The encoded "event/data" SSE frame, terminated by a blank line.
+    """
+
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
@@ -41,6 +74,17 @@ async def query(
     data: QueryRequest,
     service: QueryService = Depends(get_query_service),
 ) -> QueryResponse:
+    """
+    Answer a question in one shot and return the full response.
+
+    Args:
+        data: Question and the organisation to search within.
+        service: Injected QueryService instance.
+
+    Returns:
+        QueryResponse with the answer and its cited sources.
+    """
+
     return await service.query(data)
 
 
@@ -51,6 +95,24 @@ async def query_stream(
     conversations: ConversationService = Depends(get_conversation_service),
     user_id: int = Depends(get_current_user_id),
 ) -> StreamingResponse:
+    """
+    Answer a question as an SSE stream, persisting the exchange.
+
+    Resolves or creates the conversation, loads its prior messages as
+    context, records the user's question, then streams the conversation
+    id, the sources and the answer tokens as they are generated. The full
+    assistant answer and its sources are saved once the stream completes.
+
+    Args:
+        data: Question, organisation and optional conversation id.
+        service: Injected QueryService instance.
+        conversations: Injected ConversationService instance.
+        user_id: Id of the authenticated user, resolved via auth.
+
+    Returns:
+        A StreamingResponse emitting text/event-stream frames.
+    """
+
     conversation = await conversations.get_or_create(
         conversation_id=data.conversation_id,
         organisation_id=data.organisation_id,
@@ -71,6 +133,14 @@ async def query_stream(
     )
 
     async def event_stream():
+        """
+        Generate the SSE frames for one streamed answer.
+
+        Yields the conversation id, then the sources and answer tokens
+        from the query service, accumulating the answer so it can be
+        persisted, and finally a "done" frame.
+        """
+
         yield _sse_format("conversation", {"conversation_id": conversation.id})
 
         answer_parts: list[str] = []

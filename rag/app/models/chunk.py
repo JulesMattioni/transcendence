@@ -6,6 +6,16 @@ from datetime import datetime
 
 
 class Chunk(Base):
+    """
+    ORM model of an embedded document chunk (table "chunks").
+
+    Each chunk stores a slice of an ingested file's text alongside its
+    384-dimensional embedding, so similarity search can retrieve the
+    relevant passages. file_id and organisation_id are indexed to scope
+    retrieval to one organisation and to delete a file's chunks on
+    re-ingestion.
+    """
+
     __tablename__ = "chunks"
     id: Mapped[int] = mapped_column(primary_key=True)
     file_id: Mapped[int] = mapped_column(index=True)

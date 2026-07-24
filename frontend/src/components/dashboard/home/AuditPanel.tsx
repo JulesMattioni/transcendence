@@ -11,11 +11,11 @@ function formatEvent(event: RealtimeEvent): string {
     case "auth.logout":
       return `${name} logged out`;
     case "file.created":
-      return `${event.file_name} was uploaded to ${event.org_name}`;
+      return `${event.file_name} was uploaded to ${event.org_name} by ${name}`;
     case "file.updated":
-      return `${event.file_name} was updated in ${event.org_name}`;
+      return `${event.file_name} was updated in ${event.org_name} by ${name}`;
     case "file.deleted":
-      return `${event.file_name} was deleted from ${event.org_name}`;
+      return `${event.file_name} was deleted from ${event.org_name} by ${name}`;
     default:
       return "Unknown activity";
   }

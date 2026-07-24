@@ -1,2 +1,4 @@
 class UnsupportedFileType(Exception):
-    "Unsopported file type error"
+    """
+    Raised when a file's content type cannot be turned into text.
+    """

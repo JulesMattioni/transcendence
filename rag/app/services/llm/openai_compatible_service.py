@@ -1,7 +1,7 @@
 import asyncio
 import json
 import re
-from typing import Any
+from typing import Any, AsyncIterator
 import httpx
 from pydantic import ValidationError
 from shared.base_service import BaseService
@@ -19,6 +19,14 @@ class OpenAICompatibleService(BaseService):
     RATE_LIMIT_MAX_WAIT = 120
 
     def __init__(self, model_name: str, base_url: str) -> None:
+        """
+        Initialize the client for one model on one provider.
+
+        Args:
+            model_name: Model identifier sent in each request.
+            base_url: Provider base URL exposing /chat/completions.
+        """
+
         super().__init__()
         self._key_manager = KeyManager()
         self.model_name = model_name
@@ -30,6 +38,27 @@ class OpenAICompatibleService(BaseService):
         stop_sequences: list[str] | None = None,
         max_tokens: int | None = None,
     ) -> LlmResponse:
+        """
+        Send a chat-completion request and return the model's reply.
+
+        Retries around transient failures: rate limits rotate through the
+        key pool before backing off, network and 5xx errors back off with
+        capped exponential delay, and 400/401/403 marks the current key
+        dead and rotates to the next.
+
+        Args:
+            messages: Chat messages to send.
+            stop_sequences: Optional strings that stop generation.
+            max_tokens: Optional cap on generated tokens.
+
+        Returns:
+            LlmResponse with the content and token usage.
+
+        Raises:
+            ValueError: When retries are exhausted, every key is rejected
+            or rate-limited, or the response cannot be parsed.
+        """
+
         max_rate_limit_retries = 6
         max_server_retries = 4
 
@@ -140,7 +169,26 @@ class OpenAICompatibleService(BaseService):
         self,
         messages: list[dict[str, Any]],
         max_tokens: int | None = None,
-    ):
+    ) -> AsyncIterator[str]:
+        """
+        Stream a chat completion token by token.
+
+        Opens a streaming request and yields each content delta as it
+        arrives, stopping at the [DONE] sentinel. Unlike generate, this
+        path does not rotate keys or retry: it is used for the final
+        answer where partial output has already been sent.
+
+        Args:
+            messages: Chat messages to send.
+            max_tokens: Optional cap on generated tokens.
+
+        Yields:
+            Content fragments in arrival order.
+
+        Raises:
+            ValueError: If the provider returns a non-200 status.
+        """
+
         payload: dict[str, Any] = {
             "messages": messages,
             "model": self.model_name,
@@ -188,6 +236,22 @@ class OpenAICompatibleService(BaseService):
     def _parse_retry_after(
         self, response: httpx.Response, default: float
     ) -> float:
+        """
+        Extract how long to wait before retrying a rate-limited request.
+
+        Reads the provider's hint from the standard Retry-After headers
+        (Groq-style, seconds or milliseconds) or from the response body
+        (Gemini-style retryDelay / "retry in Ns"), falling back to a
+        default when none is present or parseable.
+
+        Args:
+            response: The rate-limited HTTP response.
+            default: Seconds to wait when no hint is found.
+
+        Returns:
+            The number of seconds to wait before retrying.
+        """
+
         # Groq-style
         retry_after = response.headers.get("retry-after")
         if retry_after is not None:

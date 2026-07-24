@@ -28,6 +28,7 @@ class RealtimeClient:
         event_type: str,
         org_id: int,
         file_name: str,
+        owner_id: int,
     ) -> None:
         """
         Schedule the event broadcast without awaiting its result.
@@ -37,15 +38,19 @@ class RealtimeClient:
             file.deleted).
             org_id: Organisation whose clients receive the event.
             file_name: Original filename shown in the event.
+            owner_id: Id of the authenticated user uploading the file.
         """
 
-        asyncio.create_task(self._post_event(event_type, org_id, file_name))
+        asyncio.create_task(
+            self._post_event(event_type, org_id, file_name, owner_id)
+        )
 
     async def _post_event(
         self,
         event_type: str,
         org_id: int,
         file_name: str,
+        owner_id: int,
     ) -> None:
         """
         POST the event to realtime; failures are only logged.
@@ -55,12 +60,14 @@ class RealtimeClient:
             file.deleted).
             org_id: Organisation whose clients receive the event.
             file_name: Original filename shown in the event.
+            owner_id: Id of the authenticated user uploading the file.
         """
 
         payload = {
             "event_type": event_type,
             "org_id": org_id,
             "file_name": file_name,
+            "user_id": owner_id,
         }
         try:
             async with httpx.AsyncClient(
