@@ -110,7 +110,6 @@ function TwoFactorSetupContent({
           <button
             type="button"
             onClick={handleCopy}
-            aria-label="Copy secret"
             className="flex h-9 w-9 items-center justify-center border border-gray-200 text-muted transition-colors hover:text-black"
           >
             {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}

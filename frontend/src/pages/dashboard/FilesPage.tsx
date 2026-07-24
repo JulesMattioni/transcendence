@@ -187,7 +187,6 @@ function FilesPage() {
                       {canWrite && (
                         <button
                           onClick={() => setFileToEdit(file)}
-                          aria-label={`Edit ${file.title}`}
                           className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
                         >
                           <Pencil size={18} />
@@ -195,7 +194,6 @@ function FilesPage() {
                       )}
                       <button
                         onClick={() => handleDownload(file)}
-                        aria-label={`Download ${file.title}`}
                         className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-keepr"
                       >
                         <Download size={18} />
@@ -203,7 +201,6 @@ function FilesPage() {
                       {canWrite && (
                         <button
                           onClick={() => setFileToDelete(file)}
-                          aria-label={`Delete ${file.title}`}
                           className="shrink-0 p-1 text-muted transition-colors duration-200 hover:text-red-600"
                         >
                           <Trash2 size={18} />
