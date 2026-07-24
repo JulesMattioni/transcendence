@@ -1,6 +1,8 @@
 from fastapi import APIRouter, status, Depends, Header
 from typing import Annotated
 from app.schemas.organisation import InvitationCreate, InvitationRead
+from app.schemas.roles import Role
+from app.schemas.user import User
 from app.dependancies import (
     get_invitation_service,
     get_current_user,
@@ -19,11 +21,11 @@ router = APIRouter(tags=["Invitations"])
 async def create_invitation(
     org_id: int,
     data: InvitationCreate,
-    authorization: Annotated[str | None, Header()] = None,
-    user=Depends(get_current_user),
+    authorization: Annotated[str, Header()],
+    user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> InvitationRead:
     return await service.invite(
         org_id=org_id,
         email=data.email,
@@ -40,16 +42,16 @@ async def create_invitation(
 async def list_org_invitations(
     org_id: int,
     service: InvitationService = Depends(get_invitation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> list[InvitationRead]:
     return await service.list_for_org(org_id)
 
 
 @router.get("/invitations/me", response_model=list[InvitationRead])
 async def list_my_invitations(
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
-):
+) -> list[InvitationRead]:
     return await service.list_my_pending(user.id)
 
 
@@ -58,9 +60,9 @@ async def list_my_invitations(
 )
 async def accept_invitation(
     invitation_id: int,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
-):
+) -> InvitationRead:
     return await service.accept(invitation_id, user.id)
 
 
@@ -69,7 +71,7 @@ async def accept_invitation(
 )
 async def decline_invitation(
     invitation_id: int,
-    user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
     service: InvitationService = Depends(get_invitation_service),
-):
+) -> InvitationRead:
     return await service.decline(invitation_id, user.id)

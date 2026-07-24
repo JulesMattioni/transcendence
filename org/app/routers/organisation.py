@@ -1,10 +1,14 @@
+from typing import Any
 from fastapi import APIRouter, status, Depends
+from app.models.organisation import Organisation, OrganisationMember
 from app.schemas.organisation import (
     OrganisationCreate,
     OrganisationRead,
     OrganisationUpdate,
     OrganisationMemberRead,
 )
+from app.schemas.roles import Role
+from app.schemas.user import User
 from app.dependancies import (
     get_organisation_service,
     get_current_user,
@@ -24,9 +28,9 @@ router = APIRouter(
 )
 async def create_organisation(
     data: OrganisationCreate,
-    user_id=Depends(get_current_user),
+    user_id: User = Depends(get_current_user),
     service: OrganisationService = Depends(get_organisation_service),
-):
+) -> OrganisationRead:
     new_org = await service.create_organisation(
         data.name,
         user_id=user_id.id,
@@ -38,14 +42,18 @@ async def create_organisation(
     return new_org
 
 
-@router.post("/{org_id}/users/{user_id}", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{org_id}/users/{user_id}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=None,
+)
 async def create_user_from_organisation(
     org_id: int,
     user_id: int,
     role_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> OrganisationMember:
     create_user = await service.create_user_from_org(org_id, user_id, role_id)
     return create_user
 
@@ -54,7 +62,7 @@ async def create_user_from_organisation(
 async def get_organisation_by_id(
     org_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-):
+) -> Organisation:
     organisation = await service.get_org_by_id(org_id)
     return organisation
 
@@ -63,8 +71,8 @@ async def get_organisation_by_id(
 async def get_organisation_members(
     org_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_reader_role),
-):
+    _: Role = Depends(required_reader_role),
+) -> list[OrganisationMember]:
     return await service.get_org_members(org_id)
 
 
@@ -72,7 +80,7 @@ async def get_organisation_members(
 async def get_user_organisation_endpoint(
     user_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-):
+) -> dict[str, Any]:
     return await service.get_user_organisation_endpoint(user_id)
 
 
@@ -81,8 +89,8 @@ async def edit_organisation(
     org_id: int,
     data_updated: OrganisationUpdate,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> OrganisationRead | None:
     return await service.update_organisation(org_id, data_updated)
 
 
@@ -92,8 +100,8 @@ async def update_permission_member(
     user_id: int,
     new_role: int,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> bool:
     update_role = await service.update_perm_from_organisation(
         org_id, user_id, new_role
     )
@@ -107,8 +115,8 @@ async def del_user_from_organisation(
     org_id: int,
     user_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> None:
     await service.delete_user_from_org(org_id, user_id)
     return None
 
@@ -117,7 +125,7 @@ async def del_user_from_organisation(
 async def delete_organisation(
     org_id: int,
     service: OrganisationService = Depends(get_organisation_service),
-    _=Depends(required_admin_role),
-):
+    _: Role = Depends(required_admin_role),
+) -> None:
     await service.delete_organisation(org_id)
     return None
