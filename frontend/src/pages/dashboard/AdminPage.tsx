@@ -163,16 +163,16 @@ function AdminPage() {
     <DashboardLayout>
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl font-bold text-black">Admin</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setIsInviteOpen(true)}
-            className="inline-flex items-center gap-2 rounded bg-keepr px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded bg-keepr px-2.5 py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700 sm:px-4 sm:py-2 sm:text-base"
           >
-            Invite member <UserPlus size={15} strokeWidth={2} />
+            Add member <UserPlus size={15} strokeWidth={2} />
           </button>
           <button
             onClick={() => setIsDeleteOrgOpen(true)}
-            className="inline-flex items-center gap-2 rounded border border-red-200 px-4 py-2 font-medium text-red-600 transition-colors duration-200 hover:border-red-300 hover:bg-red-50"
+            className="inline-flex items-center gap-2 rounded border border-red-200 px-2.5 py-1.5 text-sm font-medium text-red-600 transition-colors duration-200 hover:border-red-300 hover:bg-red-50 sm:px-4 sm:py-2 sm:text-base"
           >
             Delete organisation <Trash2 size={15} strokeWidth={2} />
           </button>
