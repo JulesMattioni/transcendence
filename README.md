@@ -108,11 +108,10 @@ scope, reviewing pull requests, testing and documenting their work — and three
 
 | Login | Role(s) | Responsibilities |
 | ----- | ------- | ---------------- |
-| **jmattion** | **Product Owner** + Developer | Owns the product vision and backlog: decided what Keepr is and which modules serve it. Arbitrates scope and priorities, validates completed work before merge, represents the project to evaluators. |
-| **ysimonne** | **Scrum Master / PM** + Developer | Facilitates the team: runs the weekly sync, tracks progress and deadlines, keeps communication flowing, clears blockers — especially cross-service dependencies where one member waited on another's endpoint. |
-| **kkraft** | **Technical Lead / Architect** + Developer | Owns technical direction: the microservice split, the shared-database-with-one-migration-chain decision, the stack choices, and the layered convention every service follows. Reviews security-critical changes. |
-| **thsykas** | Developer | Implements features end to end and reviews teammates' PRs. Owner of the organisations and RBAC domain. |
-
+| **jmattion** | **Product Owner** + Developer | The project's driving force: decided what Keepr is, which modules serve it, and drove the technical direction behind it: the stack choices and the conventions every service shares. Owns the product vision, built the largest share of the system (core, rag, frontend, gateway), and validated completed work before merge. |
+| **kkraft** | **Technical Lead** + Developer | Owns technical direction: the microservice split, the shared-database-with-one-migration-chain decision, and the layered convention every service follows. Built the **authentication** service (accounts, JWT, 2FA, OAuth) and reviews security-critical changes. |
+| **thsykas** | Developer | Implements features end to end. Owner of the organisations and RBAC domain. |
+| **ysimonne** | **Scrum Master / PM** + Developer | Facilitates the team: runs the weekly sync, tracks progress and deadlines, keeps communication flowing, clears blockers. Also built the **realtime** service end to end (WebSockets, presence, event fan-out). |
 ---
 
 ## 4. Project Management
@@ -136,7 +135,7 @@ integration: every change reaches `main` through a PR reviewed by another member
 team's quick asynchronous channel. **Markdown in the repository** for decision records — a README per
 component plus [`docs/`](docs/). Every PR is expected clean: Python checked with `flake8` (PEP 8) and
 `mypy`, dependencies pinned by **uv** with a committed `uv.lock`. TypeScript is checked with ESLint and
-`tsc --noEmit` in `strict` mode.
+`tsc --noEmit`.
 
 ---
 
@@ -151,8 +150,8 @@ component plus [`docs/`](docs/). Every PR is expected clean: Python checked with
 
 **Why React + TypeScript.** The dashboard is a stateful application, not a set of documents: shared
 organisation context, a live WebSocket, a token-by-token answer stream. Components with hooks map onto
-that, and `strict` TypeScript propagates the API layer's types into components, so a backend schema change
-becomes a compile error rather than a runtime `undefined`.
+that, and TypeScript propagates the API layer's types into components, so a backend schema change
+surfaces as a compile error rather than a runtime failure.
 
 **Why FastAPI.** Keepr is I/O-bound in three places — services calling each other, streaming tokens from a
 remote LLM, holding many idle WebSockets — so an async framework handles it in one process instead of a
@@ -286,7 +285,7 @@ with `docker compose exec postgres psql -U keepr -d keepr -c "\dt"`.
 | OAuth 2.0 (Google & 42) | Authorisation-code flow with a CSRF `state` cookie. Resolves: existing link → existing email (links one) → new user. Tokens never appear in a URL — the callback returns a 30-second one-time code exchanged for real tokens |
 | Profile & session | `GET /me`, profile update, logout revoking a refresh token, user lookup by email for `org` |
 
-**Organisations & permissions** — *lead: thsykas — invitations: jmattion*
+**Organisations & permissions** — *lead: thsykas*
 
 | Feature | Description |
 | ------- | ----------- |
@@ -354,8 +353,7 @@ with `docker compose exec postgres psql -U keepr -d keepr -c "\dt"`.
 
 **Major 9 × 2 = 18 · Minor 3 × 1 = 3 · Total = 21 points**
 
-The project requires 14, and extras count as bonus, capped at 5. Keepr claims 21 deliberately, so a module a
-corrector judges incomplete does not put the project at risk. **No custom "Modules of choice" are claimed.**
+**No custom "Modules of choice" are claimed.**
 **Not claimed:** the gateway runs a hardened ModSecurity/WAF, but the Cybersecurity module requires
 ModSecurity **and** HashiCorp Vault. Keepr does not deploy Vault, so the WAF is infrastructure
 ([§5](#5-technical-stack)).
@@ -378,7 +376,7 @@ migrations by diffing models against the live database.
 
 **4 · Standard user management** *(Major)* — Keepr is a permissions product, and accounts are its
 foundation. Covers all four requirements — users **update their profile** (location, avatar), they pick an
-**avatar from a bundled set** with a default when none is chosen, they **see the online status** of the
+avatar from a bundled set with a default when none is chosen, they **see the online status** of the
 people they share an organisation with (in Keepr your organisation members *are* your connections, the
 product's equivalent of a friends list), and every user has a **profile page**. Underneath: bcrypt salted
 hashes, JWT, rotating refresh tokens.
@@ -441,7 +439,8 @@ shows commits from all four across their respective areas.
 
 ### 10.1 jmattion — Product Owner + Developer
 
-Defined the product vision, maintained the backlog, prioritised modules, validated work before merge.
+Defined the product vision, maintained the backlog, prioritised modules, drove the stack choices and the
+conventions every service shares, and validated work before merge.
 Built: **`core`** (chunked streaming upload, UUID storage, paginated metadata CRUD, download,
 `404`-not-`403` scoping, analytics aggregation) · **`rag`** — the entire AI assistant (ingestion,
 embeddings, the hybrid retrieval pipeline, grounded generation with citations, SSE streaming, conversation
@@ -476,10 +475,10 @@ last one is gone, and `broadcast_id` iterates every socket, disconnecting indivi
 mid-send. The lesson: presence is per **connection**, not per user, and the single-client happy path hid the
 bug entirely.
 
-### 10.3 kkraft — Technical Lead / Architect + Developer
+### 10.3 kkraft — Technical Lead + Developer
 
-Owned technical direction: the five-service split, the shared-database-with-one-Alembic-chain decision, the
-stack choices, and the layered convention every service follows. Reviewed security-critical changes. Built
+Owned technical direction: the five-service split, the shared-database-with-one-Alembic-chain decision, and
+the layered convention every service follows. Reviewed security-critical changes. Built
 **`auth` end to end**: sign-up and login with bcrypt salted hashes · JWT access tokens and refresh tokens
 rotated in one transaction · the four token types and their lifetimes · `/me`, profile update, user lookup by
 email · the **full TOTP 2FA lifecycle** (secret and provisioning URI, confirmation by first code, the
@@ -545,19 +544,13 @@ need, and a stub for an unfinished dependency has to be designed to be deleted.
 - **Secrets live in `.env`** — git-ignored but not encrypted. Centralising them in HashiCorp Vault was
   planned and not delivered, which is why the Cybersecurity module is not claimed. The TLS certificate is
   self-signed: local development only.
-- **`realtime` cannot be replicated** — the presence registry is in memory in a single process, so two
-  instances would split presence and a restart drops all connections. A proper fix needs Redis pub/sub.
 - **One database shared by all services** — a deliberate trade-off ([§5](#5-technical-stack)): real foreign
   keys and transactions, at the cost of schema isolation. Cross-service references are validated by the
   owning service, not the database, so a manual `DELETE` in SQL can leave orphans.
-- **Avatars are selected from a bundled set**, not uploaded.
 - **Ingestion covers PDF and plain text** — other formats upload, download and preview normally but produce
   no chunks. Answer quality depends on an external LLM provider, and inference runs on CPU.
 - **A logout only needs a valid refresh token**, not proof the caller owns it.
-- **Two `console.error` calls remain** on failure paths
-  ([`FilePreview.tsx`](frontend/src/components/FilePreview.tsx),
-  [`ChatPage.tsx`](frontend/src/pages/dashboard/ChatPage.tsx)), and there was **no accessibility audit** —
-  ARIA usage is minimal and no screen-reader testing was done.
+
 
 ---
 
