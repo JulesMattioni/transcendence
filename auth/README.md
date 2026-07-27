@@ -392,8 +392,6 @@ mypy main.py app/
 
 - [Root README](../README.md) — platform overview, full architecture, all
   services.
-- [docs/DEV_DOC.md](../docs/DEV_DOC.md) — local dev workflow, database
-  migrations.
 - [migrations/README.md](../migrations/README.md) — how the shared Alembic
   chain works, and how to add a model.
 - [gateway/README.md](../gateway/README.md) — reverse proxy, WAF, and the
