@@ -322,7 +322,7 @@ with `docker compose exec postgres psql -U keepr -d keepr -c "\dt"`.
 
 | Feature | Description |
 | ------- | ----------- |
-| Analytics dashboard | KPIs, a files-by-category pie and an uploads-over-time line chart, date presets plus custom range, 10-second auto-refresh, CSV export. Aggregation is SQL: MIME types folded into categories, timestamps into 15-min buckets returned as a continuous series |
+| Analytics dashboard | KPIs, a files-by-category pie and an uploads-over-time line chart, four date-range presets plus a custom window in hours, 10-second auto-refresh, CSV export. Aggregation is SQL: MIME types folded into categories, timestamps into 15-min buckets returned as a continuous series |
 | Routing & API layer | Public landing/auth/legal pages plus a guarded `/dashboard` tree. `apiFetch` is the only thing that talks to the backend: prefixes `/api`, attaches the token, throws a typed `ApiError`, and on `401` refreshes **once** (deduplicating concurrent refreshes), retries, then falls back to `/login` |
 | Org context & role-aware UI | Loads the user's orgs, restores the last selected, exposes role and `isAdmin`/`canWrite`. Actions absent when the role forbids them — and re-checked server-side regardless |
 | Profile & validation | Avatar selection from a bundled set (with a default avatar) and location editing. Client-side validation of email, required fields and password rules, re-validated server-side |
@@ -427,7 +427,9 @@ resolution are delegated to their owners. See [§6](#6-architecture).
 **12 · Advanced analytics dashboard** *(Major)* — An admin needs to answer "what is in here, and is it
 growing?" without opening every file. Covers all four requirements: *interactive charts* (pie + line,
 recharts), *real-time updates* (10-second polling), *export* (CSV), *customisable date ranges and filters*
-(presets plus custom, server-side). Aggregation is SQL, so the browser receives a plottable series.
+(four presets — today, last 6h, last 24h, all time — plus a custom window of the last *n* hours, all
+applied server-side as SQL bounds rather than filtered in the browser). Aggregation is SQL, so the
+browser receives a plottable series.
 
 ---
 
