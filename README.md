@@ -451,7 +451,22 @@ and legal pages) · **`gateway`** (Nginx config, TLS, prefix routing, WebSocket 
 hardening) · the **invitation** table and lifecycle in `org` plus its UI · and cross-cutting code (shared
 `BaseService`, async session, service Dockerfiles, most of `docs/`).
 
-**Challenges.** *(placeholder — to be completed by jmattion)*
+**Challenge — the session that expired in silence.** The API layer stored the token pair and attached the
+bearer header on every call, and it passed every test: sign in, upload, chat, all green. The bug only
+existed in *time*. An access token lives 15 minutes
+([`ACCESS_TOKEN_EXPIRE_MINUTES`](auth/app/config.py#L25)), the refresh token seven days — but nothing ever
+spent the second to renew the first. Past the fifteen-minute mark every request started coming back `401`,
+so the app appeared to log itself out at random while a perfectly valid refresh token sat untouched in
+`localStorage`. It read like a backend problem; it was a missing client-side branch. The fix put the
+renewal inside [`apiFetch`](frontend/src/api/client.ts#L30): a `401` triggers one refresh, both tokens are
+rewritten (the endpoint rotates them, so keeping only the access token would break the *next* refresh), and
+the original request is replayed — failure clears the session and redirects to `/login`. Two traps came
+with it. `doRefresh` calls `fetch` directly rather than going back through `apiFetch`, since a `401` on the
+refresh call itself would otherwise recurse forever. And a page firing several requests at once produced
+several parallel refreshes, each rotating the token and invalidating the others' — hence `refreshInFlight`,
+a single shared promise all concurrent callers await. The lesson: a short test session never reaches the
+moment a credential expires, and the bugs that need a clock to appear are the ones you have to go looking
+for on purpose.
 
 ### 10.2 ysimonne — Scrum Master / PM + Developer
 
@@ -487,7 +502,22 @@ validation, three-step account resolution, the one-time exchange code keeping to
 auth data model — `users`, `tokens`, `oauth_accounts` with their cascades and the
 `(provider, provider_user_id)` constraint — plus a large share of the shared Alembic setup.
 
-**Challenges.** *(placeholder — to be completed by kkraft)*
+**Challenge — the last hop, not the handshake.** The commit landing Google OAuth
+([`f1e2f58`](auth/app/routers/oauth.py)) named its own missing piece in its message: *need to implement
+redirection to frontend*. Everything up to that point worked — the provider redirected back, `state` matched
+the cookie, the account resolved, the token pair was issued — and then the service held a full session and a
+browser it had to send somewhere. The obvious move, appending the tokens to the redirect URL, quietly
+defeats the whole flow: a URL is written to browser history, to server access logs, and leaks through the
+`Referer` header of whatever page loads next, so credentials designed to be handled carefully would end up
+in three places nobody controls. Five hours later [`84c9ef2`](auth/app/core/tokens.py) answered with a
+**fourth token type**: `oauth_exchange`, carrying nothing but a user id and a **30-second** lifetime
+([`OAUTH_EXCHANGE_EXPIRE_SECONDS`](auth/app/config.py#L34)). That code is the only thing riding in the URL;
+the frontend trades it for the real pair over `POST /oauth/exchange`, which verifies `payload["type"]`
+before issuing anything — a JWT is only as narrow as the checks made on it, and without that guard an
+exchange code would work as an access token. It stays a stateless JWT, so it is replayable in principle;
+the window is simply too short to survive the logs it lands in, and closing it entirely would mean storing
+and revoking codes server-side. The lesson: the fragile part of an OAuth flow is rarely the exchange with
+the provider — it is the last hop home, where a working redirect and a safe one look identical.
 
 ### 10.4 thsykas — Developer
 
