@@ -11,10 +11,12 @@ import ProtectedLayout from "../components/auth/ProtectedLayout";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import OAuthCallbackPage from "../pages/OAuthCallbackPage";
+import NotFoundPage from "../pages/NotFoundPage";
 
 /**
- * Declares the app's route table: public pages (landing, auth, legal) and
- * the authenticated /dashboard tree guarded by ProtectedLayout.
+ * Declares the app's route table: public pages (landing, auth, legal), the
+ * authenticated /dashboard tree guarded by ProtectedLayout, and a catch-all
+ * rendering the 404 page.
  */
 function AppRoutes() {
   return (
@@ -34,6 +36,7 @@ function AppRoutes() {
 
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
