@@ -38,13 +38,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const PRESETS = [
-  { label: "Today", hours: null, sinceMidnight: true },
-  { label: "Last 6h", hours: 6, sinceMidnight: false },
-  { label: "Last 24h", hours: 24, sinceMidnight: false },
-  { label: "All time", hours: null, sinceMidnight: false },
+  { label: "Today", hours: null, sinceMidnight: true, custom: false },
+  { label: "Last 6h", hours: 6, sinceMidnight: false, custom: false },
+  { label: "Last 24h", hours: 24, sinceMidnight: false, custom: false },
+  { label: "All time", hours: null, sinceMidnight: false, custom: false },
+  { label: "Custom", hours: null, sinceMidnight: false, custom: true },
 ] as const;
 
 const POLL_INTERVAL_MS = 10000;
+
+/**
+ * Longest custom window, in hours. The backend bins uploads into
+ * 15-minute buckets and returns at most 500 of them, so anything past
+ * this would be silently truncated mid-chart.
+ */
+const MAX_CUSTOM_HOURS = 120;
 
 /** Format a byte count as a human-readable size (B, KB, MB, …). */
 function formatBytes(bytes: number): string {
@@ -62,6 +70,20 @@ function formatBytes(bytes: number): string {
 function formatBucket(iso: string): string {
   const date = new Date(iso);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Format a bucket's ISO timestamp for the tooltip, including the day so
+ * a window spanning several days stays unambiguous.
+ */
+function formatBucketLong(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 /** Human-readable label for a file category, falling back to its key. */
@@ -84,25 +106,49 @@ function startForPreset(preset: (typeof PRESETS)[number]): string | undefined {
     d.setHours(0, 0, 0, 0);
     return d.toISOString();
   }
-  if (preset.hours === null) return undefined; // "All time"
+  if (preset.hours === null) return undefined; // "All time" and "Custom"
   const d = new Date();
   d.setHours(d.getHours() - preset.hours);
   return d.toISOString();
 }
 
 /**
+ * Compute the ISO start time for a custom window expressed in hours,
+ * or undefined when the field is empty or not a usable number so no
+ * lower bound is sent.
+ *
+ * Capped at MAX_CUSTOM_HOURS: the series is binned in 15-minute steps,
+ * so a longer window would exceed the buckets the backend returns and
+ * the chart would stop short of the requested range.
+ */
+function startForCustomHours(value: string): string | undefined {
+  const hours = Math.floor(Number(value));
+  if (!Number.isFinite(hours) || hours <= 0) return undefined;
+  const d = new Date();
+  d.setHours(d.getHours() - Math.min(hours, MAX_CUSTOM_HOURS));
+  return d.toISOString();
+}
+
+/**
  * File analytics dashboard for an organisation: KPI tiles plus a
  * files-by-type pie and an uploads-over-time line, with date-range
- * presets, periodic polling, and CSV export.
+ * presets plus a custom window in hours, periodic polling, and CSV
+ * export.
  */
 function AnalyticsPanel({ orgId }: { orgId: number }) {
   const [stats, setStats] = useState<FileStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [presetIndex, setPresetIndex] = useState(0);
+  const [customHours, setCustomHours] = useState("");
+
+  const isCustom = PRESETS[presetIndex].custom;
 
   const load = useCallback(() => {
-    const start = startForPreset(PRESETS[presetIndex]);
+    const current = PRESETS[presetIndex];
+    const start = current.custom
+      ? startForCustomHours(customHours)
+      : startForPreset(current);
     return getFileStats(orgId, start)
       .then((data) => {
         setStats(data);
@@ -110,7 +156,7 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
       })
       .catch(() => setError("Could not load analytics."))
       .finally(() => setLoading(false));
-  }, [orgId, presetIndex]);
+  }, [orgId, presetIndex, customHours]);
 
   useEffect(() => {
     load();
@@ -132,6 +178,10 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
   const lineData = useMemo(
     () =>
       (stats?.by_bucket ?? []).map((b) => ({
+        // The raw ISO stamp keys each point: two buckets a day apart
+        // format to the same "14:30" label, and duplicate category
+        // values make the tooltip snap to the first of them.
+        bucket: b.bucket_start,
         time: formatBucket(b.bucket_start),
         uploads: b.file_count,
       })),
@@ -191,6 +241,29 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
               </button>
             ))}
           </div>
+          {isCustom && (
+            <div className="flex items-center gap-1 rounded bg-white p-1 shadow-sm">
+              <label className="sr-only" htmlFor="analytics-hours">
+                Number of hours to show
+              </label>
+              <span className="pl-2 text-xs text-muted">Last</span>
+              <input
+                id="analytics-hours"
+                type="number"
+                min={1}
+                max={MAX_CUSTOM_HOURS}
+                step={1}
+                value={customHours}
+                placeholder="7"
+                onChange={(e) => {
+                  setLoading(true);
+                  setCustomHours(e.target.value);
+                }}
+                className="w-16 rounded px-2 py-1 text-xs font-medium text-muted focus:outline-none focus:ring-1 focus:ring-keepr"
+              />
+              <span className="pr-2 text-xs text-muted">hours</span>
+            </div>
+          )}
           <button
             type="button"
             onClick={handleExportCsv}
@@ -297,7 +370,8 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
                     vertical={false}
                   />
                   <XAxis
-                    dataKey="time"
+                    dataKey="bucket"
+                    tickFormatter={formatBucket}
                     tick={{ fontSize: 12, fill: "#585858" }}
                     tickLine={false}
                     axisLine={{ stroke: "#e5e7eb" }}
@@ -314,6 +388,7 @@ function AnalyticsPanel({ orgId }: { orgId: number }) {
                       const count = Number(value);
                       return [`${count} upload${count > 1 ? "s" : ""}`, ""];
                     }}
+                    labelFormatter={(label) => formatBucketLong(String(label))}
                     contentStyle={{
                       borderRadius: 4,
                       border: "1px solid #e5e7eb",
