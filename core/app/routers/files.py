@@ -1,5 +1,14 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    UploadFile,
+    status,
+    Query,
+    HTTPException,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.repositories.file_repository import FileRepository
@@ -16,6 +25,9 @@ from fastapi.responses import FileResponse
 from app.clients.rag_client import RagClient
 from app.clients.realtime_client import RealtimeClient
 from app.get_user import get_current_user_id
+from app.permissions import require_editor, require_reader
+from app.clients.org_client import OrgClient
+from app.permissions import get_org_client, ROLE_ADMIN, ROLE_EDITOR
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -51,9 +63,14 @@ async def upload_file(
     description: str | None = Form(default=None),
     service: FileService = Depends(get_file_service),
     owner_id: int = Depends(get_current_user_id),
+    org_client: OrgClient = Depends(get_org_client),
 ) -> FileRead:
     """
     Upload a file with its metadata and create its database record.
+
+    Membership is checked here rather than through a role dependency
+    because organisation_id arrives as a multipart form field, which a
+    dependency cannot read from the signature.
 
     Args:
         upload: Uploaded binary content (multipart).
@@ -62,10 +79,22 @@ async def upload_file(
         description: Optional description of the file.
         service: Injected FileService instance.
         owner_id: Id of the authenticated user, resolved via auth.
+        org_client: Client used to read the caller's role.
 
     Returns:
         FileRead with the created file's metadata.
+
+    Raises:
+        HTTPException: 403 when the caller may not write in this
+        organisation.
     """
+
+    role_id = await org_client.get_member_role(organisation_id, owner_id)
+    if role_id not in (ROLE_ADMIN, ROLE_EDITOR):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have necessary permission",
+        )
 
     data = FileCreate(
         title=title,
@@ -81,6 +110,7 @@ async def list_files(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=9, ge=1, le=100),
     service: FileService = Depends(get_file_service),
+    _: int = Depends(require_reader),
 ) -> FilePage:
     """
     List one page of an organisation's files, newest first.
@@ -104,6 +134,7 @@ async def get_file_stats(
     start: datetime | None = Query(default=None),
     end: datetime | None = Query(default=None),
     service: FileService = Depends(get_file_service),
+    _: int = Depends(require_reader),
 ) -> FileStats:
     """
     Return aggregated analytics for an organisation's files.
@@ -131,6 +162,7 @@ async def get_file(
     file_id: int,
     organisation_id: int,
     service: FileService = Depends(get_file_service),
+    _: int = Depends(require_reader),
 ) -> FileRead:
     """
     Return the metadata of a single file.
@@ -156,6 +188,7 @@ async def get_file_content(
     file_id: int,
     organisation_id: int,
     service: FileService = Depends(get_file_service),
+    _: int = Depends(require_reader),
 ) -> FileResponse:
     """
     Download the binary content with its original filename.
@@ -188,7 +221,7 @@ async def update_file(
     organisation_id: int,
     data: FileUpdate,
     service: FileService = Depends(get_file_service),
-    owner_id: int = Depends(get_current_user_id),
+    owner_id: int = Depends(require_editor),
 ) -> FileRead:
     """
     Partially update a file's metadata (title, description).
@@ -215,7 +248,7 @@ async def delete_file(
     file_id: int,
     organisation_id: int,
     service: FileService = Depends(get_file_service),
-    owner_id: int = Depends(get_current_user_id),
+    owner_id: int = Depends(require_editor),
 ) -> None:
     """
     Delete a file record and its binary content.

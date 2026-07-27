@@ -12,3 +12,5 @@ RAG_BASE_URL = os.environ.get("RAG_BASE_URL", "http://rag:8000")
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL", "http://auth:8000")
 
 REALTIME_BASE_URL = os.environ.get("REALTIME_BASE_URL", "http://realtime:8000")
+
+ORG_BASE_URL = os.environ.get("ORG_BASE_URL", "http://org:8000")
