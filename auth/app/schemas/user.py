@@ -1,4 +1,8 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from app.core.password_policy import (
+    validate_password_length,
+    validate_password_strength,
+)
 
 
 class UserCreate(BaseModel):
@@ -14,10 +18,29 @@ class UserCreate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    first_name: str = Field(max_length=255)
-    last_name: str = Field(max_length=255)
+    first_name: str = Field(min_length=1, max_length=255)
+    last_name: str = Field(min_length=1, max_length=255)
     email: EmailStr = Field(max_length=255)
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def check_password_strength(cls, value: str) -> str:
+        """
+        Enforce the registration password rules server-side.
+
+        Args:
+            value: Plaintext password submitted by the client.
+
+        Returns:
+            The password unchanged when it satisfies every rule.
+
+        Raises:
+            ValueError: When any strength rule is unmet; FastAPI turns it
+            into a 422 response.
+        """
+
+        return validate_password_strength(value)
 
 
 class UserRead(BaseModel):
@@ -58,6 +81,29 @@ class UserLogin(BaseModel):
 
     email: EmailStr
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def check_password_length(cls, value: str) -> str:
+        """
+        Reject empty or over-long passwords before hashing.
+
+        Only the bounds are enforced at login: applying the strength
+        rules here would lock out accounts created before those rules
+        existed, and would tell an attacker which passwords are plausible.
+
+        Args:
+            value: Plaintext password submitted by the client.
+
+        Returns:
+            The password unchanged when it fits the accepted bounds.
+
+        Raises:
+            ValueError: When the password is empty or exceeds bcrypt's
+            72-byte limit.
+        """
+
+        return validate_password_length(value)
 
 
 class UserUpdate(BaseModel):
