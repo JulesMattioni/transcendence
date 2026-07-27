@@ -28,8 +28,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
-        location /api/org/internal/ {
-            return 404;
+    location /api/org/internal/ {
+        return 404;
     }
 
     location /api/org/ {
@@ -48,6 +48,10 @@ server {
         proxy_pass http://rag:8000/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /ws/internal/ {
+        return 404;
     }
 
     location /ws/ {
