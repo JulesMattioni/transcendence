@@ -96,8 +96,7 @@ Each service serves API docs at `/docs`, e.g. <https://localhost:8443/api/core/d
 
 **Detailed documentation** — each component documents itself in depth: [gateway](gateway/README.md) ·
 [auth](auth/README.md) · [org](org/README.md) · [core](core/README.md) · [rag](rag/README.md) ·
-[realtime](realtime/README.md) · [frontend](frontend/README.md) · [migrations](migrations/README.md) ·
-[dev & migration workflow](docs/DEV_DOC.md)
+[realtime](realtime/README.md) · [frontend](frontend/README.md) · [migrations](migrations/README.md)
 
 ---
 
@@ -133,7 +132,7 @@ re-prioritise with the Product Owner, raise blockers. Coordination is asynchrono
 (`<author>/<topic>`), 334 commits from all four members. **GitHub Pull Requests** for review and
 integration: every change reaches `main` through a PR reviewed by another member. **WhatsApp** as the
 team's quick asynchronous channel. **Markdown in the repository** for decision records — a README per
-component plus [`docs/`](docs/). Every PR is expected clean: Python checked with `flake8` (PEP 8) and
+component. Every PR is expected clean: Python checked with `flake8` (PEP 8) and
 `mypy`, dependencies pinned by **uv** with a committed `uv.lock`. TypeScript is checked with ESLint and
 `tsc --noEmit`.
 
@@ -449,7 +448,7 @@ persistence with history summarisation, the resilient LLM client) · **`frontend
 upload and preview, streaming chat, the analytics dashboard, audit and connections panels, admin, profile
 and legal pages) · **`gateway`** (Nginx config, TLS, prefix routing, WebSocket upgrade, ModSecurity/CRS
 hardening) · the **invitation** table and lifecycle in `org` plus its UI · and cross-cutting code (shared
-`BaseService`, async session, service Dockerfiles, most of `docs/`).
+`BaseService`, async session, service Dockerfiles).
 
 **Challenge — the session that expired in silence.** The API layer stored the token pair and attached the
 bearer header on every call, and it passed every test: sign in, upload, chat, all green. The bug only
@@ -601,7 +600,7 @@ for the code. Nothing was merged that its author could not explain.
 prose: the eight per-component READMEs ([auth](auth/README.md), [org](org/README.md), [core](core/README.md),
 [rag](rag/README.md), [realtime](realtime/README.md), [gateway](gateway/README.md),
 [frontend](frontend/README.md), [migrations](migrations/README.md)), the Python docstrings and TypeScript
-TSDoc blocks, [`docs/DEV_DOC.md`](docs/DEV_DOC.md) and this README. Most useful for consistency of structure
+TSDoc blocks, and this README. Most useful for consistency of structure
 and tone across documents written by four people. Authors corrected the drafts against the code: generated
 documentation states what the code *appears* to do, which is not always what it does.
 
@@ -613,8 +612,8 @@ SQLAlchemy session and transaction-boundary mistakes · cross-service failures w
 reporting the error.
 
 **Where AI was not used.** The product concept, module selection, service decomposition, data model and
-security design were the team's decisions, taken in the weekly meeting and recorded in
-[`docs/PROJECT_VISION.md`](docs/PROJECT_VISION.md). The rule throughout: AI reduces the cost of explaining
+security design were the team's decisions, taken in the weekly meeting. The rule throughout: AI reduces the
+cost of explaining
 and checking work. It does not decide what to build, and it does not get to own code no one can defend in
 evaluation.
 
