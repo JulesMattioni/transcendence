@@ -319,7 +319,7 @@ with `docker compose exec postgres psql -U keepr -d keepr -c "\dt"`.
 | Enrichment | A minimal inbound event gains a UUID, a UTC timestamp, the actor's name and the organisation name before broadcast |
 | Client-facing | Live audit log, an online indicator via `GET /ws/connected_friends`, and reconnection with backoff that distinguishes intentional disconnects |
 
-**Analytics, web client & platform** — *lead: jmattion (migrations: kkraft, jmattion, thsykas)*
+**Analytics, web client & platform** — *lead: jmattion*
 
 | Feature | Description |
 | ------- | ----------- |
