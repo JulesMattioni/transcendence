@@ -6,14 +6,9 @@
 ![Auth](https://img.shields.io/badge/auth-JWT%20%2B%20TOTP%20%2B%20OAuth-8A2BE2)
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 
-_Identity provider for the [Keepr](../README.md) platform — sign-up, login, JWT
+_Identity provider for the [Keepr](../README.md) platform - sign-up, login, JWT
 sessions, TOTP two-factor authentication, and OAuth (Google / 42)._
 
-This service owns everything related to **who a user is**: credentials,
-sessions and identity federation. It does not know about organisations,
-documents or permissions — that's [`org`](../org/README.md) and
-[`core`](../core/README.md). See the [root README](../README.md) for how it
-fits into the rest of the platform.
 
 ## Table of contents
 
@@ -45,16 +40,6 @@ fits into the rest of the platform.
   `/users/by-email`).
 - Notify the `realtime` service of login/logout events (best-effort).
 
-### 1.2 Non-goals
-
-- **No authorization/RBAC** — role and organisation membership checks live in
-  [`org`](../org/README.md). This service only answers "who is this user?",
-  never "what can they do?".
-- **No document or business data** — it stores users, tokens and OAuth links
-  only.
-- **No token introspection endpoint for other services** — services validate
-  JWTs themselves (shared `SECRET_KEY`/`ALGORITHM`); `auth` doesn't proxy that.
-
 ## 2. Architecture
 
 ### 2.1 Where it sits in the platform
@@ -72,20 +57,20 @@ fits into the rest of the platform.
 
 The gateway is the only public entry point ([gateway/README.md](../gateway/README.md));
 `auth` itself is only reachable on the internal Docker network. All routes
-documented below are **relative to this service** — externally they're
+documented below are **relative to this service**, externally they're
 prefixed with `/api/auth` (e.g. `POST /login` → `POST /api/auth/login`).
 
 ### 2.2 Internal layering
 
 ```
-routers/            HTTP layer — request parsing, status codes, response models
+routers/            HTTP layer - request parsing, status codes, response models
   auth.py             signup, login, 2FA, refresh, logout, profile
   oauth.py             Google / 42 redirect, callback, code exchange
   health.py             liveness check
         │
         ▼
 services/
-  auth_service.py     business logic — orchestrates repositories + the
+  auth_service.py     business logic - orchestrates repositories + the
                        realtime client, owns DB transactions (commit/rollback)
         │
         ▼
@@ -95,15 +80,15 @@ repositories/
   oauth_repository.py     OAuthAccount persistence
         │
         ▼
-     PostgreSQL (shared database — see migrations/)
+     PostgreSQL (shared database - see migrations/)
 ```
 
 Alongside the repositories, two more building blocks are injected into
 `AuthService` via FastAPI's `Depends()` (see [`dependencies.py`](app/dependencies.py)):
 
-- **`clients/realtime_client.py`** — outbound HTTP client that notifies the
+- **`clients/realtime_client.py`** - outbound HTTP client that notifies the
   `realtime` service of auth events (see [§9](#9-realtime-event-notifications)).
-- **`core/`** — stateless helpers with no state of their own: password hashing
+- **`core/`** - stateless helpers with no state of their own: password hashing
   (`security.py`), JWT encode/decode (`tokens.py`), and OAuth profile fetching
   (`google_oauth.py`, `ft_oauth.py`).
 
@@ -139,7 +124,7 @@ Alongside the repositories, two more building blocks are injected into
 > **Note on parameters.** Endpoints below that take a bare scalar parameter
 > (`refresh_token`, `email`) declare it as a plain `str` with no `Body()`
 > annotation. FastAPI treats un-annotated scalar parameters as **query
-> parameters**, even on `POST` — so these must be sent as `?refresh_token=...`,
+> parameters**, even on `POST` - so these must be sent as `?refresh_token=...`,
 > not as a JSON body. Anything typed as a Pydantic model (`UserCreate`,
 > `UserLogin`, ...) is sent as a JSON body, as usual.
 
@@ -147,12 +132,12 @@ Alongside the repositories, two more building blocks are injected into
 
 | Method | Path                | Auth                    | Request                          | Response                            | Description |
 | ------ | -------------------- | ------------------------ | --------------------------------- | ------------------------------------ | ----------- |
-| POST   | `/signup`             | —                         | `UserCreate` (body)                | `LoginResponse`                      | Register a user, hash the password, issue tokens, emit `auth.login`. |
-| POST   | `/login`               | —                         | `UserLogin` (body)                 | `LoginResponse` \| `TwoFactorRequired` | Authenticate with email/password. Returns tokens directly, or a `pending_token` if 2FA is enabled. |
+| POST   | `/signup`             | -                         | `UserCreate` (body)                | `LoginResponse`                      | Register a user, hash the password, issue tokens, emit `auth.login`. |
+| POST   | `/login`               | -                         | `UserLogin` (body)                 | `LoginResponse` \| `TwoFactorRequired` | Authenticate with email/password. Returns tokens directly, or a `pending_token` if 2FA is enabled. |
 | POST   | `/login/2fa/verify`    | Bearer `pending_token`    | `TwoFactorVerify` (body)           | `LoginResponse`                      | Complete login by verifying the TOTP code. Emits `auth.login`. |
-| POST   | `/refresh`             | —                         | `refresh_token` (query)            | `TokenResponse`                      | Rotate a refresh token: old one deleted, new access/refresh pair issued. |
-| POST   | `/logout`              | —                         | `refresh_token` (query)            | —                                     | Revoke a refresh token (no-op if unknown). Emits `auth.logout`. |
-| GET    | `/me`                  | Bearer access token       | —                                  | `UserRead`                           | Return the authenticated user's profile. |
+| POST   | `/refresh`             | -                         | `refresh_token` (query)            | `TokenResponse`                      | Rotate a refresh token: old one deleted, new access/refresh pair issued. |
+| POST   | `/logout`              | -                         | `refresh_token` (query)            | -                                     | Revoke a refresh token (no-op if unknown). Emits `auth.logout`. |
+| GET    | `/me`                  | Bearer access token       | -                                  | `UserRead`                           | Return the authenticated user's profile. |
 | PATCH  | `/update`              | Bearer access token       | `UserUpdate` (body)                 | `UserRead`                           | Update `location` and `avatar_id`. |
 | GET    | `/users/by-email`      | Bearer access token       | `email` (query)                    | `UserLookup`                          | Look up another user's public info by email (used by other services). |
 
@@ -160,25 +145,25 @@ Alongside the repositories, two more building blocks are injected into
 
 | Method | Path                | Auth                  | Request                 | Response                | Description |
 | ------ | -------------------- | ----------------------- | ------------------------- | -------------------------- | ----------- |
-| POST   | `/2fa/enable`         | Bearer access token       | —                          | `TwoFactorCredentials`      | Generate a TOTP secret + provisioning URI. 2FA is **not** active yet. |
-| POST   | `/2fa/enable/verify`  | Bearer access token       | `TwoFactorVerify` (body)   | —                            | Verify the first code and set `is_2fa_enabled = true`. |
-| POST   | `/2fa/disable`        | Bearer access token       | —                          | `UserRead`                   | Disable 2FA for the current user. |
+| POST   | `/2fa/enable`         | Bearer access token       | -                          | `TwoFactorCredentials`      | Generate a TOTP secret + provisioning URI. 2FA is **not** active yet. |
+| POST   | `/2fa/enable/verify`  | Bearer access token       | `TwoFactorVerify` (body)   | -                            | Verify the first code and set `is_2fa_enabled = true`. |
+| POST   | `/2fa/disable`        | Bearer access token       | -                          | `UserRead`                   | Disable 2FA for the current user. |
 
 ### 5.3 OAuth (Google & 42)
 
 | Method | Path                    | Auth | Request                                                     | Response                              | Description |
 | ------ | ------------------------ | ---- | ------------------------------------------------------------ | --------------------------------------- | ----------- |
-| GET    | `/oauth/google/login`     | —    | —                                                              | `OAuthRedirect` (+ sets `oauth_state_google` cookie) | Build the Google authorization URL, set a CSRF state cookie. |
-| GET    | `/oauth/google/callback`  | —    | `code`, `state` (query) + `oauth_state_google` cookie          | 302 → frontend                          | Validate `state`, fetch the profile, redirect with `pending_token` or `exchange_code`. |
-| GET    | `/oauth/42/login`         | —    | —                                                              | `OAuthRedirect` (+ sets `oauth_state_ft` cookie) | Same flow, 42. |
-| GET    | `/oauth/42/callback`      | —    | `code`, `state` (query) + `oauth_state_ft` cookie               | 302 → frontend                          | Same flow, 42. |
-| POST   | `/oauth/exchange`         | —    | `OAuthExchange` (body: `exchange_code`)                          | `LoginResponse`                          | Exchange the one-time code for real tokens. Emits `auth.login`. |
+| GET    | `/oauth/google/login`     | -    | -                                                              | `OAuthRedirect` (+ sets `oauth_state_google` cookie) | Build the Google authorization URL, set a CSRF state cookie. |
+| GET    | `/oauth/google/callback`  | -    | `code`, `state` (query) + `oauth_state_google` cookie          | 302 → frontend                          | Validate `state`, fetch the profile, redirect with `pending_token` or `exchange_code`. |
+| GET    | `/oauth/42/login`         | -    | -                                                              | `OAuthRedirect` (+ sets `oauth_state_ft` cookie) | Same flow, 42. |
+| GET    | `/oauth/42/callback`      | -    | `code`, `state` (query) + `oauth_state_ft` cookie               | 302 → frontend                          | Same flow, 42. |
+| POST   | `/oauth/exchange`         | -    | `OAuthExchange` (body: `exchange_code`)                          | `LoginResponse`                          | Exchange the one-time code for real tokens. Emits `auth.login`. |
 
 ### 5.4 Health
 
 | Method | Path      | Auth | Response                                     | Description |
 | ------ | ---------- | ---- | ---------------------------------------------- | ----------- |
-| GET    | `/health`   | —    | `{"status": "ok", "service": "auth"}`            | Liveness check. |
+| GET    | `/health`   | -    | `{"status": "ok", "service": "auth"}`            | Liveness check. |
 
 ## 6. Authentication model
 
@@ -189,7 +174,7 @@ Alongside the repositories, two more building blocks are injected into
 | Access token           | `access`          | signup, login, login_2fa, refresh, oauth exchange   | 15 min (`ACCESS_TOKEN_EXPIRE_MINUTES`)      | Bearer token for authenticated endpoints. |
 | Refresh token           | *(opaque string, not a JWT)* | same as above                          | 7 days (`REFRESH_TOKEN_EXPIRE_DAYS`), persisted in `tokens` | Exchanged via `/refresh`; revoked via `/logout`. |
 | Pending-2FA token       | `2fa_pending`     | `/login` when `is_2fa_enabled` is true              | 5 min (`TEMPORARY_TOKEN_EXPIRE_MINUTES`)    | Identifies the user while completing `/login/2fa/verify`. |
-| OAuth exchange code     | `oauth_exchange`  | OAuth callback (Google/42)                          | 30 sec (`OAUTH_EXCHANGE_EXPIRE_SECONDS`)    | One-time code handed to the frontend in a redirect URL, swapped for real tokens via `/oauth/exchange` — keeps long-lived tokens out of the URL/browser history. |
+| OAuth exchange code     | `oauth_exchange`  | OAuth callback (Google/42)                          | 30 sec (`OAUTH_EXCHANGE_EXPIRE_SECONDS`)    | One-time code handed to the frontend in a redirect URL, swapped for real tokens via `/oauth/exchange` - keeps long-lived tokens out of the URL/browser history. |
 
 All JWTs are signed **HS256** (`ALGORITHM`) with `SECRET_KEY`.
 
@@ -209,25 +194,25 @@ header regardless of which endpoint issued it. `get_current_user` requires a
 ### 6.3 Refresh & logout semantics
 
 - **Refresh is a rotation, not a reissue**: the old `RefreshToken` row is
-  deleted and a new one inserted in the same transaction — the old refresh
+  deleted and a new one inserted in the same transaction - the old refresh
   token is unusable immediately, no reuse window.
-- **Logout requires no caller identity** — presenting a valid `refresh_token`
+- **Logout requires no caller identity** - presenting a valid `refresh_token`
   string is the only requirement; there is no check that it belongs to the
   caller (pre-existing behaviour, not introduced by the realtime-notification
   work).
 
 ## 7. Two-factor authentication flow
 
-1. **Enable** — `POST /2fa/enable` generates a TOTP secret and an `otpauth://`
+1. **Enable** - `POST /2fa/enable` generates a TOTP secret and an `otpauth://`
    provisioning URI (scannable QR in the frontend). 2FA is **not** active yet.
-2. **Confirm** — the user scans it, then `POST /2fa/enable/verify` with the
+2. **Confirm** - the user scans it, then `POST /2fa/enable/verify` with the
    first code sets `is_2fa_enabled = true`.
-3. **Login with 2FA** — `POST /login` returns `TwoFactorRequired` (a
+3. **Login with 2FA** - `POST /login` returns `TwoFactorRequired` (a
    `pending_token`) instead of tokens. The client calls
    `POST /login/2fa/verify` with that token + a TOTP code to get real tokens.
-4. **Disable** — `POST /2fa/disable` turns it back off.
+4. **Disable** - `POST /2fa/disable` turns it back off.
 
-Codes are verified with `pyotp`, `valid_window=1` — accepting one 30-second
+Codes are verified with `pyotp`, `valid_window=1` - accepting one 30-second
 step of clock drift on either side of the current window.
 
 ## 8. OAuth flow (Google & 42)
@@ -248,7 +233,7 @@ step of clock drift on either side of the current window.
 5. The frontend calls `POST /oauth/exchange` with that code to get real
    tokens. Emits `auth.login`.
 
-> **Note.** Users created via OAuth get `hashed_password="IMPOSSIBLE"` — a
+> **Note.** Users created via OAuth get `hashed_password="IMPOSSIBLE"` - a
 > sentinel that can never match a bcrypt comparison. This is intentional: it
 > blocks password-based `/login` for accounts that only exist through OAuth,
 > without needing a nullable `hashed_password` column.
@@ -319,7 +304,7 @@ Three tables, defined in [`models/auth.py`](app/models/auth.py):
 | `user_id`                  | FK → `users.id` | `ON DELETE CASCADE` |
 | `created_at`                | `timestamptz` | |
 
-Unique constraint on (`provider`, `provider_user_id`) — one link per external
+Unique constraint on (`provider`, `provider_user_id`) - one link per external
 account. Deleting a `User` cascades to their tokens and OAuth links at the
 database level.
 
@@ -349,7 +334,7 @@ shape.
 
 ## 12. Configuration
 
-Environment variables read in [`config.py`](app/config.py) — set at the
+Environment variables read in [`config.py`](app/config.py) - set at the
 project root (`.env`, see [`.env.example`](../.env.example)).
 
 **Core**
@@ -365,7 +350,7 @@ project root (`.env`, see [`.env.example`](../.env.example)).
 | `REFRESH_TOKEN_EXPIRE_DAYS`                        | `7`                                                                     | Refresh token lifetime. |
 | `OAUTH_EXCHANGE_EXPIRE_SECONDS`                      | `30`                                                                      | OAuth exchange code lifetime. |
 
-**OAuth — Google**
+**OAuth - Google**
 
 | Variable                | Default | Description |
 | -------------------------- | ------- | ----------- |
@@ -373,7 +358,7 @@ project root (`.env`, see [`.env.example`](../.env.example)).
 | `GOOGLE_CLIENT_SECRET`          | `""`     | OAuth client secret. |
 | `GOOGLE_REDIRECT_URI`             | `https://localhost:8443/api/auth/oauth/google/callback` | Must match the URI registered with Google. |
 
-**OAuth — 42**
+**OAuth - 42**
 
 | Variable         | Default | Description |
 | -------------------- | ------- | ----------- |
@@ -385,9 +370,9 @@ project root (`.env`, see [`.env.example`](../.env.example)).
 
 | Variable            | Default    | Description |
 | ---------------------- | ---------- | ----------- |
-| `POSTGRES_USER`           | *required*  | No fallback — startup fails without it. |
-| `POSTGRES_PASSWORD`         | *required*  | No fallback — startup fails without it. |
-| `POSTGRES_DB`                  | *required*  | No fallback — startup fails without it. |
+| `POSTGRES_USER`           | *required*  | No fallback - startup fails without it. |
+| `POSTGRES_PASSWORD`         | *required*  | No fallback - startup fails without it. |
+| `POSTGRES_DB`                  | *required*  | No fallback - startup fails without it. |
 | `POSTGRES_HOST`                  | `postgres`   | |
 | `POSTGRES_PORT`                    | `5432`        | |
 
@@ -426,7 +411,7 @@ auth/
 
 ## 14. Getting started
 
-The recommended way to run this service is as part of the full stack — it
+The recommended way to run this service is as part of the full stack - it
 needs PostgreSQL, and (for OAuth) the `gateway` for the correct redirect
 URIs:
 
@@ -455,13 +440,13 @@ uv run uvicorn main:app --reload
 
 ## 15. Related documentation
 
-- [Root README](../README.md) — platform overview, full architecture, all
+- [Root README](../README.md) - platform overview, full architecture, all
   services.
-- [docs/DEV_DOC.md](../docs/DEV_DOC.md) — local dev workflow, database
+- [docs/DEV_DOC.md](../docs/DEV_DOC.md) - local dev workflow, database
   migrations.
-- [migrations/README.md](../migrations/README.md) — how the shared Alembic
+- [migrations/README.md](../migrations/README.md) - how the shared Alembic
   chain works, and how to add a model.
-- [gateway/README.md](../gateway/README.md) — reverse proxy, WAF, and the
+- [gateway/README.md](../gateway/README.md) - reverse proxy, WAF, and the
   `/api/auth/*` routing this service sits behind.
-- [realtime/README.md](../realtime/README.md) — consumer of the
+- [realtime/README.md](../realtime/README.md) - consumer of the
   `auth.login` / `auth.logout` events described in [§9](#9-realtime-event-notifications).
