@@ -77,3 +77,5 @@ CONV_TITLE_MAX_LEN = 60
 HISTORY_RAW_LIMIT = 6
 
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL", "http://auth:8000")
+
+ORG_BASE_URL = os.environ.get("ORG_BASE_URL", "http://org:8000")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.database import get_session
 from app.config import GROQ_BASE_URL, GROQ_MODEL
@@ -11,6 +11,8 @@ import json
 from app.repositories.conversation_repository import ConversationRepository
 from app.services.conversation_service import ConversationService
 from app.get_user import get_current_user_id
+from app.permissions import get_org_client
+from app.clients.org_client import OrgClient
 
 router = APIRouter(prefix="/query", tags=["query"])
 
@@ -73,17 +75,36 @@ def _sse_format(event: str, data: dict) -> str:
 async def query(
     data: QueryRequest,
     service: QueryService = Depends(get_query_service),
+    user_id: int = Depends(get_current_user_id),
+    org_client: OrgClient = Depends(get_org_client),
 ) -> QueryResponse:
     """
     Answer a question in one shot and return the full response.
 
+    Membership is checked here rather than through a role dependency
+    because organisation_id arrives in the request body, which a
+    dependency cannot read from the signature.
+
     Args:
         data: Question and the organisation to search within.
         service: Injected QueryService instance.
+        user_id: Id of the authenticated user, resolved via auth.
+        org_client: Client used to read the caller's role.
 
     Returns:
         QueryResponse with the answer and its cited sources.
+
+    Raises:
+        HTTPException: 401 when unauthenticated, 403 when the caller is
+        not a member of the organisation being searched.
     """
+
+    role_id = await org_client.get_member_role(data.organisation_id, user_id)
+    if role_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have necessary permission",
+        )
 
     return await service.query(data)
 
@@ -94,6 +115,7 @@ async def query_stream(
     service: QueryService = Depends(get_query_service),
     conversations: ConversationService = Depends(get_conversation_service),
     user_id: int = Depends(get_current_user_id),
+    org_client: OrgClient = Depends(get_org_client),
 ) -> StreamingResponse:
     """
     Answer a question as an SSE stream, persisting the exchange.
@@ -112,6 +134,13 @@ async def query_stream(
     Returns:
         A StreamingResponse emitting text/event-stream frames.
     """
+
+    role_id = await org_client.get_member_role(data.organisation_id, user_id)
+    if role_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have necessary permission",
+        )
 
     conversation = await conversations.get_or_create(
         conversation_id=data.conversation_id,

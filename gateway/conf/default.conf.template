@@ -29,7 +29,7 @@ server {
     }
 
         location /api/org/internal/ {
-        return 404;
+            return 404;
     }
 
     location /api/org/ {
