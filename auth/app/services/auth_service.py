@@ -600,16 +600,17 @@ class AuthService:
         if user.is_2fa_enabled:
             raise TwoFactorAlreadyEnabledError()
 
-        secret = generate_2fa_secret()
-
-        try:
-            await self._user_repository.register_2fa_secret(
-                user=user, secret=secret
-            )
-            await self._session.commit()
-        except Exception:
-            await self._session.rollback()
-            raise
+        secret = user.secret_2fa
+        if not secret:
+            secret = generate_2fa_secret()
+            try:
+                await self._user_repository.register_2fa_secret(
+                    user=user, secret=secret
+                )
+                await self._session.commit()
+            except Exception:
+                await self._session.rollback()
+                raise
 
         uri = pyotp.TOTP(secret).provisioning_uri(
             name=user.email, issuer_name="Keepr"
