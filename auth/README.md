@@ -14,7 +14,11 @@ gateway under the prefix **`/api/auth/`** (e.g. `POST /api/auth/login`).
 ## Responsibilities
 
 - **Sign-up & login** — register users with email + password, authenticate
-  them, and issue **JWT access/refresh tokens**.
+  them, and issue **JWT access/refresh tokens**. Registration passwords are
+  checked against a strength policy
+  ([`core/password_policy.py`](app/core/password_policy.py)); login only
+  enforces the bcrypt length bounds, so accounts created before the policy
+  still work.
 - **Two-factor authentication** — optional **TOTP 2FA** on login, compatible
   with any authenticator app (Google Authenticator, Authy, ...).
 - **OAuth login** — authenticate via **Google** and **42**, automatically
@@ -47,6 +51,7 @@ auth/
     │   └── realtime_client.py    # async push of login/logout events to realtime
     ├── core/
     │   ├── security.py           # password hashing, TOTP verification
+    │   ├── password_policy.py    # password length/strength rules
     │   ├── tokens.py              # JWT encode/decode
     │   ├── google_oauth.py         # Google profile fetch
     │   └── ft_oauth.py              # 42 profile fetch
